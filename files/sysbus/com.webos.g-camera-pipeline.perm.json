@@ -1,0 +1,8 @@
+{
+    "com.webos.pipeline.*": [
+        "camera"
+    ],
+    "com.webos.rm.client.*": [
+        "camera"
+    ]
+}

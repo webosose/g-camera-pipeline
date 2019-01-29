@@ -1,0 +1,73 @@
+# Copyright (c) 2019 LG Electronics, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 2.8)
+
+project(g-camera-pipeline)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+if(NOT DEFINED WEBOS_INSTALL_ROOT)
+  set(WEBOS_INSTALL_ROOT /usr/local/webos/)
+endif()
+
+if(NOT DEFINED WEBOS_INSTALL_SBINDIR)
+  set(WEBOS_INSTALL_SBINDIR /usr/sbin)
+endif()
+
+set(CMAKE_INSTALL_PREFIX ${WEBOS_INSTALL_ROOT}usr)
+
+if (NOT DEFINED ENV{PKG_CONFIG_PATH})
+  set(ENV{PKG_CONFIG_PATH} ${WEBOS_INSTALL_ROOT}usr/share/pkgconfig)
+endif()
+
+if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3-64")
+  message(STATUS "Build g-camera-pipeline for raspberrypi3")
+  add_definitions(-DPLATFORM_RASPBERRYPI3)
+  add_definitions(-DMAX_NUM_DISPLAY=1)
+elseif(${WEBOS_TARGET_MACHINE} STREQUAL "intel-corei7-64")
+  message(STATUS "Build g-camera-pipeline for intel-corei7-64")
+
+# Configuration variable is related with EXTRA_OECMAKE in recipe file.
+# See recipes-multimedia/g-camera-pipeline/g-camera-pipeline.bb
+  if(DEFINED PLATFORM_INTEL_APOLLO_LAKE)
+    message(STATUS "Add definition for PLATFORM_INTEL_APOLLO_LAKE")
+    add_definitions(-DPLATFORM_INTEL_APOLLO_LAKE)
+    add_definitions(-DMAX_NUM_DISPLAY=3)
+  endif()
+
+else()
+  message(FATAL_ERROR "Check WEBOS_TARGET_MACHINE: " ${WEBOS_TARGET_MACHINE})
+endif()
+
+
+file(GLOB_RECURSE HEADERS "*.h*")
+add_custom_target(show_headers SOURCES ${HEADERS})
+
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(GSTPLAYER gstreamer-player-1.0 REQUIRED)
+pkg_check_modules(GSTREAMER gstreamer-1.0 REQUIRED)
+
+set(GSTREAMER_INCLUDE_DIRS ${GSTPLAYER_INCLUDE_DIRS} ${GSTREAMER_INCLUDE_DIRS})
+set(GSTREAMER_LIBRARIES ${GSTPLAYER_LIBRARIES} ${GSTREAMER_LIBRARIES})
+
+include_directories(${GSTREAMER_INCLUDE_DIRS})
+link_directories(${GSTREAMER_LIBRARIES})
+
+add_subdirectory(src)
+add_subdirectory(camsrc)
+add_subdirectory(files)

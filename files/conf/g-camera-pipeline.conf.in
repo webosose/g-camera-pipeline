@@ -1,0 +1,23 @@
+{
+    "outputs" : [
+        {
+            "name" : "g-camera-pipeline-log",
+            "file" : "@WEBOS_INSTALL_LOGDIR@/g-camera-pipeline.log",
+            "maxSize" : 100000,
+            "rotations" : 1
+        }
+    ],
+
+    "contexts" : [
+        {
+            "name" : "g-camera-pipeline",
+            "level" : "debug",
+            "logProcessIds" : false,
+            "logThreadIds" : false,
+            "logToConsole" : false,
+            "rules" : [
+                {"filter" : "*.*", "output" : "g-camera-pipeline-log"}
+            ]
+        }
+    ]
+}
