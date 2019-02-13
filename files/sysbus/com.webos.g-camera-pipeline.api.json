@@ -11,9 +11,9 @@
         "com.webos.pipeline.*/unsubscribe",
         "com.webos.pipeline.*/setUri",
         "com.webos.pipeline.*/setPlane",
-        "com.webos.pipeline.*/takeSnapshot",
-        "com.webos.pipeline.*/startRecord",
-        "com.webos.pipeline.*/stopRecord"
+        "com.webos.pipeline.*/takeCameraSnapshot",
+        "com.webos.pipeline.*/startCameraRecord",
+        "com.webos.pipeline.*/stopCameraRecord"
     ]
 }
 

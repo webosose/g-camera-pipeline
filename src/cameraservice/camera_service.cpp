@@ -178,9 +178,9 @@ void Service::Initialize(cmp::player::Player *player)
     static UMSConnectorEventHandler event_handlers[] = {
         // uMediaserver public API
         {"load", Service::LoadEvent},
-        {"takeSnapshot", Service::TakeSnapshotEvent},
-        {"startRecord", Service::StartRecordEvent},
-        {"stopRecord", Service::StopRecordEvent},
+        {"takeCameraSnapshot", Service::TakeCameraSnapshotEvent},
+        {"startCameraRecord", Service::StartCameraRecordEvent},
+        {"stopCameraRecord", Service::StopCameraRecordEvent},
         {"attach", Service::AttachEvent},
         {"unload", Service::UnloadEvent},
 
@@ -285,8 +285,7 @@ bool Service::LoadEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message
     return ret;
 }
 
-bool Service::TakeSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message,
-        void *ctxt)
+bool Service::TakeCameraSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
 {
     pbnjson::JDomParser jsonparser;
     std::string cmd = instance_->umc_->getMessageText(message);
@@ -301,7 +300,7 @@ bool Service::TakeSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage 
     return ret;
 }
 
-bool Service::StartRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
+bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
 {
     pbnjson::JDomParser jsonparser;
     std::string cmd = instance_->umc_->getMessageText(message);
@@ -316,7 +315,7 @@ bool Service::StartRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *
     return ret;
 }
 
-bool Service::StopRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
+bool Service::StopCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
 {
     return instance_->player_->stopRecord();
 }

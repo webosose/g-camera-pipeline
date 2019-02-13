@@ -59,9 +59,9 @@ class Service : public IService {
 
   // uMediaserver public API
   static bool LoadEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool TakeSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool StartRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool StopRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool TakeCameraSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool StartCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool StopCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
   static bool AttachEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
   static bool UnloadEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
 
