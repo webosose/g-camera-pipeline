@@ -70,7 +70,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_camsrc_debug);
 #define GST_CAT_DEFAULT gst_camsrc_debug
 
 #define VERSION "1.0.0"
-#define FRAME_SIZE 1382400
+#define FRAME_SIZE 8294400
 
 /* Filter signals and args */
 enum
@@ -185,6 +185,7 @@ gst_camsrc_init (Gstcamsrc * filter)
   GST_PAD_SET_PROXY_CAPS (filter->srcpad);
   gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
 
+  gst_base_src_set_format (GST_BASE_SRC (filter), GST_FORMAT_TIME);
   filter->device = NULL;
 }
 
@@ -262,6 +263,7 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
     GstCaps *thiscaps;
     GstCaps *caps = NULL;
     GstCaps *peercaps = NULL;
+    gboolean result = FALSE;
     const gchar * pfx = " ";
     GstStructure *pref = NULL;
     streamformat.stream_width = DEFAULT_VIDEO_WIDTH;
@@ -272,12 +274,7 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
     thiscaps = gst_pad_query_caps (GST_BASE_SRC_PAD (basesrc), NULL);
     GST_DEBUG_OBJECT (basesrc, "caps of src: %" GST_PTR_FORMAT, thiscaps);
 
-    /* nothing or anything is allowed, we're done */
-    if (thiscaps == NULL || gst_caps_is_any (thiscaps))
-        goto no_nego_needed;
-
-    /* get the peer caps without a filter as we'll filter ourselves later on
-     * */
+    /* query the peer caps*/
     peercaps = gst_pad_peer_query_caps (GST_BASE_SRC_PAD (basesrc), NULL);
     GST_DEBUG_OBJECT (basesrc, "caps of peer: %" GST_PTR_FORMAT, peercaps);
 
@@ -303,16 +300,13 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
             {
                 pref = gst_caps_get_structure (peercaps, 0);
                 gst_structure_foreach (pref, set_value, (gpointer) pfx);
+                result = gst_base_src_set_caps (basesrc, peercaps);
             }
         }
     }
-no_nego_needed:
-    {
-        GST_DEBUG_OBJECT (basesrc, "no negotiation needed");
-        if (thiscaps)
-            gst_caps_unref (thiscaps);
-        return TRUE;
-    }
+    if (peercaps)
+      gst_caps_unref (peercaps);
+  return result;
 }
 
     static GstFlowReturn

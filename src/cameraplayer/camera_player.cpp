@@ -54,19 +54,26 @@ static int numOfCapturedImages = 0;
 static int num = 0;
 #define NUMBEROFIMAGES 1
 
+std::string capture_path;
+std::string record_path;
+
 void writeImageToFile(const void *p,int size)
 {
     FILE *fp;
-    char image_name[20];
+    if(capture_path.empty())
+      capture_path = "/tmp/";
 
-    sprintf(image_name, "/tmp/capture.jpeg");
+    capture_path += "capture.jpeg";
 
-    if (NULL == (fp = fopen(image_name, "wb")))
+    if (NULL == (fp = fopen(capture_path.c_str(), "wb")))
     {
+        CMP_DEBUG_PRINT("File Open Failed :%d\n\n",__LINE__);
+        return;
     }
 
     fwrite(p, size, 1, fp);
     fclose(fp);
+    capture_path.clear();
 }
 
 static void
@@ -204,14 +211,18 @@ bool create_capture_bin(GstPad * pad)
 
 bool create_record_bin(GstPad * pad)
 {
+    char recordfilename[100];
     record_bin = gst_bin_new ("record_bin");
     record_queue = gst_element_factory_make ("queue", "record_queue");
     record_encoder = gst_element_factory_make ("omxh264enc", "record_encoder");
-    record_sink = gst_element_factory_make("filesink", NULL);
-    gst_bin_add_many (GST_BIN (record_bin), record_queue, record_encoder, record_sink, NULL);
+    record_sink = gst_element_factory_make("filesink", "record_sink");
+    record_mux = gst_element_factory_make("mpegtsmux", "record_mux");
+    gst_bin_add_many (GST_BIN (record_bin), record_queue, record_encoder,
+                      record_mux, record_sink, NULL);
     record_queue_pad = gst_element_get_static_pad (record_queue, "sink");
     g_object_set(G_OBJECT(record_sink), "sync", true, NULL);
-    if (TRUE != gst_element_link_many (record_queue, record_encoder, record_sink, NULL))
+    if (TRUE != gst_element_link_many (record_queue, record_encoder, record_mux,
+                                       record_sink, NULL))
     {
         CMP_DEBUG_PRINT ("link capture elements could not be linked.\n");
         return false;
@@ -222,14 +233,18 @@ bool create_record_bin(GstPad * pad)
     gst_element_add_pad (GST_ELEMENT(record_bin), record_ghost_sinkpad);
     gst_object_unref (record_queue_pad);
 
-    if (!record_encoder || !record_queue_pad || !record_sink || !record_queue )
+    if (!record_encoder || !record_queue_pad || !record_sink || !record_queue
+        || !record_mux)
     {
         CMP_DEBUG_PRINT("Record elements not created.");
         return false;
     }
 
-    numOfImagesToCapture = NUMBEROFIMAGES;
-    g_object_set(G_OBJECT(record_sink), "location", "/media/internal/Record.h264", NULL);
+    if (record_path.empty())
+      record_path = "/media/internal/";
+
+    snprintf(recordfilename, 100, "%sRecord%d.ts", record_path.c_str(), rand());
+    g_object_set(G_OBJECT(record_sink), "location", recordfilename, NULL);
 
     if (TRUE != gst_bin_add (GST_BIN (pipeline), record_bin))
     {
@@ -341,6 +356,7 @@ record_remove_probe(GstPad * pad, GstPadProbeInfo * info, gpointer user_data)
     gst_object_unref(tee_record_pad);
 
     gst_pad_remove_probe (pad, GST_PAD_PROBE_INFO_ID (info));
+    record_path.clear();
 
     return GST_PAD_PROBE_OK;
 
@@ -634,11 +650,13 @@ bool CameraPlayer::LoadPipeline()
     {
         source   = gst_element_factory_make ("camsrc", "source");
         g_object_set (source, "device", memsrc_.c_str(), NULL);
+        g_object_set (source, "do-timestamp", true, NULL);
     }
     else if(strncmp(memtype_.c_str(),"shmem",5) == 0)
     {
         source   = gst_element_factory_make ("appsrc", "source");
         g_object_set (source, "format", GST_FORMAT_TIME, NULL);
+        g_object_set (source, "do-timestamp", true, NULL);
         g_signal_connect (source, "need-data", G_CALLBACK (feed_data), data);
         if (OpenShmem((SHMEM_HANDLE *)(&(context.shmemHandle)),context.shmemKey) != 0)
         {
@@ -762,6 +780,8 @@ bool CameraPlayer::LoadPipeline()
 
 bool CameraPlayer::takeSnapshot(const std::string  &location)
 {
+    if(!location.empty())
+      capture_path = location;
     if (NULL == tee_capture_pad)
     {
         tee_capture_pad = gst_element_get_request_pad (tee, "src_%u");
@@ -790,6 +810,8 @@ bool CameraPlayer::takeSnapshot(const std::string  &location)
 
 bool CameraPlayer::startRecord(const std::string  &location)
 {
+    if(!location.empty())
+      record_path = location;
     tee_record_pad = gst_element_get_request_pad (tee, "src_%u");
     record_tee_pad_ref = tee_record_pad;
     if (create_bin(tee_record_pad,"record"))

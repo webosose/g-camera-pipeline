@@ -57,7 +57,7 @@ namespace cmp { namespace resource { class ResourceRequestor; }}
 namespace cmp { namespace player {
 
 static GstElement *pipeline, *capture_queue, *preview_queue, *capture_sink,*capture_encoder,
-                  *tee_ref, *record_queue, *record_sink,*record_encoder,
+                  *tee_ref, *record_queue, *record_sink, *record_encoder, *record_mux,
                   *record_bin, *capture_bin, *preview_bin,
                   *preview_sink, *tee, *source, *parser,
                   *decoder, *filter, *filter2, *vconv;
