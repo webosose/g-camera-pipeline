@@ -167,7 +167,7 @@ void Service::Notify(const NOTIFY_TYPE_T notification, const void *payload)
     }
 }
 
-void Service::Initialize(cmp::player::Player *player)
+void Service::Initialize(cmp::player::CameraPlayer *player)
 {
     if (!player || !umc_)
         return;
@@ -296,7 +296,7 @@ bool Service::TakeCameraSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMe
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();
-    bool ret = instance_->player_->takeSnapshot(parsed["location"].asString());
+    bool ret = instance_->player_->TakeSnapshot(parsed["location"].asString());
     return ret;
 }
 
@@ -311,13 +311,13 @@ bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMes
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();
-    bool ret = instance_->player_->startRecord(parsed["location"].asString());
+    bool ret = instance_->player_->StartRecord(parsed["location"].asString());
     return ret;
 }
 
 bool Service::StopCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)
 {
-    return instance_->player_->stopRecord();
+    return instance_->player_->StopRecord();
 }
 
 bool Service::AttachEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt)

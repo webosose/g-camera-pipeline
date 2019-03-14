@@ -27,9 +27,9 @@
 #include <gst/player/player.h>
 #include <gst/pbutils/pbutils.h>
 #include <gst/app/gstappsrc.h>
+#include <gst/app/gstappsink.h>
 
 #include "base.h"
-
 
 typedef void *SHMEM_HANDLE;
 typedef struct _GstAppSrcContext
@@ -41,7 +41,6 @@ typedef struct _GstAppSrcContext
     gint isFirstCallback;
     GstAppSrc *appsrc;
 }GstAppSrcContext;
-static int count = 0;
 typedef struct
 {
       GMainLoop *loop;
@@ -56,94 +55,73 @@ namespace cmp { namespace resource { class ResourceRequestor; }}
 
 namespace cmp { namespace player {
 
-static GstElement *pipeline, *capture_queue, *preview_queue, *capture_sink,*capture_encoder,
-                  *tee_ref, *record_queue, *record_sink, *record_encoder, *record_mux,
-                  *record_bin, *capture_bin, *preview_bin,
-                  *preview_sink, *tee, *source, *parser,
-                  *decoder, *filter, *filter2, *vconv;
-static GstPad *capture_ghost_sinkpad, *preview_ghost_sinkpad,*record_ghost_sinkpad,
-              *preview_queue_pad, *capture_tee_pad_ref, *record_tee_pad_ref,
-              *record_queue_pad,*capture_queue_pad, *tee_capture_pad,
-              *tee_preview_pad, *tee_record_pad;
-
-static int planeNo;
-static int crctNo;
-static int connNo;
-
-class Player {
- public:
-  Player()
-    : pipeline_(NULL)
-    , service_(NULL)
-    , load_complete_(false) {}
-
-  virtual ~Player() {}
-
-  virtual bool Load(const std::string &str,const std::string &payload) = 0;
-  virtual bool Unload() = 0;
-  virtual bool Play() = 0;
-  virtual bool SetPlane(int planeId) = 0;
-  virtual bool SetDisplayResource(cmp::base::disp_res_t &res) = 0;
-  virtual void Initialize(cmp::service::IService *service) = 0;
-  virtual bool takeSnapshot(const std::string  &location) = 0;
-  virtual bool startRecord(const std::string  &location) = 0;
-  virtual bool stopRecord() = 0;
-
- protected:
-  GstElement *pipeline_;
-  cmp::service::IService *service_;
-  bool load_complete_;
-};
-
-class CameraPlayer : public Player {
+class CameraPlayer {
  public:
   CameraPlayer();
   ~CameraPlayer();
-  bool Load(const std::string &str,const std::string &payload) override;
-  bool Unload() override;
-  bool Play() override;
-  bool SetPlane(int planeId) override;
-  bool SetDisplayResource(cmp::base::disp_res_t &res) override;
-  void Initialize(cmp::service::IService *service) override;
+  bool Load(const std::string& str,const std::string& payload);
+  bool Unload();
+  bool Play();
+  bool SetPlane(int planeId);
+  bool SetDisplayResource(cmp::base::disp_res_t &res);
+  bool TakeSnapshot(const std::string& location);
+  bool StartRecord(const std::string& location);
+  bool StopRecord();
+  void Initialize(cmp::service::IService *service);
   static gboolean HandleBusMessage(GstBus *bus,
                                    GstMessage *message, gpointer user_data);
-  bool takeSnapshot(const std::string  &location) override;
-  bool startRecord(const std::string  &location) override;
-  bool stopRecord() override;
 
  private:
-  int32_t planeId_, shmkey_, width_, height_,framerate_;
-
-  std::string memtype_;
-  std::string memsrc_;
-  std::string format_;
-
-  base::source_info_t source_info_;
-  std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
-  base::playback_state_t current_state_;
-  GstBus *bus;
-  GstCaps *caps, *caps2, *scalecaps;
 
   void NotifySourceInfo();
+  void SetGstreamerDebug();
+  void ParseOptionString(const std::string& str);
   bool GetSourceInfo();
   bool LoadPipeline();
-  base::error_t HandleErrorMessage(GstMessage *message);
-  int32_t ConvertErrorCode(GQuark domain, gint code);
-  void SetGstreamerDebug();
-  int GetShmkey(const std::string &uri);
-  base::playback_state_t GetPlayerState() const { return current_state_; }
   bool SetPlayerState(base::playback_state_t state) {
     current_state_ = state;
     return true;
   }
-  void ParseOptionString(const std::string &str);
-  int32_t crtcId_;
-  int32_t connId_;
-  int32_t display_path_;
-  std::string uri_;
+  bool CreateBin(GstPad * pad,char *mode);
+  bool CreatePreviewBin(GstPad * pad);
+  bool CreateCaptureElements(GstPad * pad);
+  bool CreateRecordElements(GstPad * pad);
+  int32_t ConvertErrorCode(GQuark domain, gint code);
+  base::error_t HandleErrorMessage(GstMessage *message);
+  base::playback_state_t GetPlayerState() const { return current_state_; }
+  void WriteImageToFile(const void *p,int size);
+  bool LoadYUY2Pipeline();
+  bool LoadJPEGPipeline();
+  static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
+  static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
+  static GstPadProbeReturn CaptureRemoveProbe(GstPad * pad,
+                                                GstPadProbeInfo * info,
+                                                gpointer user_data);
+  static GstPadProbeReturn RecordRemoveProbe(GstPad * pad,
+                                               GstPadProbeInfo * info,
+                                               gpointer user_data);
+
+  int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
+            display_path_;
+  int  numOfImagesToCapture_, numOfCapturedImages_;
+  std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
+  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_, *filter2_,
+             *vconv_, *tee_, *capture_queue_, *capture_encoder_, *capture_sink_,
+              *record_queue_, *record_encoder_, *record_mux_, *record_sink_,
+              *preview_bin_, *preview_queue_, *preview_sink_;
+  GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
+         *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
+         *tee_record_pad_;
+  GstAppSrcContext context_ ;
+  base::source_info_t source_info_;
+  std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
+  base::playback_state_t current_state_;
+  GstBus *bus_;
+  GstCaps *caps_, *caps2_;
+  cmp::service::IService *service_;
+  bool load_complete_;
 };
 
 }  // namespace player
 }  // namespace cmp
 #endif  // SRC_CAMERA_PLAYER_H_
-

@@ -28,7 +28,7 @@ class UMSConnector;
 class UMSConnectorHandle;
 class UMSConnectorMessage;
 
-namespace cmp { namespace player { class Player; }}
+namespace cmp { namespace player { class CameraPlayer; }}
 namespace cmp { namespace base { struct source_info_t; }}
 namespace cmp { namespace resource { class ResourceRequestor; }}
 
@@ -54,7 +54,7 @@ class Service : public IService {
 
   bool Wait() override;
   bool Stop() override;
-  void Initialize(cmp::player::Player *player);
+  void Initialize(cmp::player::CameraPlayer *player);
   bool acquire(cmp::base::source_info_t   &source_info, const int32_t display_path = 0) override;
 
   // uMediaserver public API
@@ -98,7 +98,7 @@ class Service : public IService {
 
   UMSConnector *umc_;
   std::string media_id_;  // connection_id
-  cmp::player::Player *player_;
+  cmp::player::CameraPlayer *player_;
   static Service *instance_;
   std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
 
