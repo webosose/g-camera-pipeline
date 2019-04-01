@@ -29,9 +29,9 @@
 #include <gst/app/gstappsrc.h>
 #include <gst/app/gstappsink.h>
 
+#include "camshm.h"
 #include "base.h"
 
-typedef void *SHMEM_HANDLE;
 typedef struct _GstAppSrcContext
 {
     SHMEM_HANDLE shmemHandle;
@@ -59,7 +59,7 @@ class CameraPlayer {
  public:
   CameraPlayer();
   ~CameraPlayer();
-  bool Load(const std::string& str,const std::string& payload);
+  bool Load(const std::string& str, const std::string& payload);
   bool Unload();
   bool Play();
   bool SetPlane(int planeId);
@@ -76,22 +76,22 @@ class CameraPlayer {
   void NotifySourceInfo();
   void SetGstreamerDebug();
   void ParseOptionString(const std::string& str);
+  void WriteImageToFile(const void *p, int size);
   bool GetSourceInfo();
   bool LoadPipeline();
   bool SetPlayerState(base::playback_state_t state) {
     current_state_ = state;
     return true;
   }
-  bool CreateBin(GstPad * pad,char *mode);
+  bool CreateBin(GstPad * pad, const std::string& str);
   bool CreatePreviewBin(GstPad * pad);
   bool CreateCaptureElements(GstPad * pad);
   bool CreateRecordElements(GstPad * pad);
-  int32_t ConvertErrorCode(GQuark domain, gint code);
-  base::error_t HandleErrorMessage(GstMessage *message);
-  base::playback_state_t GetPlayerState() const { return current_state_; }
-  void WriteImageToFile(const void *p,int size);
   bool LoadYUY2Pipeline();
   bool LoadJPEGPipeline();
+  int32_t ConvertErrorCode(GQuark domain, gint code);
+  base::error_t HandleErrorMessage(GstMessage *message);
+
   static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
   static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
   static GstPadProbeReturn CaptureRemoveProbe(GstPad * pad,
@@ -102,13 +102,14 @@ class CameraPlayer {
                                                gpointer user_data);
 
   int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
-            display_path_;
+            display_path_idx_;
   int  numOfImagesToCapture_, numOfCapturedImages_;
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
-  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_, *filter2_,
-             *vconv_, *tee_, *capture_queue_, *capture_encoder_, *capture_sink_,
-              *record_queue_, *record_encoder_, *record_mux_, *record_sink_,
-              *preview_bin_, *preview_queue_, *preview_sink_;
+  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_,
+             *filter_I420_, *filter_JPEG_, *vconv_, *tee_, *capture_queue_,
+             *capture_encoder_, *capture_sink_, *record_queue_, *record_encoder_,
+             *record_mux_, *record_sink_, *preview_bin_, *preview_queue_,
+             *preview_sink_;
   GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
          *tee_record_pad_;
@@ -117,7 +118,7 @@ class CameraPlayer {
   std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
   base::playback_state_t current_state_;
   GstBus *bus_;
-  GstCaps *caps_, *caps2_;
+  GstCaps *caps_YUY2_, *caps_I420_, *caps_JPEG_;
   cmp::service::IService *service_;
   bool load_complete_;
 };

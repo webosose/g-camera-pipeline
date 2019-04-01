@@ -31,6 +31,8 @@ include_directories(./cameraservice)
 
 include_directories(./log)
 
+include_directories(./util)
+
 include_directories(./cameraplayer)
 
 add_subdirectory(cameraplayer)

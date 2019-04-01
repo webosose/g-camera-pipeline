@@ -36,7 +36,6 @@
 #include <sys/mman.h>
 #include <pthread.h>
 
-#include "../util/camshm.h"
 #include "parser/parser.h"
 #include "camera_player.h"
 
@@ -46,24 +45,29 @@
 
 #define CMP_DEBUG_PRINT CMP_INFO_PRINT
 #define DISCOVER_EXPIRE_TIME (10 * GST_SECOND)
-const int numOfImages = 1;
+const int kNumOfImages = 1;
+const std::string kFormatYUV = "YUY2";
+const std::string kFormatJPEG = "JPEG";
+const std::string kFormatI420 = "I420";
+const std::string kModePreview = "preview";
+const std::string kModeCapture = "capture";
+const std::string kModeRecord = "record";
+const std::string kMemtypeDevice = "device";
+const std::string kMemtypeShmem = "shmem";
 
 namespace cmp { namespace player {
 
 CameraPlayer::CameraPlayer()
     : planeId_(-1),
-    display_path_(0),
-    current_state_(base::playback_state_t::STOPPED),
-    service_(NULL),
-    load_complete_(false),
     shmkey_(0),
     width_(0),
     height_(0),
     framerate_(0),
     crtcId_(0),
     connId_(0),
-    numOfCapturedImages_(0),
+    display_path_idx_(0),
     numOfImagesToCapture_(0),
+    numOfCapturedImages_(0),
     uri_(""),
     memtype_(""),
     memsrc_(""),
@@ -74,8 +78,9 @@ CameraPlayer::CameraPlayer()
     source_(NULL),
     parser_(NULL),
     decoder_(NULL),
-    filter_(NULL),
-    filter2_(NULL),
+    filter_YUY2_(NULL),
+    filter_I420_(NULL),
+    filter_JPEG_(NULL),
     vconv_(NULL),
     tee_(NULL),
     capture_queue_(NULL),
@@ -97,9 +102,13 @@ CameraPlayer::CameraPlayer()
     tee_record_pad_(NULL),
     context_{NULL,1,0,0,FALSE,NULL},
     source_info_(),
+    current_state_(base::playback_state_t::STOPPED),
     bus_(NULL),
-    caps_(NULL),
-    caps2_(NULL){
+    caps_YUY2_(NULL),
+    caps_I420_(NULL),
+    caps_JPEG_(NULL),
+    service_(NULL),
+    load_complete_(false){
     }
 
 CameraPlayer::~CameraPlayer()
@@ -146,7 +155,7 @@ bool CameraPlayer::Load(const std::string& str, const std::string& payload)
         return false;
     }
 
-    if (!service_->acquire(source_info_, display_path_)) {
+    if (!service_->acquire(source_info_, display_path_idx_)) {
         CMP_DEBUG_PRINT("resouce acquire fail!");
         return false;
     }
@@ -226,7 +235,7 @@ bool CameraPlayer::TakeSnapshot(const std::string& location)
         return false;
     }
 
-    if (!CreateBin(tee_capture_pad_,"capture")) {
+    if (!CreateBin(tee_capture_pad_, kModeCapture)) {
         CMP_DEBUG_PRINT("Create Bin Failed.\n");
         return false;
     }
@@ -239,7 +248,7 @@ bool CameraPlayer::StartRecord(const std::string& location)
         record_path_ = location;
 
     tee_record_pad_ = gst_element_get_request_pad (tee_, "src_%u");
-    if (!CreateBin(tee_record_pad_,"record")) {
+    if (!CreateBin(tee_record_pad_, kModeRecord)) {
         CMP_DEBUG_PRINT("Create Bin Failed.\n");
         return false;
     }
@@ -418,9 +427,26 @@ void CameraPlayer::ParseOptionString(const std::string& str)
     if (parsed["options"]["option"].hasKey("display-path")) {
         int32_t display_path =
             parsed["options"]["option"]["display-path"].asNumber<int32_t>();
-        display_path_ = (display_path >= MAX_NUM_DISPLAY ? 0 : display_path);
+        display_path_idx_ = (display_path >= MAX_NUM_DISPLAY ? 0 : display_path);
     }
-    CMP_DEBUG_PRINT("uri: %s, display-path: %d", uri_.c_str(), display_path_);
+    CMP_DEBUG_PRINT("uri: %s, display-path: %d", uri_.c_str(), display_path_idx_);
+}
+
+void CameraPlayer::WriteImageToFile(const void *p,int size)
+{
+    if (capture_path_.empty())
+        capture_path_ = "/tmp/";
+
+    capture_path_ += "capture.jpeg";
+
+    FILE *fp;
+    if (NULL == (fp = fopen(capture_path_.c_str(), "wb"))) {
+        CMP_DEBUG_PRINT("File %s Open Failed :%d\n\n",capture_path_,__LINE__);
+        return;
+    }
+
+    fwrite(p, size, 1, fp);
+    fclose(fp);
 }
 
 bool CameraPlayer::GetSourceInfo()
@@ -461,11 +487,11 @@ bool CameraPlayer::LoadPipeline()
     context_.shmemKey = key;
 
     pipeline_ = gst_pipeline_new ("camera-player");
-    if (strncmp(memtype_.c_str(),"device",6) == 0) {
+    if (memtype_ == kMemtypeDevice) {
         source_   = gst_element_factory_make ("camsrc", "source_");
         g_object_set (source_, "device", memsrc_.c_str(), NULL);
         g_object_set (source_, "do-timestamp", true, NULL);
-    } else if (strncmp(memtype_.c_str(),"shmem",5) == 0) {
+    } else if (memtype_ == kMemtypeShmem) {
         source_   = gst_element_factory_make ("appsrc", "source_");
         g_object_set (source_, "format", GST_FORMAT_TIME, NULL);
         g_object_set (source_, "do-timestamp", true, NULL);
@@ -480,30 +506,30 @@ bool CameraPlayer::LoadPipeline()
         return (gst_element_set_state (pipeline_, GST_STATE_NULL));
     }
 
-    if (0 == strncmp(format_.c_str(),"YUY2", strlen("YUY2"))) {
+    if (format_ == kFormatYUV) {
         if (!LoadYUY2Pipeline()) {
             CMP_DEBUG_PRINT("YUY2 pipeline_ load failed!");
             return false;
         }
-    }//end of YUV
-
-    if (0 == strncmp(format_.c_str(),"JPEG",strlen("JPEG"))) {
+    } else if (format_ == kFormatJPEG) {
         if (!LoadJPEGPipeline()) {
             CMP_DEBUG_PRINT("JPEG pipeline_ load failed!");
             return false;
         }
+    } else {
+        CMP_DEBUG_PRINT("Format_ not YUY2 or JPEG");
     }
 
     return (gst_element_set_state (pipeline_, GST_STATE_PAUSED));
 }
 
-bool CameraPlayer::CreateBin(GstPad * pad,char *mode)
+bool CameraPlayer::CreateBin(GstPad * pad,const std::string& mode)
 {
-    if (0 == strncmp(mode,"capture", strlen("capture"))) {
+    if (mode == kModeCapture) {
         return CreateCaptureElements(pad);
-    } else if (0 == strncmp(mode,"record", strlen("record"))) {
+    } else if (mode == kModeRecord) {
         return CreateRecordElements(pad);
-    } else if (0 == strncmp(mode,"preview", strlen("preview"))) {
+    } else if (mode == kModePreview) {
         return CreatePreviewBin(pad);
     }
     return true;
@@ -565,7 +591,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
 
 bool CameraPlayer::CreateCaptureElements(GstPad * pad)
 {
-    numOfImagesToCapture_ = numOfImages;
+    numOfImagesToCapture_ = kNumOfImages;
 
     if (!capture_queue_)
         capture_queue_ = gst_element_factory_make ("queue", "capture_queue_");
@@ -672,6 +698,90 @@ bool CameraPlayer::CreateRecordElements(GstPad * pad)
     return true;
 }
 
+bool CameraPlayer::LoadYUY2Pipeline()
+{
+    CMP_DEBUG_PRINT("YUY2 FORMAT");
+    tee_ = gst_element_factory_make ("tee", "tee_");
+    filter_YUY2_   = gst_element_factory_make ("capsfilter", "filter_YUY2_");
+    filter_I420_  = gst_element_factory_make ("capsfilter", "filter_I420_");
+    caps_YUY2_ = gst_caps_new_simple ("video/x-raw",
+            "width", G_TYPE_INT, width_,
+            "height", G_TYPE_INT, height_,
+            "framerate", GST_TYPE_FRACTION, framerate_, 1,
+            "format", G_TYPE_STRING,kFormatYUV.c_str(),
+            NULL);
+    caps_I420_ = gst_caps_new_simple ("video/x-raw",
+            "width", G_TYPE_INT, width_,
+            "height", G_TYPE_INT, height_,
+            "format", G_TYPE_STRING,kFormatI420.c_str(),
+            NULL);
+    if (!pipeline_ || !source_) {
+        g_printerr ("elements could not be created. Exiting.");
+        return -1;
+    }
+    g_object_set (G_OBJECT (filter_YUY2_), "caps", caps_YUY2_, NULL);
+    g_object_set (G_OBJECT (filter_I420_), "caps", caps_I420_, NULL);
+
+    vconv_ = gst_element_factory_make ("videoconvert", "vconv_");
+    gst_bin_add_many (GST_BIN (pipeline_), source_, filter_YUY2_, vconv_,
+        filter_I420_, tee_, NULL);
+
+    gst_element_link_many (source_, filter_YUY2_, vconv_, filter_I420_, tee_, NULL);
+    tee_preview_pad_ = gst_element_get_request_pad (tee_, "src_%u");
+
+    if (CreateBin(tee_preview_pad_, kModePreview)) {
+        bus_ = gst_pipeline_get_bus (GST_PIPELINE (pipeline_));
+        gst_bus_add_watch(bus_, CameraPlayer::HandleBusMessage, this);
+        gst_object_unref (bus_);
+        return true;
+    } else {
+        CMP_DEBUG_PRINT("Create Bin Failed.\n");
+        gst_element_set_state (pipeline_, GST_STATE_NULL);
+        return false;
+    }
+}
+
+bool CameraPlayer::LoadJPEGPipeline()
+{
+    CMP_DEBUG_PRINT("JPEG FORMAT");
+    tee_ = gst_element_factory_make ("tee", "tee_");
+    decoder_  = gst_element_factory_make ("jpegdec", "decoder_");
+    parser_   = gst_element_factory_make ("jpegparse", "parser_");
+
+    if (!pipeline_ || !source_ || !tee_ || !decoder_ ) {
+        g_printerr ("One element could not be created. Exiting.\n");
+    }
+
+    filter_JPEG_  = gst_element_factory_make ("capsfilter", "filter_JPEG_");
+    caps_JPEG_ = gst_caps_new_simple ("image/jpeg",
+            "width", G_TYPE_INT, width_,
+            "height", G_TYPE_INT, height_,
+            "framerate", GST_TYPE_FRACTION, framerate_, 1,
+            NULL);
+    g_object_set (G_OBJECT (filter_JPEG_), "caps", caps_JPEG_, NULL);
+    gst_bin_add_many (GST_BIN (pipeline_), source_, filter_JPEG_, parser_,
+        decoder_, tee_, NULL);
+
+    if (TRUE != gst_element_link_many (source_, filter_JPEG_, parser_, decoder_,
+            tee_, NULL)) {
+        CMP_DEBUG_PRINT("Elements could not be linked.\n");
+        return false;
+    }
+
+    tee_preview_pad_ = gst_element_get_request_pad (tee_, "src_%u");
+
+    if (CreateBin(tee_preview_pad_, kModePreview)) {
+        bus_ = gst_pipeline_get_bus (GST_PIPELINE (pipeline_));
+        gst_bus_add_watch(bus_, CameraPlayer::HandleBusMessage, this);
+        gst_object_unref (bus_);
+        return true;
+    } else {
+        CMP_DEBUG_PRINT("Create Bin Failed.\n");
+        gst_element_set_state (pipeline_, GST_STATE_NULL);
+        return false;
+    }
+}
+
 int32_t CameraPlayer::ConvertErrorCode(GQuark domain, gint code)
 {
     int32_t converted = MEDIA_MSG_ERR_PLAYING;
@@ -745,106 +855,6 @@ base::error_t CameraPlayer::HandleErrorMessage(GstMessage *message)
     return error;
 }
 
-void CameraPlayer::WriteImageToFile(const void *p,int size)
-{
-    if (capture_path_.empty())
-        capture_path_ = "/tmp/";
-
-    capture_path_ += "capture.jpeg";
-
-    FILE *fp;
-    if (NULL == (fp = fopen(capture_path_.c_str(), "wb"))) {
-        CMP_DEBUG_PRINT("File %s Open Failed :%d\n\n",capture_path_,__LINE__);
-        return;
-    }
-
-    fwrite(p, size, 1, fp);
-    fclose(fp);
-}
-
-bool CameraPlayer::LoadYUY2Pipeline()
-{
-    CMP_DEBUG_PRINT("YUY2 FORMAT");
-    tee_ = gst_element_factory_make ("tee", "tee_");
-    filter_   = gst_element_factory_make ("capsfilter", "filter_");
-    filter2_  = gst_element_factory_make ("capsfilter", "filter2_");
-    caps_ = gst_caps_new_simple ("video/x-raw",
-            "width", G_TYPE_INT, width_,
-            "height", G_TYPE_INT, height_,
-            "framerate", GST_TYPE_FRACTION, framerate_, 1,
-            "format", G_TYPE_STRING,"YUY2",
-            NULL);
-    caps2_ = gst_caps_new_simple ("video/x-raw",
-            "width", G_TYPE_INT, width_,
-            "height", G_TYPE_INT, height_,
-            "format", G_TYPE_STRING,"I420",
-            NULL);
-    if (!pipeline_ || !source_) {
-        g_printerr ("elements could not be created. Exiting.");
-        return -1;
-    }
-    g_object_set (G_OBJECT (filter_), "caps", caps_, NULL);
-    g_object_set (G_OBJECT (filter2_), "caps", caps2_, NULL);
-
-    vconv_ = gst_element_factory_make ("videoconvert", "vconv_");
-    gst_bin_add_many (GST_BIN (pipeline_), source_, filter_, vconv_,
-        filter2_, tee_, NULL);
-
-    gst_element_link_many (source_, filter_, vconv_, filter2_, tee_, NULL);
-    tee_preview_pad_ = gst_element_get_request_pad (tee_, "src_%u");
-
-    if (CreateBin(tee_preview_pad_,"preview")) {
-        bus_ = gst_pipeline_get_bus (GST_PIPELINE (pipeline_));
-        gst_bus_add_watch(bus_, CameraPlayer::HandleBusMessage, this);
-        gst_object_unref (bus_);
-        return true;
-    } else {
-        CMP_DEBUG_PRINT("Create Bin Failed.\n");
-        gst_element_set_state (pipeline_, GST_STATE_NULL);
-        return false;
-    }
-}
-
-bool CameraPlayer::LoadJPEGPipeline()
-{
-    CMP_DEBUG_PRINT("JPEG FORMAT");
-    tee_ = gst_element_factory_make ("tee", "tee_");
-    decoder_  = gst_element_factory_make ("jpegdec", "decoder_");
-    parser_   = gst_element_factory_make ("jpegparse", "parser_");
-
-    if (!pipeline_ || !source_ || !tee_ || !decoder_ ) {
-        g_printerr ("One element could not be created. Exiting.\n");
-    }
-
-    filter_  = gst_element_factory_make ("capsfilter", "filter_");
-    caps_ = gst_caps_new_simple ("image/jpeg",
-            "width", G_TYPE_INT, width_,
-            "height", G_TYPE_INT, height_,
-            "framerate", GST_TYPE_FRACTION, framerate_, 1,
-            NULL);
-    g_object_set (G_OBJECT (filter_), "caps", caps_, NULL);
-    gst_bin_add_many (GST_BIN (pipeline_), source_, filter_, parser_,
-        decoder_, tee_, NULL);
-
-    if (TRUE != gst_element_link_many (source_, filter_, parser_, decoder_,
-            tee_, NULL)) {
-        CMP_DEBUG_PRINT("Elements could not be linked.\n");
-        return false;
-    }
-
-    tee_preview_pad_ = gst_element_get_request_pad (tee_, "src_%u");
-
-    if (CreateBin(tee_preview_pad_,"preview")) {
-        bus_ = gst_pipeline_get_bus (GST_PIPELINE (pipeline_));
-        gst_bus_add_watch(bus_, CameraPlayer::HandleBusMessage, this);
-        gst_object_unref (bus_);
-        return true;
-    } else {
-        CMP_DEBUG_PRINT("Create Bin Failed.\n");
-        gst_element_set_state (pipeline_, GST_STATE_NULL);
-        return false;
-    }
-}
 void
 CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
 {
@@ -870,10 +880,10 @@ GstFlowReturn CameraPlayer::GetSample (GstAppSink *elt, gpointer data)
             CaptureRemoveProbe, player, NULL);
     } else {
         GstSample *sample;
-        GstBuffer *buffer;
-        GstMapInfo map;
         sample = gst_app_sink_pull_sample (GST_APP_SINK (elt));
         if (NULL != sample) {
+            GstMapInfo map;
+            GstBuffer *buffer;
             buffer = gst_sample_get_buffer (sample);
             gst_buffer_map (buffer, &map, GST_MAP_READ);
             if ((NULL != map.data) && (map.size != 0)) {
@@ -893,7 +903,7 @@ CameraPlayer::CaptureRemoveProbe(
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(user_data);
     gst_pad_unlink (player->tee_capture_pad_, player->capture_queue_pad_);
-    gst_element_release_request_pad(player->tee_,player->tee_capture_pad_);
+    gst_element_release_request_pad(player->tee_, player->tee_capture_pad_);
     gst_object_unref(player->tee_capture_pad_);
     gst_object_unref(player->capture_queue_pad_);
 
@@ -924,11 +934,11 @@ CameraPlayer::RecordRemoveProbe(
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(user_data);
     gst_pad_unlink (player->tee_record_pad_, player->record_queue_pad_);
-    gst_element_release_request_pad(player->tee_,player->tee_record_pad_);
+    gst_element_release_request_pad(player->tee_, player->tee_record_pad_);
     gst_object_unref(player->tee_record_pad_);
     gst_object_unref(player->record_queue_pad_);
 
-    gst_element_set_state(player->record_queue_,GST_STATE_NULL);
+    gst_element_set_state(player->record_queue_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
                                        player->record_queue_)) {
         CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
@@ -944,7 +954,7 @@ CameraPlayer::RecordRemoveProbe(
     gst_object_unref(player->record_encoder_);
     player->record_encoder_ = NULL;
 
-    gst_element_set_state(player->record_mux_,GST_STATE_NULL);
+    gst_element_set_state(player->record_mux_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
             player->record_mux_)) {
         CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
@@ -952,7 +962,7 @@ CameraPlayer::RecordRemoveProbe(
     gst_object_unref(player->record_mux_);
     player->record_mux_ = NULL;
 
-    gst_element_set_state(player->record_sink_,GST_STATE_NULL);
+    gst_element_set_state(player->record_sink_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
             player->record_sink_)) {
         CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
