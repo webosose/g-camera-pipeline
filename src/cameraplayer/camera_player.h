@@ -103,7 +103,7 @@ class CameraPlayer {
 
   int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
             display_path_idx_;
-  int  numOfImagesToCapture_, numOfCapturedImages_;
+  int  num_of_images_to_capture_, num_of_captured_images_;
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
   GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_,
              *filter_I420_, *filter_JPEG_, *vconv_, *tee_, *capture_queue_,

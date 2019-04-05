@@ -54,6 +54,9 @@ const std::string kModeCapture = "capture";
 const std::string kModeRecord = "record";
 const std::string kMemtypeDevice = "device";
 const std::string kMemtypeShmem = "shmem";
+const std::string kDefaultCapturePath = "/tmp/";
+const std::string kDefaultRecordPath = "/media/internal/";
+const std::string kCaptureFileName = "capture.jpeg";
 
 namespace cmp { namespace player {
 
@@ -66,8 +69,8 @@ CameraPlayer::CameraPlayer()
     crtcId_(0),
     connId_(0),
     display_path_idx_(0),
-    numOfImagesToCapture_(0),
-    numOfCapturedImages_(0),
+    num_of_images_to_capture_(0),
+    num_of_captured_images_(0),
     uri_(""),
     memtype_(""),
     memsrc_(""),
@@ -435,9 +438,9 @@ void CameraPlayer::ParseOptionString(const std::string& str)
 void CameraPlayer::WriteImageToFile(const void *p,int size)
 {
     if (capture_path_.empty())
-        capture_path_ = "/tmp/";
+        capture_path_ = kDefaultCapturePath;
 
-    capture_path_ += "capture.jpeg";
+    capture_path_ += kCaptureFileName;
 
     FILE *fp;
     if (NULL == (fp = fopen(capture_path_.c_str(), "wb"))) {
@@ -591,7 +594,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
 
 bool CameraPlayer::CreateCaptureElements(GstPad * pad)
 {
-    numOfImagesToCapture_ = kNumOfImages;
+    num_of_images_to_capture_ = kNumOfImages;
 
     if (!capture_queue_)
         capture_queue_ = gst_element_factory_make ("queue", "capture_queue_");
@@ -665,7 +668,7 @@ bool CameraPlayer::CreateRecordElements(GstPad * pad)
         record_mux_, record_sink_, NULL);
 
     if (record_path_.empty())
-        record_path_ = "/media/internal/";
+        record_path_ = kDefaultRecordPath;
 
     if (TRUE != gst_element_link_many (record_queue_, record_encoder_,
             record_mux_, record_sink_, NULL)) {
@@ -873,9 +876,9 @@ CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
 GstFlowReturn CameraPlayer::GetSample (GstAppSink *elt, gpointer data)
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(data);
-    if (player->numOfImagesToCapture_ == player->numOfCapturedImages_) {
-        player->numOfImagesToCapture_ = 0;
-        player->numOfCapturedImages_ = 0;
+    if (player->num_of_images_to_capture_ == player->num_of_captured_images_) {
+        player->num_of_images_to_capture_ = 0;
+        player->num_of_captured_images_ = 0;
         gst_pad_add_probe(player->tee_capture_pad_, GST_PAD_PROBE_TYPE_IDLE ,
             CaptureRemoveProbe, player, NULL);
     } else {
@@ -891,7 +894,7 @@ GstFlowReturn CameraPlayer::GetSample (GstAppSink *elt, gpointer data)
             }
             gst_sample_unref (sample);
             gst_buffer_unmap (buffer, &map);
-            player->numOfCapturedImages_++;
+            player->num_of_captured_images_++;
         }
     }
     return GST_FLOW_OK;
