@@ -659,8 +659,12 @@ bool CameraPlayer::CreateRecordElements(GstPad * pad)
     record_sink_ = gst_element_factory_make("filesink", "record_sink_");
 
     char recordfilename[100];
-    snprintf(recordfilename, sizeof(recordfilename), "%sRecord%d.ts",
+    int ret = snprintf(recordfilename, sizeof(recordfilename), "%sRecord%d.ts",
         record_path_.c_str(), rand());
+    if (ret < 0 || sizeof(recordfilename) < ret)
+    {
+        return false;
+    }
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
     g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
 
