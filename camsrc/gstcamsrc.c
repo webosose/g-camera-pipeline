@@ -122,8 +122,6 @@ static void gst_camsrc_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 static GstStateChangeReturn
 gst_camsrc_change_state (GstPushSrc * element, GstStateChange transition);
-static gboolean
-gst_camsrc_query (GstBaseSrc * bsrc, GstQuery * query);
 
 static gboolean gst_camsrc_sink_event (GstPad * pad, GstObject * parent, GstEvent * event);
 static GstFlowReturn gst_camsrc_chain (GstPad * pad, GstObject * parent, GstBuffer * buf);
@@ -159,7 +157,6 @@ gst_camsrc_class_init (GstcamsrcClass * klass)
               GST_TYPE_CAMSRC_IOMODE,DEFAULT_PROP_IOMODE,
               (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 
-  basesrc_class->query = GST_DEBUG_FUNCPTR (gst_camsrc_query);
   basesrc_class->negotiate = GST_DEBUG_FUNCPTR (gst_camsrc_negotiate);
   pushsrc_class->create = GST_DEBUG_FUNCPTR (gst_camsrc_create);
 
@@ -210,18 +207,6 @@ gst_camsrc_set_property (GObject * object, guint prop_id,
           G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
           break;
   }
-}
-
-    static gboolean
-gst_camsrc_query (GstBaseSrc * bsrc, GstQuery * query)
-{
-    gboolean res = FALSE;
-
-    switch (GST_QUERY_TYPE (query)) {
-        default:
-            res = GST_BASE_SRC_CLASS (parent_class)->query (bsrc, query);
-            break;
-    }
 }
 
 static gboolean set_value (GQuark field, const GValue * value, gpointer pfx)
@@ -356,7 +341,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
     struct pollfd fds[] = {
         { .fd = fd, .events = POLLIN },
     };
-    if((check = poll(fds, 2, 2000)) > 0)
+    if((check = poll(fds, 1, 2000)) > 0)
     {
 
         ret = GST_BASE_SRC_CLASS (parent_class)->alloc (GST_BASE_SRC (src), 0,
