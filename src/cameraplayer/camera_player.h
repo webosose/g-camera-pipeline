@@ -83,10 +83,10 @@ class CameraPlayer {
     current_state_ = state;
     return true;
   }
-  bool CreateBin(GstPad * pad, const std::string& str);
+
   bool CreatePreviewBin(GstPad * pad);
-  bool CreateCaptureElements(GstPad * pad);
-  bool CreateRecordElements(GstPad * pad);
+  bool CreateCaptureElements(GstPad *tee_capture_pad);
+  bool CreateRecordElements(GstPad *tee_record_pad);
   bool LoadYUY2Pipeline();
   bool LoadJPEGPipeline();
   int32_t ConvertErrorCode(GQuark domain, gint code);
@@ -107,10 +107,10 @@ class CameraPlayer {
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
   GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_,
              *filter_I420_, *filter_JPEG_, *vconv_, *tee_, *capture_queue_,
-             *capture_encoder_, *capture_sink_, *record_queue_, *record_encoder_,
-             *record_mux_, *record_sink_, *preview_bin_, *preview_queue_,
-             *preview_sink_;
-  GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
+             *capture_encoder_, *capture_sink_, *record_queue_,
+             *record_encoder_, *record_decoder_, *record_mux_, *record_sink_,
+             *preview_queue_, *preview_sink_;
+  GstPad *tee_preview_pad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
          *tee_record_pad_;
   GstAppSrcContext context_ ;
