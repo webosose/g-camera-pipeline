@@ -30,9 +30,9 @@ int main(int argc, char const *argv[])
     std::string load = "luna-send -n 1 luna://com.webos.media/load '{\"uri\":\"camera://com.webos.service.camera2/7010\",\"payload\" : { \"width\" : 640,\"height\":480,\"format\":\"JPEG\",\"framerate\":30, \"memtype\":\"device\",\"memsrc\":\"/dev/video0\"} ,\"type\":\"camera\"}'";
     std::string play = "luna-send -n 1 luna://com.webos.media/play \'{";
     std::string Unload = "luna-send -n 1 luna://com.webos.media/unload \'{";
-    std::string takeSnapshot = "luna-send -n 1 luna://com.webos.media/takeSnapshot \'{";
-    std::string startRecord = "luna-send -n 1 luna://com.webos.media/startRecord \'{";
-    std::string stopRecord = "luna-send -n 1 luna://com.webos.media/stopRecord \'{";
+    std::string takeSnapshot = "luna-send -n 1 luna://com.webos.media/takeCameraSnapshot \'{";
+    std::string startRecord = "luna-send -n 1 luna://com.webos.media/startCameraRecord \'{";
+    std::string stopRecord = "luna-send -n 1 luna://com.webos.media/stopCameraRecord \'{";
 
     while(option !=7)
     {
