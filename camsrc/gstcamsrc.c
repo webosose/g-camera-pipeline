@@ -71,6 +71,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_camsrc_debug);
 
 #define VERSION "1.0.0"
 #define FRAME_SIZE 8294400
+#define FIELD_NAME_LENGTH 100
 
 /* Filter signals and args */
 enum
@@ -212,10 +213,13 @@ gst_camsrc_set_property (GObject * object, guint prop_id,
 static gboolean set_value (GQuark field, const GValue * value, gpointer pfx)
 {
     gchar *str = gst_value_serialize (value);
-    char temp[100];
+    gchar *field_name = g_quark_to_string (field);
+    char temp[FIELD_NAME_LENGTH];
 
 
-    strcpy (temp,g_quark_to_string (field));
+    int field_length = strlen(field_name);
+    if(field_length < FIELD_NAME_LENGTH)
+        strcpy (temp,field_name);
 
     if ((strcmp(temp,"width") == 0))
     {
