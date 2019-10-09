@@ -87,6 +87,7 @@ class CameraPlayer {
   bool CreatePreviewBin(GstPad * pad);
   bool CreateCaptureElements(GstPad *tee_capture_pad);
   bool CreateRecordElements(GstPad *tee_record_pad);
+  int GetFileIndex(const std::string& record_path);
   bool LoadYUY2Pipeline();
   bool LoadJPEGPipeline();
   int32_t ConvertErrorCode(GQuark domain, gint code);

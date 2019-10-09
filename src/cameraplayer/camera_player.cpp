@@ -35,6 +35,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <pthread.h>
+#include <dirent.h>
 
 #include "parser/parser.h"
 #include "camera_player.h"
@@ -58,6 +59,7 @@ const std::string kMemtypeDevice = "device";
 const std::string kMemtypeShmem = "shmem";
 const std::string kCaptureImageFile = "/tmp/capture.jpeg";
 const std::string kRecordPath = "/media/internal/";
+static int kExistingFileIndex = -1;
 
 namespace cmp { namespace player {
 
@@ -667,6 +669,41 @@ bool CameraPlayer::CreateCaptureElements(GstPad *tee_capture_pad)
     return true;
 }
 
+int CameraPlayer::GetFileIndex(const std::string& record_path)
+{
+    DIR *dir_handle;
+    char * file_name;
+    struct dirent *directory;
+    bool bFound = 0;
+    int fileIndex = 0;
+    dir_handle = opendir(record_path.c_str());
+    char delim[] = ".";
+    if (dir_handle) {
+        while ((directory = readdir(dir_handle)) != NULL) {
+            file_name = strstr (directory->d_name,"Record");
+            if(file_name) {
+                bFound = 1;
+
+                file_name = file_name + strlen("Record");
+                char *ptr = strtok(file_name, delim);
+                fileIndex = atoi(ptr);
+
+                CMP_DEBUG_PRINT("Identified index %d\n", fileIndex);
+            }
+            else if(bFound) {
+                break;
+            }
+        }
+        closedir(dir_handle);
+    }
+    if(!bFound) {
+        CMP_DEBUG_PRINT("Record file not found\n");
+    } else {
+        fileIndex = fileIndex + 1;
+    }
+    return fileIndex;
+}
+
 bool CameraPlayer::CreateRecordElements(GstPad *tee_record_pad)
 {
     record_queue_ = gst_element_factory_make("queue", "record-queue");
@@ -694,8 +731,14 @@ bool CameraPlayer::CreateRecordElements(GstPad *tee_record_pad)
     if (record_path_.empty())
         record_path_ = kRecordPath;
 
+    CMP_DEBUG_PRINT("file Index value: %d", kExistingFileIndex);
+    if (kExistingFileIndex == -1) {
+        kExistingFileIndex = GetFileIndex(record_path_);
+    } else {
+        kExistingFileIndex++;
+    }
     snprintf(recordfilename, sizeof(recordfilename), "%sRecord%d.ts",
-             record_path_.c_str(), rand());
+             record_path_.c_str(), kExistingFileIndex);
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
     g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
 
@@ -798,8 +841,13 @@ bool CameraPlayer::LoadYUY2Pipeline()
     gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, vconv_,
                      filter_I420_, tee_, NULL);
 
-    gst_element_link_many(source_, filter_YUY2_, vconv_, filter_I420_, tee_,
-                          NULL);
+
+    if (TRUE != gst_element_link_many(source_, filter_YUY2_, vconv_, filter_I420_, tee_,
+                NULL)) {
+        CMP_DEBUG_PRINT ("elements could not be linked.\n");
+        return false;
+    }
+
     tee_preview_pad_ = gst_element_get_request_pad(tee_, "src_%u");
 
     if (CreatePreviewBin(tee_preview_pad_)) {
