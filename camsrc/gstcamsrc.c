@@ -214,33 +214,20 @@ static gboolean set_value (GQuark field, const GValue * value, gpointer pfx)
 {
     gchar *str = gst_value_serialize (value);
     gchar *field_name = g_quark_to_string (field);
-    char temp[FIELD_NAME_LENGTH];
+    int field_value = atoi(str);
 
-
-    int field_length = strlen(field_name);
-    if(field_length < FIELD_NAME_LENGTH)
-        strcpy (temp,field_name);
-
-    if ((strcmp(temp,"width") == 0))
+    if ((strcasecmp(field_name,"width") == 0) && (field_value > 0))
     {
-        if (atoi(str) != 0)
-        {
-            streamformat.stream_width = atoi(str);
-        }
+        streamformat.stream_width = field_value;
     }
-    else if ((strcasecmp(temp,"height") == 0))
+    else if ((strcasecmp(field_name,"height") == 0) && (field_value > 0))
     {
-        if (atoi(str) != 0)
-        {
-            streamformat.stream_height = atoi(str);
-        }
+        streamformat.stream_height = field_value;
     }
-    else if ((strcasecmp(temp,"format") == 0))
+    else if ((strcasecmp(field_name,"format") == 0))
     {
-        if ((strcasecmp(str,"YUY2") == 0))
-        {
+        if ((strcasecmp(str,"YUY2") == 0) || (strcasecmp(str,"YUYV") == 0))
             streamformat.pixel_format = CAMERA_PIXEL_FORMAT_YUYV;
-        }
     }
     g_free (str);
     return TRUE;
