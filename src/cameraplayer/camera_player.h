@@ -92,6 +92,7 @@ class CameraPlayer {
   bool LoadJPEGPipeline();
   int32_t ConvertErrorCode(GQuark domain, gint code);
   base::error_t HandleErrorMessage(GstMessage *message);
+  void HandleStateMessage(GstMessage *message);
 
   static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
   static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);

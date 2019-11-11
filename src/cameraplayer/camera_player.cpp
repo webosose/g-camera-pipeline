@@ -317,27 +317,9 @@ gboolean CameraPlayer::HandleBusMessage(
             break;
         }
 
-        case GST_STATE_PAUSED: {
-            CMP_DEBUG_PRINT("PAUSED");
-            player->service_->Notify(NOTIFY_PAUSED);
-            break;
-        }
-
-        case GST_STATE_PLAYING: {
-            CMP_DEBUG_PRINT("PLAYING");
-            player->service_->Notify(NOTIFY_PLAYING);
-            break;
-        }
-
         case GST_MESSAGE_STATE_CHANGED: {
-            GstState oldState = GST_STATE_NULL;
-            GstState newState = GST_STATE_NULL;
-            gst_message_parse_state_changed(message,
-                                            &oldState, &newState, NULL);
-            CMP_INFO_PRINT("Element[%s] State changed ...%s -> %s",
-                           GST_MESSAGE_SRC_NAME(message),
-                           gst_element_state_get_name(oldState),
-                           gst_element_state_get_name(newState));
+            CMP_DEBUG_PRINT("STATE_CHANGED");
+            player->HandleStateMessage(message);
             break;
         }
 
@@ -377,6 +359,31 @@ gboolean CameraPlayer::HandleBusMessage(
     }
 
     return true;
+}
+
+void CameraPlayer::HandleStateMessage(GstMessage *message) {
+  GstState oldState = GST_STATE_NULL;
+  GstState newState = GST_STATE_NULL;
+  gst_message_parse_state_changed(message,
+                                  &oldState, &newState, NULL);
+  CMP_INFO_PRINT("Element[%s] State changed ...%s -> %s",
+                 GST_MESSAGE_SRC_NAME(message),
+                 gst_element_state_get_name(oldState),
+                 gst_element_state_get_name(newState));
+
+  switch (newState) {
+    case GST_STATE_PAUSED: {
+      CMP_DEBUG_PRINT("PAUSED");
+      service_->Notify(NOTIFY_PAUSED);
+      break;
+    }
+
+    case GST_STATE_PLAYING: {
+      CMP_DEBUG_PRINT("PLAYING");
+      service_->Notify(NOTIFY_PLAYING);
+      break;
+    }
+  }
 }
 
 void CameraPlayer::NotifySourceInfo()

@@ -94,7 +94,8 @@ class Service : public IService {
   static bool ExitEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
 
  private:
-  explicit Service(const char *service_name);
+  Service();
+  Service(const char *service_name);
 
   UMSConnector *umc_;
   std::string media_id_;  // connection_id
