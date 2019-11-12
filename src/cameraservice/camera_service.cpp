@@ -34,11 +34,17 @@
 #define CMP_DEBUG_PRINT CMP_INFO_PRINT
 
 namespace cmp { namespace service {
+
 Service *Service::instance_ = NULL;
 
-Service::Service(const char *service_name)
+Service::Service()
   : umc_(NULL)
   , media_id_("")
+  , player_(NULL) {
+}
+
+Service::Service(const char *service_name)
+  : media_id_("")
   , player_(NULL) {
   umc_ = new UMSConnector(service_name, NULL, NULL, UMS_CONNECTOR_PRIVATE_BUS);
 }
@@ -292,7 +298,7 @@ bool Service::TakeCameraSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMe
 
     if (!jsonparser.parse(cmd, pbnjson::JSchema::AllSchema()))
     {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd : ",cmd.c_str());
+        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd : %s",cmd.c_str());
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();
@@ -307,7 +313,7 @@ bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMes
 
     if (!jsonparser.parse(cmd, pbnjson::JSchema::AllSchema()))
     {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd : ",cmd.c_str());
+        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd : %s",cmd.c_str());
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();
