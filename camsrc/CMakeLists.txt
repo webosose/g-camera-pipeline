@@ -22,7 +22,7 @@ include_directories(${CMAKE_SOURCE_DIR}/camsrc/)
 add_library(gstcamsrc SHARED
     gstcamsrc.c
     gstcamsrc.h
-    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera_hal_types.h
+    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera_hal_if_types.h
     $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera_hal_if.h
     )
 

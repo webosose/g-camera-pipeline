@@ -49,7 +49,6 @@
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
 #include "camera_hal_if.h"
-#include "camera_hal_types.h"
 
 G_BEGIN_DECLS
 
