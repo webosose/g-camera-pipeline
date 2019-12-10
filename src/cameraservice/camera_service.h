@@ -96,6 +96,8 @@ class Service : public IService {
  private:
   Service();
   Service(const char *service_name);
+  Service(Service const &) = delete;
+  Service &operator=(Service const &) = delete;
 
   UMSConnector *umc_;
   std::string media_id_;  // connection_id
