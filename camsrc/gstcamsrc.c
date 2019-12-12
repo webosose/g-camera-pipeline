@@ -267,6 +267,7 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
         /* no peer or peer have ANY caps, work
          * with our own caps then */
         caps = thiscaps;
+        gst_caps_unref (thiscaps);
     }
     if (caps) {
         /* now fixate */
@@ -279,6 +280,7 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
                 result = gst_base_src_set_caps (basesrc, peercaps);
             }
         }
+        gst_caps_unref (caps);
     }
     if (peercaps)
       gst_caps_unref (peercaps);
