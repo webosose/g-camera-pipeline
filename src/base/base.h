@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,11 @@ struct source_info_t {
   std::vector<video_info_t> video_streams;
 };
 
+struct vdec_port_info_t {
+  int32_t vdec_port;
+  std::string core_type;
+};
+
 struct result_t {
   bool state;
   std::string mediaId;
@@ -70,6 +75,17 @@ struct disp_res_t {
   int32_t plane_id;
   int32_t crtc_id;
   int32_t conn_id;
+};
+
+struct media_info_t {
+  std::string mediaId;
+};
+
+struct load_param_t {
+  int32_t displayPath;
+  std::string videoDisplayMode;
+  std::string windowId;
+  std::string uri;
 };
 
 }  // namespace base

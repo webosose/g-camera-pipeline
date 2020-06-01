@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 int main(int argc, char * argv[]) {
   int c;
-  char service_name[MAX_SERVICE_STRING+1];
+  char service_name[MAX_SERVICE_STRING+1] = {'\0',};
   bool service_name_specified = false;
 
   while ((c = getopt(argc, argv, "s:")) != -1) {
@@ -46,14 +46,11 @@ int main(int argc, char * argv[]) {
   if (!service_name_specified)
     return 1;
 
-  cmp::player::CameraPlayer *player = new cmp::player::CameraPlayer();
   cmp::service::Service *service
                          = cmp::service::Service::GetInstance(service_name);
 
-  service->Initialize(player);
   service->Wait();
 
-  delete player;
   delete service;
 
   return 0;

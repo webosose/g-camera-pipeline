@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,17 +21,22 @@
 #include <glib.h>
 #include <glib-unix.h>
 #include <gst/gst.h>
-#include <string>
-#include <memory>
-#include <thread>
 #include <gst/player/player.h>
 #include <gst/pbutils/pbutils.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/app/gstappsink.h>
-
-#include "camshm.h"
+#include <gst/pbutils/pbutils.h>
+#include <camera_window_manager.h>
+#include <cameraservice/camera_service.h>
 #include "base.h"
+#include "camshm.h"
 
+using namespace std;
+
+static constexpr char const *waylandDisplayHandleContextType =
+    "GstWaylandDisplayHandleContextType";
+using CALLBACK_T = std::function<void(const gint type, const gint64 numValue,
+        const gchar *strValue, void *udata)>;
 typedef struct _GstAppSrcContext
 {
     SHMEM_HANDLE shmemHandle;
@@ -50,32 +55,93 @@ typedef struct
       int shmemid;
 } ProgramData;
 
-namespace cmp { namespace service { class IService; }}
-namespace cmp { namespace resource { class ResourceRequestor; }}
+typedef enum {
+  MEDIA_OK = 0,
+  MEDIA_ERROR = -1,
+  MEDIA_NOT_IMPLEMENTED = -2,
+  MEDIA_NOT_SUPPORTED = -6,
+  MEDIA_BUFFER_FULL = -7,                         /**< function doesn't works cause buffer is full */
+  MEDIA_INVALID_PARAMS = -3,                      /**< Invalid parameters */
+  MEDIA_NOT_READY = -11,                          /**< API's resource is not ready */
+} MEDIA_STATUS_T;
+
+typedef enum {
+  CMP_ERROR_NONE,
+  CMP_ERROR_STREAM,
+  CMP_ERROR_ASYNC,
+  CMP_ERROR_RES_ALLOC,
+  CMP_ERROR_MAX
+} CMP_ERROR_CODE;
+
+typedef enum {
+  DEFAULT_DISPLAY = 0,
+  PRIMARY_DISPLAY = 0,
+  SECONDARY_DISPLAY,
+} DISPLAY_PATH;
+
+typedef enum {
+  NOTIFY_LOAD_COMPLETED = 0,
+  NOTIFY_UNLOAD_COMPLETED,
+  NOTIFY_SOURCE_INFO,
+  NOTIFY_END_OF_STREAM,
+  NOTIFY_PLAYING,
+  NOTIFY_PAUSED,
+  NOTIFY_ERROR,
+  NOTIFY_VIDEO_INFO,
+  NOTIFY_ACTIVITY,
+  NOTIFY_ACQUIRE_RESOURCE,
+  NOTIFY_MAX
+} NOTIFY_TYPE_T;
+
+/* player status enum type */
+typedef enum {
+  LOADING_STATE,
+  STOPPED_STATE,
+  PAUSING_STATE,
+  PAUSED_STATE,
+  PLAYING_STATE,
+  PLAYED_STATE,
+} PIPELINE_STATE;
+
+typedef struct ACQUIRE_RESOURCE_INFO {
+  cmp::base::source_info_t* sourceInfo;
+  char *displayMode;
+  gboolean result;
+} ACQUIRE_RESOURCE_INFO_T;
+
+namespace cmp { namespace service { class Service; }}
 
 namespace cmp { namespace player {
 
 class CameraPlayer {
  public:
+
   CameraPlayer();
   ~CameraPlayer();
-  bool Load(const std::string& str, const std::string& payload);
+  bool Load(const std::string& mediaId,
+            const std::string& options, const std::string& payload);
+  bool Load(const std::string& str);
   bool Unload();
+  void RegisterCbFunction(CALLBACK_T);
   bool Play();
-  bool SetPlane(int planeId);
   bool SetDisplayResource(cmp::base::disp_res_t &res);
   bool TakeSnapshot(const std::string& location);
   bool StartRecord(const std::string& location);
   bool StopRecord();
-  void Initialize(cmp::service::IService *service);
+  void Initialize(cmp::service::Service *service);
+
   static gboolean HandleBusMessage(GstBus *bus,
                                    GstMessage *message, gpointer user_data);
+  static GstBusSyncReply HandleSyncBusMessage(GstBus *bus,
+                                     GstMessage *msg, gpointer data);
 
  private:
-
+  void PauseInternalSync();
+  void ParseOptionString(const std::string& options);
   void NotifySourceInfo();
   void SetGstreamerDebug();
-  void ParseOptionString(const std::string& str);
+  bool attachSurface(bool allow_no_window = false);
+  bool detachSurface();
   void WriteImageToFile(const void *p, int size);
   bool GetSourceInfo();
   bool LoadPipeline();
@@ -85,14 +151,19 @@ class CameraPlayer {
   }
 
   bool CreatePreviewBin(GstPad * pad);
-  bool CreateCaptureElements(GstPad *tee_capture_pad);
-  bool CreateRecordElements(GstPad *tee_record_pad);
-  int GetFileIndex(const std::string& record_path);
+  bool CreateCaptureElements(GstPad * pad);
+  bool CreateRecordElements(GstPad * pad);
   bool LoadYUY2Pipeline();
   bool LoadJPEGPipeline();
   int32_t ConvertErrorCode(GQuark domain, gint code);
   base::error_t HandleErrorMessage(GstMessage *message);
-  void HandleStateMessage(GstMessage *message);
+
+  void HandleBusMsgApplication(const GstStructure *appData);
+
+  void FreeLoadPipelineElements();
+  void FreeCaptureElements();
+  void FreeRecordElements();
+  void FreePreviewBinElements();
 
   static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
   static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
@@ -103,26 +174,35 @@ class CameraPlayer {
                                                GstPadProbeInfo * info,
                                                gpointer user_data);
 
+  std::string media_id_;
+  uint32_t display_path_ = DEFAULT_DISPLAY;
+  CALLBACK_T cbFunction_ = nullptr;
+
   int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
             display_path_idx_;
   int  num_of_images_to_capture_, num_of_captured_images_;
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
-  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_,
-             *filter_I420_, *filter_JPEG_, *vconv_, *tee_, *capture_queue_,
-             *capture_encoder_, *capture_sink_, *record_queue_,
+  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_,
+             *filter_I420_, *filter_JPEG_, *filter_RGB_, *vconv_, *record_convert_,
+             *preview_decoder_, *preview_parser_, *preview_encoder_, *preview_convert_,
+             *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
              *record_encoder_, *record_decoder_, *record_mux_, *record_sink_,
              *preview_queue_, *preview_sink_;
-  GstPad *tee_preview_pad_, *preview_queue_pad_,
+  GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
          *tee_record_pad_;
   GstAppSrcContext context_ ;
   base::source_info_t source_info_;
-  std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
   base::playback_state_t current_state_;
   GstBus *bus_;
-  GstCaps *caps_YUY2_, *caps_I420_, *caps_JPEG_;
-  cmp::service::IService *service_;
+  GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_;
+  cmp::service::Service *service_;
   bool load_complete_;
+
+  /* GAV Features */
+  LSM::CameraWindowManager lsm_camera_window_manager_;
+  std::string display_mode_ = "Default";
+  std::string window_id_;
 };
 
 }  // namespace player

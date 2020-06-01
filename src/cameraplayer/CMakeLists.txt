@@ -1,4 +1,4 @@
-# Copyright (c) 2019 LG Electronics, Inc.
+# Copyright (c) 2019-2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ pkg_check_modules(GSTPBUTIL gstreamer-pbutils-1.0 REQUIRED)
 include_directories(${GSTPBUTIL_INCLUDE_DIRS})
 link_directories(${GSTPBUTIL_LIBRARY_DIRS})
 
-pkg_check_modules(LUNA luna-service2 REQUIRED)
-include_directories(${LUNA_INCLUDE_DIRS})
-link_directories(${LUNA_LIBRARY_DIRS})
+pkg_check_modules(LUNASERVICE luna-service2 REQUIRED)
+include_directories(${LUNASERVICE_INCLUDE_DIRS})
+link_directories(${LUNASERVICE_LIBRARY_DIRS})
 
 pkg_check_modules(PBNJSON pbnjson_cpp REQUIRED)
 include_directories(${PBNJSON_INCLUDE_DIRS})
@@ -49,7 +49,7 @@ include_directories(${RESOURCE-CALCULATOR_INCLUDE_DIRS})
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 
-find_package(Boost 1.54.0 REQUIRED COMPONENTS log)
+find_package(Boost REQUIRED COMPONENTS regex)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -58,14 +58,17 @@ if (PMLOGLIB_FOUND)
   set(PMLOG_LIBRARIES PmLogLib)
 endif (PMLOGLIB_FOUND)
 
+set(GSTAPP_LIB gstapp-1.0)
+set(G-CAMERA-PIPELINE_LIB cmp-player)
+
 set(G-CAMERA-PIPELINE_HEADERS
     camera_player.h
     notification.h
     ../base/base.h
     ../log/log.h
     ../cameraservice/camera_service.h
-    ../util/camshm.h
     ../resourcefacilitator/requestor.h
+    ../util/camshm.h
     )
 
 set(G-CAMERA-PIPELINE_SRC
@@ -78,8 +81,9 @@ set(G-CAMERA-PIPELINE_SRC
     ../util/camshm.cpp
     )
 
-set(G-CAMERA-PIPELINE_LIB
+set(G-CAMERA-PIPELINE_LIBRARIES
     ums_connector
+    ${Boost_REGEX_LIBRARY}
     ${GSTPLAYER_LIBRARIES}
     ${GSTREAMER_LIBRARIES}
     ${GSTPBUTIL_LIBRARIES}
@@ -89,20 +93,38 @@ set(G-CAMERA-PIPELINE_LIB
     ${CMAKE_THREAD_LIBS_INIT}
     ${PBNJSON_LIBRARIES}
     ${PMLOG_LIBRARIES}
-    )
-set(GSTAPP_LIB gstapp-1.0)
-
-add_library(cmp-player SHARED ${G-CAMERA-PIPELINE_SRC})
-target_link_libraries(cmp-player ${G-CAMERA-PIPELINE_LIB}
+    ${LUNASERVICE_LDFLAGS}
     ${RESOURCE-CALCULATOR_LDFLAGS}
-    mdc_client
-    mdc_content_provider
     resource_mgr_client
     resource_mgr_client_c
     ${GSTAPP_LIB}
     )
 
-install(FILES gst_debug.conf DESTINATION /etc/g-camera-pipeline)
+add_library(${G-CAMERA-PIPELINE_LIB} SHARED ${G-CAMERA-PIPELINE_SRC})
+target_link_libraries(${G-CAMERA-PIPELINE_LIB}
+    ${G-CAMERA-PIPELINE_LIBRARIES}
+    ${RESOURCE-CALCULATOR_LDFLAGS}
+    resource_mgr_client
+    resource_mgr_client_c
+    camera-window-manager
+    )
+set_target_properties(${G-CAMERA-PIPELINE_LIB} PROPERTIES
+    VERSION ${G-CAMERA-PIPELINE_VERSION}
+    SOVERSION ${G-CAMERA-PIPELINE_VERSION_MAJOR}
+    )
 
-install(TARGETS cmp-player DESTINATION lib)
-install(FILES ${G-CAMERA-PIPELINE_HEADERS} DESTINATION include/cmp)
+if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64")
+  message(STATUS "Using config & debug file for raspberrypi4")
+  install(FILES ./raspberrypi4/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
+  install(FILES ./raspberrypi4/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
+elseif (${WEBOS_TARGET_MACHINE} STREQUAL "qemux86")
+  message(STATUS "Using config & debug file for qemux86")
+  install(FILES ./qemux86/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
+  install(FILES ./qemux86/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
+else()
+  message(FATAL_ERROR the "Check WEBOS_TARGET_MACHINE: " ${WEBOS_TARGET_MACHINE})
+endif()
+
+install(TARGETS cmp-player DESTINATION ${WEBOS_INSTALL_LIBDIR})
+install(FILES ${G-CAMERA-PIPELINE_HEADERS}
+        DESTINATION ${WEBOS_INSTALL_INCLUDEDIR}/cmp)

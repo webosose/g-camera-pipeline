@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@
 #ifndef SRC_CAMERA_SERVICE_H_
 #define SRC_CAMERA_SERVICE_H_
 
-#include <memory>
-#include <string>
-
-#include "notification.h"
-#include "base.h"
+#include <UMSConnector.h>
+#include "resourcefacilitator/requestor.h"
+#include "cameraplayer/camera_player.h"
+#include "base/base.h"
+#include <base/message.h>
 
 class UMSConnector;
 class UMSConnectorHandle;
@@ -32,81 +32,79 @@ namespace cmp { namespace player { class CameraPlayer; }}
 namespace cmp { namespace base { struct source_info_t; }}
 namespace cmp { namespace resource { class ResourceRequestor; }}
 
-#define PLANE_MAP_SIZE 4
-
 namespace cmp { namespace service {
-class IService {
- public:
-  virtual void Notify(const NOTIFY_TYPE_T notification) = 0;
-  virtual void Notify(const NOTIFY_TYPE_T notification, const void *payload) = 0;
-  virtual bool Wait() = 0;
-  virtual bool Stop()= 0;
-  virtual bool acquire(cmp::base::source_info_t   &source_info, const int32_t display_path = 0) = 0;
-};
 
-class Service : public IService {
+class Service {
  public:
-  ~Service();
   static Service *GetInstance(const char *service_name);
 
-  void Notify(const NOTIFY_TYPE_T notification) override;
-  void Notify(const NOTIFY_TYPE_T notification, const void *payload) override;
+  ~Service();
 
-  bool Wait() override;
-  bool Stop() override;
+  void Notify(const gint notification, const gint64 numValue,
+          const gchar *strValue, void *payload = nullptr);
+
+  bool Wait();
+  bool Stop();
   void Initialize(cmp::player::CameraPlayer *player);
-  bool acquire(cmp::base::source_info_t   &source_info, const int32_t display_path = 0) override;
 
   // uMediaserver public API
-  static bool LoadEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool TakeCameraSnapshotEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool StartCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool StopCameraRecordEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool AttachEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool UnloadEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool LoadEvent(UMSConnectorHandle *handle,
+                        UMSConnectorMessage *message, void *ctxt);
+  static bool TakeCameraSnapshotEvent(UMSConnectorHandle *handle,
+                                UMSConnectorMessage *message, void *ctxt);
+  static bool StartCameraRecordEvent(UMSConnectorHandle *handle,
+                               UMSConnectorMessage *message, void *ctxt);
+  static bool StopCameraRecordEvent(UMSConnectorHandle *handle,
+                              UMSConnectorMessage *message, void *ctxt);
+  static bool AttachEvent(UMSConnectorHandle *handle,
+                          UMSConnectorMessage *message, void *ctxt);
+  static bool UnloadEvent(UMSConnectorHandle *handle,
+                          UMSConnectorMessage *message, void *ctxt);
 
   // media operations
-  static bool PlayEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool PauseEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool StateChangeEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool UnsubscribeEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool SetUriEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool SetPlaneEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool PlayEvent(UMSConnectorHandle *handle,
+                        UMSConnectorMessage *message, void *ctxt);
+  static bool PauseEvent(UMSConnectorHandle *handle,
+                         UMSConnectorMessage *message, void *ctxt);
+  static bool StateChangeEvent(UMSConnectorHandle *handle,
+                               UMSConnectorMessage *message, void *ctxt);
+  static bool UnsubscribeEvent(UMSConnectorHandle *handle,
+                               UMSConnectorMessage *message, void *ctxt);
+  static bool SetUriEvent(UMSConnectorHandle *handle,
+                          UMSConnectorMessage *message, void *ctxt);
+  static bool SetPlaneEvent(UMSConnectorHandle *handle,
+                            UMSConnectorMessage *message, void *ctxt);
 
   // Resource Manager API
-  static bool RegisterPipelineEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool UnregisterPipelineEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool AcquireEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool TryAcquireEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool ReleaseEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool NotifyForegroundEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool NotifyBackgroundEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool NotifyActivityEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool TrackAppProcessesEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
+  static bool GetPipelineStateEvent(UMSConnectorHandle *handle,
+                                    UMSConnectorMessage *message, void *ctxt);
+  static bool LogPipelineStateEvent(UMSConnectorHandle *handle,
+                                      UMSConnectorMessage *message, void *ctxt);
+  static bool GetActivePipelinesEvent(UMSConnectorHandle *handle,
+                           UMSConnectorMessage *message, void *ctxt);
+  static bool SetPipelineDebugStateEvent(UMSConnectorHandle *handle,
+                              UMSConnectorMessage *message, void *ctxt);
+  static bool ExitEvent(UMSConnectorHandle *handle,
+                           UMSConnectorMessage *message, void *ctxt);
 
-  // pipeline state query API
-  static bool GetPipelineStateEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool LogPipelineStateEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool GetActivePipelinesEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-  static bool SetPipelineDebugStateEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
-
-  // exit
-  static bool ExitEvent(UMSConnectorHandle *handle, UMSConnectorMessage *message, void *ctxt);
 
  private:
-  Service();
-  Service(const char *service_name);
-  Service(Service const &) = delete;
-  Service &operator=(Service const &) = delete;
+  explicit Service(const char *service_name);
+  void LoadCommon();
+  bool AcquireResources(const base::source_info_t &sourceInfo,
+              const std::string &display_mode = "Default", uint32_t display_path = 0);
 
-  UMSConnector *umc_;
   std::string media_id_;  // connection_id
-  cmp::player::CameraPlayer *player_;
-  static Service *instance_;
-  std::shared_ptr<cmp::resource::ResourceRequestor> res_requestor_;
+  std::string app_id_;
+  std::unique_ptr<UMSConnector> umc_;
+  std::shared_ptr<cmp::player::CameraPlayer> player_;
+  std::unique_ptr<cmp::resource::ResourceRequestor> resourceRequestor_;
+  bool isLoaded_;
 
-  // plane 51 is used for LSM. So we have to avoid using plane 51.
-  int kPlaneMap[PLANE_MAP_SIZE] = {47, 46, 45, 44};
+  static Service *instance_;
+
+  Service(const Service& s) = delete;
+  void operator=(const Service& s) = delete;
 };
 
 }  // namespace service

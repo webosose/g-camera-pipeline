@@ -1,4 +1,4 @@
-# Copyright (c) 2019 LG Electronics, Inc.
+# Copyright (c) 2019-2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,12 @@ cmake_minimum_required(VERSION 2.8)
 
 project(g-camera-pipeline)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+include(webOS/webOS)
+
+webos_modules_init(1 6 3)
+webos_distro_variant_dep()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 if(NOT DEFINED WEBOS_INSTALL_ROOT)
   set(WEBOS_INSTALL_ROOT /usr/local/webos/)
@@ -34,26 +39,6 @@ if (NOT DEFINED ENV{PKG_CONFIG_PATH})
   set(ENV{PKG_CONFIG_PATH} ${WEBOS_INSTALL_ROOT}usr/share/pkgconfig)
 endif()
 
-if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3-64")
-  message(STATUS "Build g-camera-pipeline for raspberrypi3")
-  add_definitions(-DPLATFORM_RASPBERRYPI3)
-  add_definitions(-DMAX_NUM_DISPLAY=1)
-elseif(${WEBOS_TARGET_MACHINE} STREQUAL "intel-corei7-64")
-  message(STATUS "Build g-camera-pipeline for intel-corei7-64")
-
-# Configuration variable is related with EXTRA_OECMAKE in recipe file.
-# See recipes-multimedia/g-camera-pipeline/g-camera-pipeline.bb
-  if(DEFINED PLATFORM_INTEL_APOLLO_LAKE)
-    message(STATUS "Add definition for PLATFORM_INTEL_APOLLO_LAKE")
-    add_definitions(-DPLATFORM_INTEL_APOLLO_LAKE)
-    add_definitions(-DMAX_NUM_DISPLAY=3)
-  endif()
-
-else()
-  message(FATAL_ERROR "Check WEBOS_TARGET_MACHINE: " ${WEBOS_TARGET_MACHINE})
-endif()
-
-
 file(GLOB_RECURSE HEADERS "*.h*")
 add_custom_target(show_headers SOURCES ${HEADERS})
 
@@ -68,6 +53,18 @@ set(GSTREAMER_LIBRARIES ${GSTPLAYER_LIBRARIES} ${GSTREAMER_LIBRARIES})
 include_directories(${GSTREAMER_INCLUDE_DIRS})
 link_directories(${GSTREAMER_LIBRARIES})
 
+
+pkg_check_modules(MEDIA_RESOURE_CALCULATOR media-resource-calculator REQUIRED)
+set(MEDIA_RESOURE_CALCULATOR_INCLUDE_DIRS ${MEDIA_RESOURE_CALCULATOR_INCLUDE_DIRS})
+set(MEDIA_RESOURE_CALCULATOR_LIBRARIES ${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
+
+include_directories(${MEDIA_RESOURE_CALCULATOR_INCLUDE_DIRS})
+link_directories(${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
+
 add_subdirectory(src)
 add_subdirectory(camsrc)
 add_subdirectory(files)
+
+webos_build_configured_file(
+    files/conf/g-camera-pipeline.conf SYSCONFDIR pmlog.d)
+webos_build_system_bus_files()

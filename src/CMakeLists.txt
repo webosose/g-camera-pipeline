@@ -1,4 +1,4 @@
-# Copyright (c) 2019 LG Electronics, Inc.
+# Copyright (c) 2019-2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,11 +35,30 @@ include_directories(./util)
 
 include_directories(./cameraplayer)
 
+include_directories(./camera-window-manager/include)
+
+set(G-CAMERA-PIPELINE_VERSION_MAJOR 1)
+set(G-CAMERA-PIPELINE_VERSION_MINOR 0)
+set(G-CAMERA-PIPELINE_VERSION_PATCH 0)
+set(G-CAMERA-PIPELINE_VERSION_LIST
+    "${G-CAMERA-PIPELINE_VERSION_MAJOR}"
+    ".${G-CAMERA-PIPELINE_VERSION_MINOR}"
+    ".${G-CAMERA-PIPELINE_VERSION_PATCH}"
+    )
+string(REPLACE ";" "" G-CAMERA-PIPELINE_VERSION
+    ${G-CAMERA-PIPELINE_VERSION_LIST})
+
 add_subdirectory(cameraplayer)
+add_subdirectory(camera-window-manager)
 add_subdirectory(tests)
 
 find_package(Threads REQUIRED)
 
+set_target_properties(${G-CAMERA-PIPELINE_LIB} PROPERTIES
+    VERSION ${G-CAMERA-PIPELINE_VERSION}
+    SOVERSION ${G-CAMERA-PIPELINE_VERSION_MAJOR}
+    )
+
 add_executable(g-camera-pipeline main.cpp)
 target_link_libraries(g-camera-pipeline cmp-player ${PMLOG_LIBRARIES})
-install(TARGETS g-camera-pipeline DESTINATION sbin)
+install(TARGETS g-camera-pipeline DESTINATION ${WEBOS_INSTALL_SBINDIR})

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,17 +17,6 @@
 #ifndef SRC_CAMERA_PLAYER_NOTIFICATION_H_
 #define SRC_CAMERA_PLAYER_NOTIFICATION_H_
 
-
-typedef enum {
-  NOTIFY_LOAD_COMPLETED = 0,
-  NOTIFY_UNLOAD_COMPLETED,
-  NOTIFY_SOURCE_INFO,
-  NOTIFY_END_OF_STREAM,
-  NOTIFY_PLAYING,
-  NOTIFY_PAUSED,
-  NOTIFY_ERROR,
-  NOTIFY_VIDEO_INFO,
-} NOTIFY_TYPE_T;
 
 /* video codec */
 typedef enum {

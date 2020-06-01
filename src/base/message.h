@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@
 
 typedef enum MEDIA_MESSAGE {
   MEDIA_MSG_MSG_NONE = 0x00,                         /**< no message */
+  MEDIA_MSG_ERR_LOAD = 0x0068,
+  MEDIA_MSG_ERR_POLICY = 0x0259,
   MEDIA_MSG_ERR_PLAYING = 0xf000,
 
   /* gstrreamer core error msg */

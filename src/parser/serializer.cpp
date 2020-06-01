@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -8,12 +8,12 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+// implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// SPDX-License-Identifier: Apache-2.0
 
+// SPDX-License-Identifier: Apache-2.0
 
 #include <base/base.h>
 #include "serializer.h"
@@ -28,12 +28,13 @@ pbnjson::JValue to_json(const base::result_t & result) {
 
 template<>
 pbnjson::JValue to_json(const base::video_info_t & info) {
-  return pbnjson::JObject {{"codec", info.codec},
-               {"bitrate", (int64_t)info.bit_rate},
-               {"width", (int32_t)info.width},
-               {"height", (int32_t)info.height},
-               {"frame_rate", pbnjson::JObject {{"num", info.frame_rate.num},
-                                {"den", info.frame_rate.den}}}};
+  return pbnjson::JObject {{"video",
+      pbnjson::JObject{{"codec", info.codec},
+                       {"bitrate", (int64_t)info.bit_rate},
+                       {"width", (int32_t)info.width},
+                       {"height", (int32_t)info.height},
+                       {"frame_rate", pbnjson::JObject {{"num", info.frame_rate.num},
+                                                        {"den", info.frame_rate.den}}}}}};
 }
 
 template<>
@@ -59,12 +60,26 @@ pbnjson::JValue to_json(const base::error_t & error) {
                {"mediaId", error.mediaId}};
 }
 
+template<>
+pbnjson::JValue to_json(const base::media_info_t & info) {
+  return pbnjson::JObject {{"mediaId", info.mediaId}};
+}
+
+// {"options":{"option":{"windowId":"_Window_Id_1","useSeekableRanges":true,"videoDisplayMode":"Textured","appId":"com.webos.app.mediaevents-test","needAudio":true,"bufferControl":{"userBufferCtrl":false},"transmission":{"httpHeader":{"referer":"https://www.w3.org/2010/05/video/mediaevents.html","userAgent":"Mozilla/5.0 (Web0S; Linux) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36 WebAppManager","cookies":""}},"preload":"false"}},"id":"_dPG8v3e9kM98mI","uri":"https://media.w3.org/2010/05/sintel/trailer.mp4"}
+template<>
+pbnjson::JValue to_json(const base::load_param_t & load_param) {
+  return pbnjson::JObject {{"options",
+    pbnjson::JObject {{"option",
+        pbnjson::JObject {{"videoDisplayMode", load_param.videoDisplayMode},
+                          {"display-path", (int32_t)load_param.displayPath},
+                          {"windowId", load_param.windowId}}}}},
+                          {"uri", load_param.uri}};
+}
+
 Composer::Composer() : _dom(pbnjson::JObject()) {}
 
 std::string Composer::result() {
-  std::string result;
-  pbnjson::JGenerator(nullptr).toString(_dom,
-                pbnjson::JSchemaFragment("{}"), result);
+  std::string result = _dom.stringify();
   return result;
 }
 
