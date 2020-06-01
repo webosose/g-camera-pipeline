@@ -749,7 +749,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
          return false;
        }
        caps_RGB_ = gst_caps_new_simple("video/x-raw",
-                                       "format", G_TYPE_STRING, "NV12",
+                                       "format", G_TYPE_STRING, "RGB16",
                                        NULL);
        g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
        if (GST_PAD_LINK_OK != gst_pad_link(pad, preview_queue_pad_)) {
@@ -901,7 +901,6 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
     }
 
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
-    g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,filter_NV12_,
             record_mux_, record_sink_, NULL);
 
@@ -1083,76 +1082,16 @@ bool CameraPlayer::LoadYUY2Pipeline()
     g_object_set(G_OBJECT(filter_YUY2_), "caps", caps_YUY2_, NULL);
     g_object_set(G_OBJECT(filter_I420_), "caps", caps_I420_, NULL);
 
-    if (memtype_ == kMemtypeShmem) {
-        preview_convert_ = gst_element_factory_make("videoconvert", "preview-convert");
-        if (!preview_convert_) {
-            CMP_DEBUG_PRINT("preview_convert_(%p) Failed", preview_convert_);
-            return false;
-        }
-        filter_NV12_ = gst_element_factory_make("capsfilter", "filter-NV");
-        if (!filter_NV12_) {
-            CMP_DEBUG_PRINT("filter_ element creation failed.");
-            return false;
-        }
-        caps_NV12_ = gst_caps_new_simple("video/x-raw",
-                "format", G_TYPE_STRING, "NV12",
-                NULL);
-        g_object_set(G_OBJECT(filter_NV12_), "caps", caps_NV12_, NULL);
-        preview_encoder_ = gst_element_factory_make("omxh264enc", "preview-encoder");
-        if (!preview_encoder_) {
-            CMP_DEBUG_PRINT("preview_encoder_(%p) Failed", preview_encoder_);
-            return false;
-        }
-        preview_queue_ = gst_element_factory_make ("queue", "preview-queue");
-        if (!preview_queue_) {
-            CMP_DEBUG_PRINT("record_queue_(%p) Failed", preview_queue_);
-            return false;
-        }
-        preview_decoder_ = gst_element_factory_make("omxh264dec", "preview-decoder");
-        if (!preview_decoder_) {
-            CMP_DEBUG_PRINT("preview_decoder_(%p) Failed", preview_decoder_);
-            return false;
-        }
-        vconv_ = gst_element_factory_make("videoconvert", "vconv");
-        if (!vconv_) {
-            CMP_DEBUG_PRINT("vconv_(%p) Failed", vconv_);
-            return false;
-        }
-        filter_RGB_ = gst_element_factory_make("capsfilter", "filter-RGB");
-        if (!filter_RGB_) {
-            CMP_DEBUG_PRINT("filter_ element creation failed.");
-            return false;
-        }
-        caps_RGB_ = gst_caps_new_simple("video/x-raw",
-                "format", G_TYPE_STRING, "NV12",
-                NULL);
-        g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
-        preview_sink_ = gst_element_factory_make("waylandsink", "preview-sink");
-        if (!preview_sink_) {
-            CMP_DEBUG_PRINT("preview_sink_ element creation failed.");
-            return false;
-        }
-        g_object_set(G_OBJECT(preview_sink_), "sync", false , NULL);
-
-        gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, preview_convert_,
-                filter_NV12_, preview_encoder_, preview_decoder_,
-                vconv_,filter_RGB_,preview_sink_, NULL);
-
-        gst_element_link_many(source_, filter_YUY2_, preview_convert_,
-                filter_NV12_, preview_encoder_, preview_decoder_,
-                vconv_,filter_RGB_,preview_sink_, NULL);
-        bus_ = gst_pipeline_get_bus(GST_PIPELINE (pipeline_));
-        gst_bus_add_watch(bus_, CameraPlayer::HandleBusMessage, this);
-        gst_bus_set_sync_handler(bus_, CameraPlayer::HandleSyncBusMessage,
-                &lsm_camera_window_manager_, NULL);
-        gst_object_unref(bus_);
-        return true;
+    parser_ = gst_element_factory_make("rawvideoparse", "parser");
+    if (!parser_) {
+        CMP_DEBUG_PRINT("parser_(%p) Failed", parser_);
+        return false;
     }
-    else
-    {
-        gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, tee_, NULL);
-        gst_element_link_many(source_, filter_YUY2_, tee_, NULL);
-    }
+    g_object_set(G_OBJECT(parser_), "format", GST_VIDEO_FORMAT_YUY2 , NULL);
+    g_object_set(G_OBJECT(parser_), "width", width_ , NULL);
+    g_object_set(G_OBJECT(parser_), "height", height_ , NULL);
+    gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, parser_, tee_, NULL);
+    gst_element_link_many(source_, filter_YUY2_,parser_, tee_, NULL);
     tee_preview_pad_ = gst_element_get_request_pad(tee_, "src_%u");
 
     if (CreatePreviewBin(tee_preview_pad_)) {
@@ -1208,19 +1147,15 @@ bool CameraPlayer::LoadJPEGPipeline()
 
 
     gst_bin_add_many(GST_BIN(pipeline_), source_, filter_JPEG_, parser_, tee_,
-                     preview_queue_, decoder_, NULL);
+            decoder_, NULL);
 
     if (TRUE != gst_element_link_many(source_, filter_JPEG_, parser_, tee_, NULL)) {
         CMP_DEBUG_PRINT("Elements could not be linked.\n");
         return false;
     }
-    if (TRUE != gst_element_link(preview_queue_, decoder_)) {
-        CMP_DEBUG_PRINT("Elements could not be linked.\n");
-        return false;
-    }
 
     tee_preview_pad_ = gst_element_get_request_pad(tee_, "src_%u");
-    preview_queue_pad_ = gst_element_get_static_pad(preview_queue_, "sink");
+    preview_queue_pad_ = gst_element_get_static_pad(decoder_, "sink");
     if (GST_PAD_LINK_OK != gst_pad_link(tee_preview_pad_, preview_queue_pad_)) {
         CMP_DEBUG_PRINT ("Record Tee could not be linked.\n");
         return false;
