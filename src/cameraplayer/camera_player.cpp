@@ -870,7 +870,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
         CMP_DEBUG_PRINT("record_queue_(%p) Failed", record_queue_);
         return false;
     }
-    record_encoder_ = gst_element_factory_make ("omxh264enc", "record-encoder");
+    record_encoder_ = gst_element_factory_make ("v4l2h264enc", "record-encoder");
     if (!record_encoder_) {
         CMP_DEBUG_PRINT("record_encoder_(%p) Failed", record_encoder_);
         return false;
@@ -884,6 +884,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
             "format", G_TYPE_STRING, "NV12",
             NULL);
     g_object_set(G_OBJECT(filter_NV12_), "caps", caps_NV12_, NULL);
+
     record_convert_ = gst_element_factory_make("videoconvert", "record-convert");
     if (!record_convert_) {
         CMP_DEBUG_PRINT("record_convert_(%p) Failed", record_sink_);
@@ -899,10 +900,15 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
         CMP_DEBUG_PRINT("record_sink_(%p) Failed", record_sink_);
         return false;
     }
+    record_parse_ = gst_element_factory_make("h264parse", "record-parser");
+    if (!record_parse_) {
+        CMP_DEBUG_PRINT("record_parse_(%p) Failed", record_decoder_);
+        return false;
+    }
 
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,filter_NV12_,
-            record_mux_, record_sink_, NULL);
+            record_mux_, record_sink_, record_parse_, NULL);
 
     if (format_ == kFormatJPEG) {
         record_decoder_ = gst_element_factory_make("jpegdec", "record-decoder");
@@ -921,20 +927,9 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
             return false;
         }
     }
-    if (TRUE != gst_element_link(record_convert_, filter_NV12_)) {
+    if (TRUE != gst_element_link_many(record_convert_, record_encoder_, record_mux_,
+        record_sink_, NULL)) {
         CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & filter_NV12 \n");
-        return false;
-    }
-    if (TRUE != gst_element_link(filter_NV12_, record_encoder_)) {
-        CMP_DEBUG_PRINT ("link capture elements could not be linked filter_NV12 & encoder \n");
-        return false;
-    }
-    if (TRUE != gst_element_link(record_encoder_,record_mux_)) {
-        CMP_DEBUG_PRINT ("link capture elements could not be linked encoder & mux \n");
-        return false;
-    }
-    if (TRUE != gst_element_link(record_mux_,record_sink_)) {
-        CMP_DEBUG_PRINT ("link capture elements could not be linked- mux & sink \n");
         return false;
     }
 
@@ -949,6 +944,10 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
         return false;
     }
     if (TRUE != gst_element_sync_state_with_parent(record_queue_)) {
+        CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
+        return false;
+    }
+    if (TRUE != gst_element_sync_state_with_parent(record_parse_)) {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
@@ -1140,7 +1139,7 @@ bool CameraPlayer::LoadJPEGPipeline()
     caps_JPEG_ = gst_caps_new_simple("image/jpeg",
                                      "width", G_TYPE_INT, width_,
                                      "height", G_TYPE_INT, height_,
-                                     "framerate", GST_TYPE_FRACTION, 30, 1,
+                                     "framerate", GST_TYPE_FRACTION, 25, 1,
                                      NULL);
 
     g_object_set(G_OBJECT(filter_JPEG_), "caps", caps_JPEG_, NULL);
@@ -1396,6 +1395,7 @@ CameraPlayer::RecordRemoveProbe(
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(user_data);
     gst_pad_unlink(player->tee_record_pad_, player->record_queue_pad_);
+    gst_pad_send_event(player->tee_record_pad_, gst_event_new_eos());
     gst_element_release_request_pad(player->tee_, player->tee_record_pad_);
     gst_object_unref(player->tee_record_pad_);
     gst_object_unref(player->record_queue_pad_);
@@ -1417,6 +1417,14 @@ CameraPlayer::RecordRemoveProbe(
         gst_object_unref(player->record_decoder_);
         player->record_decoder_ = NULL;
     }
+
+    gst_element_set_state(player->record_parse_,GST_STATE_NULL);
+    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
+                player->record_parse_)) {
+        CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+    }
+    gst_object_unref(player->record_parse_);
+    player->record_parse_ = NULL;
 
     gst_element_set_state(player->record_encoder_,GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),

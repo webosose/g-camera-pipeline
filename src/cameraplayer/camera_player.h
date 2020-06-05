@@ -186,7 +186,7 @@ class CameraPlayer {
              *filter_I420_, *filter_JPEG_, *filter_RGB_, *vconv_, *record_convert_,
              *preview_decoder_, *preview_parser_, *preview_encoder_, *preview_convert_,
              *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
-             *record_encoder_, *record_decoder_, *record_mux_, *record_sink_,
+             *record_encoder_, *record_parse_, *record_decoder_, *record_mux_, *record_sink_,
              *preview_queue_, *preview_sink_;
   GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
