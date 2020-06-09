@@ -579,15 +579,15 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
       capture_path_ = std::string(kCaptureImagePath);
     }
 
-    time_t t = time(NULL);
-    tm *timePtr = localtime(&t);
-    struct timeval tmnow;
-    gettimeofday(&tmnow, NULL);
+    time_t t_ = time(NULL);
+    tm *timePtr_ = localtime(&t_);
+    struct timeval tmnow_;
+    gettimeofday(&tmnow_, NULL);
 
     char image_name[100] = {};
-    snprintf(image_name, 100, "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr->tm_mday,
-             (timePtr->tm_mon) + 1, (timePtr->tm_year) + 1900, (timePtr->tm_hour),
-             (timePtr->tm_min), (timePtr->tm_sec), ((int)tmnow.tv_usec) / 10000);
+    snprintf(image_name, 100, "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
+             (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+             (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
 
 
     CMP_DEBUG_PRINT("writeImageToFile image_name : %s\n", image_name);
@@ -859,12 +859,19 @@ bool CameraPlayer::CreateCaptureElements(GstPad* tee_capture_pad)
 
 bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
 {
-    char recordfilename[100];
+    char recordfilename[100] = {};
     if (record_path_.empty())
         record_path_ = kRecordPath;
 
-    snprintf(recordfilename, sizeof(recordfilename), "%sRecord%d.ts",
-            record_path_.c_str(), rand());
+    time_t t_ = time(NULL);
+    tm *timePtr_ = localtime(&t_);
+    struct timeval tmnow_;
+    gettimeofday(&tmnow_, NULL);
+
+    snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.ts", record_path_.c_str(), timePtr_->tm_mday,
+             (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+             (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+
     record_queue_ = gst_element_factory_make ("queue", "record-queue");
     if (!record_queue_) {
         CMP_DEBUG_PRINT("record_queue_(%p) Failed", record_queue_);
