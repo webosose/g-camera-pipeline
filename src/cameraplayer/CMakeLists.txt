@@ -108,10 +108,6 @@ target_link_libraries(${G-CAMERA-PIPELINE_LIB}
     resource_mgr_client_c
     camera-window-manager
     )
-set_target_properties(${G-CAMERA-PIPELINE_LIB} PROPERTIES
-    VERSION ${G-CAMERA-PIPELINE_VERSION}
-    SOVERSION ${G-CAMERA-PIPELINE_VERSION_MAJOR}
-    )
 
 if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64")
   message(STATUS "Using config & debug file for raspberrypi4")
