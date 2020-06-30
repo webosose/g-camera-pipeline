@@ -608,7 +608,7 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
 
 bool CameraPlayer::GetSourceInfo()
 {
-    base::video_info_t video_stream_info;
+    base::video_info_t video_stream_info = {};
 
     video_stream_info.width = width_;
     video_stream_info.height = height_;

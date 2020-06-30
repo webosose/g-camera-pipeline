@@ -422,7 +422,7 @@ exit:
 bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int display_mode)
 {
     GstElement *pipeline, *source, *demuxer, *parser, *decoder, *sink;
-    GMainLoop *loop;
+    GMainLoop *loop = nullptr;
 
     bool usePlaybin = true;
     bool result = false;
@@ -512,10 +512,9 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
         g_signal_connect (demuxer, "pad-added", G_CALLBACK (pad_added_handler), parser);
     }
 
-    result = gst_element_set_state(pipeline, GST_STATE_PLAYING);
-    if (result == GST_STATE_CHANGE_FAILURE) {
+    if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         std::cout <<  "Unable to set the pipeline to the playing state" << std::endl;
-        return exit;
+        goto exit;
     }
 
     loop = g_main_loop_new (NULL, FALSE);
