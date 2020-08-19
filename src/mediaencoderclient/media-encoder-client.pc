@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 LG Electronics, Inc.
+# Copyright (c) 2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 2.8.7)
+libdir=@WEBOS_INSTALL_LIBDIR@
+includedir=@WEBOS_INSTALL_INCLUDEDIR@
 
-add_executable(testCamera testCamera.cpp)
-install(TARGETS testCamera DESTINATION ${WEBOS_INSTALL_SBINDIR})
-
-add_executable(testEncoder testEncoder.cpp camshm.cpp)
-TARGET_LINK_LIBRARIES(testEncoder media-encoder-client)
-install(TARGETS testEncoder DESTINATION ${WEBOS_INSTALL_SBINDIR})
+Name: @CMAKE_PROJECT_NAME@
+Description: @WEBOS_PROJECT_SUMMARY@
+Version: @WEBOS_COMPONENT_VERSION@
+Libs: -L${libdir} -lmedia-encoder-client
+Cflags: -I${includedir}

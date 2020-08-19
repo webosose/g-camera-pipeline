@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 LG Electronics, Inc.
+# Copyright (c) 2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 2.8.7)
+set(ENCODER_CLIENT_HEADERS
+    ../base/message.h
+    media_encoder_client.h)
 
-add_executable(testCamera testCamera.cpp)
-install(TARGETS testCamera DESTINATION ${WEBOS_INSTALL_SBINDIR})
+add_library(media-encoder-client SHARED media_encoder_client.cpp)
+target_link_libraries(media-encoder-client buffer-encoder)
 
-add_executable(testEncoder testEncoder.cpp camshm.cpp)
-TARGET_LINK_LIBRARIES(testEncoder media-encoder-client)
-install(TARGETS testEncoder DESTINATION ${WEBOS_INSTALL_SBINDIR})
+install(TARGETS media-encoder-client DESTINATION lib)
+install(FILES ${ENCODER_CLIENT_HEADERS} DESTINATION include/cmp)
+
+#install media-encoder-client.pc file
+install(FILES media-encoder-client.pc DESTINATION share/pkgconfig)

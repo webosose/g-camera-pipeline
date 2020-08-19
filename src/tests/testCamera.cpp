@@ -18,8 +18,6 @@
 #include <vector>
 #include "string.h"
 
-#define MAX_SIZE 1035 // Maximum string size
-
 int main(int argc, char const *argv[])
 {
     FILE *fp;

@@ -29,7 +29,9 @@
 #include <camera_window_manager.h>
 #include <cameraservice/camera_service.h>
 #include "base.h"
+#include "message.h"
 #include "camshm.h"
+#include "camera_types.h"
 
 using namespace std;
 
@@ -46,62 +48,6 @@ typedef struct _GstAppSrcContext
     gint isFirstCallback;
     GstAppSrc *appsrc;
 }GstAppSrcContext;
-typedef struct
-{
-      GMainLoop *loop;
-      GstElement *source;
-      GstElement *sink;
-      char *shmpointer;
-      int shmemid;
-} ProgramData;
-
-typedef enum {
-  MEDIA_OK = 0,
-  MEDIA_ERROR = -1,
-  MEDIA_NOT_IMPLEMENTED = -2,
-  MEDIA_NOT_SUPPORTED = -6,
-  MEDIA_BUFFER_FULL = -7,                         /**< function doesn't works cause buffer is full */
-  MEDIA_INVALID_PARAMS = -3,                      /**< Invalid parameters */
-  MEDIA_NOT_READY = -11,                          /**< API's resource is not ready */
-} MEDIA_STATUS_T;
-
-typedef enum {
-  CMP_ERROR_NONE,
-  CMP_ERROR_STREAM,
-  CMP_ERROR_ASYNC,
-  CMP_ERROR_RES_ALLOC,
-  CMP_ERROR_MAX
-} CMP_ERROR_CODE;
-
-typedef enum {
-  DEFAULT_DISPLAY = 0,
-  PRIMARY_DISPLAY = 0,
-  SECONDARY_DISPLAY,
-} DISPLAY_PATH;
-
-typedef enum {
-  NOTIFY_LOAD_COMPLETED = 0,
-  NOTIFY_UNLOAD_COMPLETED,
-  NOTIFY_SOURCE_INFO,
-  NOTIFY_END_OF_STREAM,
-  NOTIFY_PLAYING,
-  NOTIFY_PAUSED,
-  NOTIFY_ERROR,
-  NOTIFY_VIDEO_INFO,
-  NOTIFY_ACTIVITY,
-  NOTIFY_ACQUIRE_RESOURCE,
-  NOTIFY_MAX
-} NOTIFY_TYPE_T;
-
-/* player status enum type */
-typedef enum {
-  LOADING_STATE,
-  STOPPED_STATE,
-  PAUSING_STATE,
-  PAUSED_STATE,
-  PLAYING_STATE,
-  PLAYED_STATE,
-} PIPELINE_STATE;
 
 typedef struct ACQUIRE_RESOURCE_INFO {
   cmp::base::source_info_t* sourceInfo;
@@ -175,7 +121,7 @@ class CameraPlayer {
                                                gpointer user_data);
 
   std::string media_id_;
-  uint32_t display_path_ = DEFAULT_DISPLAY;
+  uint32_t display_path_ = CMP_DEFAULT_DISPLAY;
   CALLBACK_T cbFunction_ = nullptr;
 
   int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,

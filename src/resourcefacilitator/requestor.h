@@ -23,7 +23,7 @@
 #include <map>
 #include <dto_types.h>
 #include <resource_calculator.h>
-#include "notification.h"
+#include "message.h"
 
 namespace mrc { class ResourceCalculator; }
 namespace cmp { namespace base { struct source_info_t; }}

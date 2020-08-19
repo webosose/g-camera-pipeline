@@ -35,29 +35,19 @@ include_directories(./util)
 
 include_directories(./cameraplayer)
 
+include_directories(./mediaencoderclient)
+
+include_directories(./bufferencoder)
+
 include_directories(./camera-window-manager/include)
 
-set(G-CAMERA-PIPELINE_VERSION_MAJOR 1)
-set(G-CAMERA-PIPELINE_VERSION_MINOR 0)
-set(G-CAMERA-PIPELINE_VERSION_PATCH 0)
-set(G-CAMERA-PIPELINE_VERSION_LIST
-    "${G-CAMERA-PIPELINE_VERSION_MAJOR}"
-    ".${G-CAMERA-PIPELINE_VERSION_MINOR}"
-    ".${G-CAMERA-PIPELINE_VERSION_PATCH}"
-    )
-string(REPLACE ";" "" G-CAMERA-PIPELINE_VERSION
-    ${G-CAMERA-PIPELINE_VERSION_LIST})
-
+add_subdirectory(bufferencoder)
+add_subdirectory(mediaencoderclient)
 add_subdirectory(cameraplayer)
 add_subdirectory(camera-window-manager)
 add_subdirectory(tests)
 
 find_package(Threads REQUIRED)
-
-set_target_properties(${G-CAMERA-PIPELINE_LIB} PROPERTIES
-    VERSION ${G-CAMERA-PIPELINE_VERSION}
-    SOVERSION ${G-CAMERA-PIPELINE_VERSION_MAJOR}
-    )
 
 add_executable(g-camera-pipeline main.cpp)
 target_link_libraries(g-camera-pipeline cmp-player ${PMLOG_LIBRARIES})

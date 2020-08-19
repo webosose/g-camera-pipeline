@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020 LG Electronics, Inc.
+# Copyright (c) 2020 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,30 +59,22 @@ if (PMLOGLIB_FOUND)
 endif (PMLOGLIB_FOUND)
 
 set(GSTAPP_LIB gstapp-1.0)
-set(G-CAMERA-PIPELINE_LIB cmp-player)
+set(ENCODER-PIPELINE_LIB buffer-encoder)
 
-set(G-CAMERA-PIPELINE_HEADERS
-    camera_player.h
+set(ENCODER-PIPELINE_HEADERS
+    buffer_encoder.h
     ../base/base.h
     ../log/log.h
-    ../cameraservice/camera_service.h
-    ../resourcefacilitator/requestor.h
-    ../util/camshm.h
-    )
+)
 
-set(G-CAMERA-PIPELINE_SRC
-    camera_player.cpp
+set(ENCODER-PIPELINE_SRC
+    buffer_encoder.cpp
     ../parser/parser.cpp
     ../parser/serializer.cpp
     ../log/log.cpp
-    ../cameraservice/camera_service.cpp
-    ../resourcefacilitator/requestor.cpp
-    ../util/camshm.cpp
-    )
+)
 
-set(G-CAMERA-PIPELINE_LIBRARIES
-    ums_connector
-    ${Boost_REGEX_LIBRARY}
+set(ENCODER-PIPELINE_LIBRARIES
     ${GSTPLAYER_LIBRARIES}
     ${GSTREAMER_LIBRARIES}
     ${GSTPBUTIL_LIBRARIES}
@@ -94,31 +86,14 @@ set(G-CAMERA-PIPELINE_LIBRARIES
     ${PMLOG_LIBRARIES}
     ${LUNASERVICE_LDFLAGS}
     ${RESOURCE-CALCULATOR_LDFLAGS}
-    resource_mgr_client
-    resource_mgr_client_c
     ${GSTAPP_LIB}
-    )
+)
 
-add_library(${G-CAMERA-PIPELINE_LIB} SHARED ${G-CAMERA-PIPELINE_SRC})
-target_link_libraries(${G-CAMERA-PIPELINE_LIB}
-    ${G-CAMERA-PIPELINE_LIBRARIES}
-    ${RESOURCE-CALCULATOR_LDFLAGS}
-    resource_mgr_client
-    resource_mgr_client_c
-    camera-window-manager
-    )
+add_library(${ENCODER-PIPELINE_LIB} SHARED ${ENCODER-PIPELINE_SRC})
 
-if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64")
-  message(STATUS "Using config & debug file for raspberrypi4")
-  install(FILES ./raspberrypi4/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
-  install(FILES ./raspberrypi4/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
-elseif (${WEBOS_TARGET_MACHINE} STREQUAL "qemux86")
-  message(STATUS "Using config & debug file for qemux86")
-  install(FILES ./qemux86/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
-  install(FILES ./qemux86/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
-else()
-  message(FATAL_ERROR the "Check WEBOS_TARGET_MACHINE: " ${WEBOS_TARGET_MACHINE})
-endif()
+target_link_libraries(${ENCODER-PIPELINE_LIB}
+    ${ENCODER-PIPELINE_LIBRARIES}
+)
 
-install(TARGETS cmp-player DESTINATION lib)
-install(FILES ${G-CAMERA-PIPELINE_HEADERS} DESTINATION include/cmp)
+install(TARGETS buffer-encoder DESTINATION lib)
+install(FILES ${ENCODER-PIPELINE_HEADERS} DESTINATION include/cmp)

@@ -169,7 +169,7 @@ void CameraPlayer::ParseOptionString(const std::string& options)
 
     if (parsed["options"]["option"].hasKey("displayPath")) {
       int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-      display_path_ = (display_path > SECONDARY_DISPLAY ? 0 : display_path);
+      display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
     }
     if (parsed["options"]["option"].hasKey("windowId")) {
       window_id_ = parsed["options"]["option"]["windowId"].asString();
@@ -232,7 +232,7 @@ bool CameraPlayer::Load(const std::string& str)
     resource_info.result = true;
 
     if (cbFunction_)
-      cbFunction_(NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr, static_cast<void*>(&resource_info));
+      cbFunction_(CMP_NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr, static_cast<void*>(&resource_info));
 
     if (!resource_info.result) {
       CMP_DEBUG_PRINT("resouce acquire fail!");
@@ -300,7 +300,7 @@ bool CameraPlayer::Load(const std::string& mediaId,
     resource_info.displayMode = const_cast<char*>(display_mode_.c_str());
     resource_info.result = false;
     if (cbFunction_)
-      cbFunction_(NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr, static_cast<void*>(&resource_info));
+      cbFunction_(CMP_NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr, static_cast<void*>(&resource_info));
 
     if (!resource_info.result) {
       CMP_DEBUG_PRINT("resouce acquire fail!");
@@ -363,7 +363,7 @@ bool CameraPlayer::Unload()
     }
 
     if (cbFunction_)
-      cbFunction_(NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
+      cbFunction_(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
 
     return true;
 }
@@ -383,7 +383,7 @@ bool CameraPlayer::Play()
     SetPlayerState(base::playback_state_t::PLAYING);
 
     if (cbFunction_)
-        cbFunction_(NOTIFY_PLAYING, 0, nullptr, nullptr);
+        cbFunction_(CMP_NOTIFY_PLAYING, 0, nullptr, nullptr);
 
     return true;
 }
@@ -449,22 +449,22 @@ gboolean CameraPlayer::HandleBusMessage(
       case GST_MESSAGE_ERROR: {
         base::error_t error = player->HandleErrorMessage(message);
         if (player->cbFunction_)
-          player->cbFunction_(NOTIFY_ERROR, 0, nullptr, &error);
+          player->cbFunction_(CMP_NOTIFY_ERROR, 0, nullptr, &error);
           break;
       }
 
       case GST_MESSAGE_EOS: {
         CMP_DEBUG_PRINT("Got endOfStream");
         if (player->cbFunction_)
-          player->cbFunction_(NOTIFY_END_OF_STREAM, 0, nullptr, nullptr);
+          player->cbFunction_(CMP_NOTIFY_END_OF_STREAM, 0, nullptr, nullptr);
           break;
       }
 
       case GST_MESSAGE_ASYNC_DONE: {
         CMP_DEBUG_PRINT("ASYNC DONE");
-        auto notify_case = NOTIFY_MAX;
+        auto notify_case = CMP_NOTIFY_MAX;
         if (!player->load_complete_) {
-          player->cbFunction_(NOTIFY_LOAD_COMPLETED, 0, nullptr, nullptr);
+          player->cbFunction_(CMP_NOTIFY_LOAD_COMPLETED, 0, nullptr, nullptr);
           player->load_complete_ = true;
         }
         break;
@@ -473,14 +473,14 @@ gboolean CameraPlayer::HandleBusMessage(
       case GST_STATE_PAUSED: {
         CMP_DEBUG_PRINT("PAUSED");
         if (player->cbFunction_)
-          player->cbFunction_(NOTIFY_PAUSED, 0, nullptr, nullptr);
+          player->cbFunction_(CMP_NOTIFY_PAUSED, 0, nullptr, nullptr);
           break;
       }
 
       case GST_STATE_PLAYING: {
         CMP_DEBUG_PRINT("PLAYING");
         if (player->cbFunction_)
-          player->cbFunction_(NOTIFY_PLAYING, 0, nullptr, nullptr);
+          player->cbFunction_(CMP_NOTIFY_PLAYING, 0, nullptr, nullptr);
           break;
       }
 
@@ -523,7 +523,7 @@ gboolean CameraPlayer::HandleBusMessage(
         video_info.codec = 0;
 
         if (player->cbFunction_)
-          player->cbFunction_(NOTIFY_VIDEO_INFO, 0, nullptr, &video_info);
+          player->cbFunction_(CMP_NOTIFY_VIDEO_INFO, 0, nullptr, &video_info);
         } else if (gst_structure_has_name(gStruct, "request-resource")) {
           CMP_INFO_PRINT("got request-resource message");
         }
@@ -540,7 +540,7 @@ void CameraPlayer::NotifySourceInfo()
 {
     // TODO(anonymous): Support multiple video/audio stream case
     if (cbFunction_)
-      cbFunction_(NOTIFY_SOURCE_INFO, 0, nullptr, &source_info_);
+      cbFunction_(CMP_NOTIFY_SOURCE_INFO, 0, nullptr, &source_info_);
 }
 
 void CameraPlayer::SetGstreamerDebug()
@@ -1189,7 +1189,7 @@ int32_t CameraPlayer::ConvertErrorCode(GQuark domain, gint code)
     if (GST_CORE_ERROR == domain) {
         switch (code) {
             case GST_CORE_ERROR_EVENT:
-                converted = MEDIA_MSG__GST_CORE_ERROR_EVENT;
+                converted = CMP_MSG__GST_CORE_ERROR_EVENT;
                 break;
             default:
                 break;
@@ -1199,16 +1199,16 @@ int32_t CameraPlayer::ConvertErrorCode(GQuark domain, gint code)
     } else if (GST_RESOURCE_ERROR == domain) {
         switch (code) {
             case GST_RESOURCE_ERROR_SETTINGS:
-                converted = MEDIA_MSG__GST_RESOURCE_ERROR_SETTINGS;
+                converted = CMP_MSG__GST_RESOURCE_ERROR_SETTINGS;
                 break;
             case GST_RESOURCE_ERROR_NOT_FOUND:
-                converted = MEDIA_MSG__GST_RESOURCE_ERROR_NOT_FOUND;
+                converted = CMP_MSG__GST_RESOURCE_ERROR_NOT_FOUND;
                 break;
             case GST_RESOURCE_ERROR_OPEN_READ:
-                converted = MEDIA_MSG__GST_RESOURCE_ERROR_OPEN_READ;
+                converted = CMP_MSG__GST_RESOURCE_ERROR_OPEN_READ;
                 break;
             case GST_RESOURCE_ERROR_READ:
-                converted = MEDIA_MSG__GST_RESOURCE_ERROR_READ;
+                converted = CMP_MSG__GST_RESOURCE_ERROR_READ;
                 break;
             default:
                 break;
@@ -1216,10 +1216,10 @@ int32_t CameraPlayer::ConvertErrorCode(GQuark domain, gint code)
     } else if (GST_STREAM_ERROR == domain) {
         switch (code) {
             case GST_STREAM_ERROR_TYPE_NOT_FOUND:
-                converted = MEDIA_MSG__GST_STREAM_ERROR_TYPE_NOT_FOUND;
+                converted = CMP_MSG__GST_STREAM_ERROR_TYPE_NOT_FOUND;
                 break;
             case GST_STREAM_ERROR_DEMUX:
-                converted = MEDIA_MSG__GST_STREAM_ERROR_DEMUX;
+                converted = CMP_MSG__GST_STREAM_ERROR_DEMUX;
                 break;
             default:
                 break;

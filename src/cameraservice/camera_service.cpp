@@ -92,21 +92,21 @@ void Service::Notify(const gint notification, const gint64 numValue,
     cmp::base::media_info_t mediaInfo = { media_id_ };
     switch (notification)
     {
-        case NOTIFY_SOURCE_INFO:
+        case CMP_NOTIFY_SOURCE_INFO:
         {
             base::source_info_t info  = *static_cast<base::source_info_t *>(payload);
             composer.put("sourceInfo", info);
             break;
         }
 
-        case NOTIFY_VIDEO_INFO:
+        case CMP_NOTIFY_VIDEO_INFO:
         {
             base::video_info_t info = *static_cast<base::video_info_t*>(payload);
             composer.put("videoInfo", info);
             CMP_INFO_PRINT("videoInfo: width %d, height %d", info.width, info.height);
             break;
         }
-        case NOTIFY_ERROR:
+        case CMP_NOTIFY_ERROR:
         {
             base::error_t error = *static_cast<base::error_t *>(payload);
             error.mediaId = media_id_;
@@ -117,43 +117,43 @@ void Service::Notify(const gint notification, const gint64 numValue,
             }
             break;
         }
-        case NOTIFY_LOAD_COMPLETED:
+        case CMP_NOTIFY_LOAD_COMPLETED:
         {
             composer.put("loadCompleted", mediaInfo);
             break;
         }
 
-        case NOTIFY_UNLOAD_COMPLETED:
+        case CMP_NOTIFY_UNLOAD_COMPLETED:
         {
             composer.put("unloadCompleted", mediaInfo);
             break;
         }
 
-        case NOTIFY_END_OF_STREAM:
+        case CMP_NOTIFY_END_OF_STREAM:
         {
             composer.put("endOfStream", mediaInfo);
             break;
         }
 
-        case NOTIFY_PLAYING:
+        case CMP_NOTIFY_PLAYING:
         {
             composer.put("playing", mediaInfo);
             break;
         }
 
-        case NOTIFY_PAUSED:
+        case CMP_NOTIFY_PAUSED:
         {
             composer.put("paused", mediaInfo);
             break;
         }
-        case NOTIFY_ACTIVITY: {
+        case CMP_NOTIFY_ACTIVITY: {
             CMP_DEBUG_PRINT("notifyActivity to resource requestor");
             if (resourceRequestor_)
                 resourceRequestor_->notifyActivity();
             break;
         }
-        case NOTIFY_ACQUIRE_RESOURCE: {
-            CMP_DEBUG_PRINT("Notify, NOTIFY_ACQUIRE_RESOURCE");
+        case CMP_NOTIFY_ACQUIRE_RESOURCE: {
+            CMP_DEBUG_PRINT("Notify, CMP_NOTIFY_ACQUIRE_RESOURCE");
             ACQUIRE_RESOURCE_INFO_T* info = static_cast<ACQUIRE_RESOURCE_INFO_T*>(payload);
             info->result = AcquireResources(*(info->sourceInfo), info->displayMode, numValue);
             break;
@@ -230,7 +230,7 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
     base::error_t error;
     error.errorCode = MEDIA_MSG_ERR_LOAD;
     error.errorText = "Load Failed";
-    instance_->Notify(NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
+    instance_->Notify(CMP_NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
 
     return false;
 }
@@ -323,11 +323,11 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
         error.errorCode = MEDIA_MSG_ERR_LOAD;
         error.errorText = "Unload Failed";
         error.mediaId = instance_->media_id_;
-        instance_->Notify(NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
+        instance_->Notify(CMP_NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
     }
 
     instance_->player_.reset();
-    instance_->Notify(NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
+    instance_->Notify(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
 
     CMP_DEBUG_PRINT("UnloadEvent Done");
     return ret;
@@ -429,7 +429,7 @@ void Service::LoadCommon()
             base::error_t error;
             error.errorCode = MEDIA_MSG_ERR_POLICY;
             error.errorText = "Policy Action";
-            Notify(NOTIFY_ERROR, CMP_ERROR_RES_ALLOC,
+            Notify(CMP_NOTIFY_ERROR, CMP_ERROR_RES_ALLOC,
                                     nullptr, static_cast<void*>(&error));
             if (!resourceRequestor_)
                 CMP_DEBUG_PRINT("NotifyForeground fails");

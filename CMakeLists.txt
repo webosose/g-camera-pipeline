@@ -18,11 +18,6 @@ cmake_minimum_required(VERSION 2.8)
 
 project(g-camera-pipeline)
 
-include(webOS/webOS)
-
-webos_modules_init(1 6 3)
-webos_distro_variant_dep()
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 if(NOT DEFINED WEBOS_INSTALL_ROOT)
@@ -64,7 +59,3 @@ link_directories(${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
 add_subdirectory(src)
 add_subdirectory(camsrc)
 add_subdirectory(files)
-
-webos_build_configured_file(
-    files/conf/g-camera-pipeline.conf SYSCONFDIR pmlog.d)
-webos_build_system_bus_files()
