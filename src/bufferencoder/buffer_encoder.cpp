@@ -54,6 +54,7 @@ BufferEncoder::BufferEncoder() {
 
 BufferEncoder::~BufferEncoder() {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
+  gst_element_set_state(pipeline_, GST_STATE_NULL);
 }
 
 bool BufferEncoder::init(const ENCODER_INIT_DATA_T* loadData) {

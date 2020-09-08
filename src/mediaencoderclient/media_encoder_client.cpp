@@ -31,15 +31,7 @@ namespace cmp { namespace player {
 
 bool MediaEncoderClient::IsCodecSupported(CMP_VIDEO_CODEC videoCodec) {
 
-  switch(videoCodec) {
-    case CMP_VIDEO_CODEC_H264:
-      return true;
-    case CMP_VIDEO_CODEC_VP8:
-      return true;
-    default:
-      break;
-  }
-  return false;
+  return (videoCodec == CMP_VIDEO_CODEC_H264);
 }
 
 MediaEncoderClient::MediaEncoderClient() {
