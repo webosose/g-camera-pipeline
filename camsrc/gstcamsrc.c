@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2019 LG Electronics
+ * Copyright (C) 2019-2020 LG Electronics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -195,7 +195,7 @@ gst_camsrc_set_property (GObject * object, guint prop_id,
 
   if (NULL == filter)
   {
-      return 0;
+      return;
   }
   switch (prop_id) {
       case PROP_DEVICE:
