@@ -88,8 +88,8 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
     GstMapInfo map;
     GstBuffer *buffer;
     buffer = gst_sample_get_buffer(sample);
-    CMP_INFO_PRINT("%d %s data size:%d", __LINE__, __FUNCTION__, map.size);
     gst_buffer_map(buffer, &map, GST_MAP_READ);
+    CMP_INFO_PRINT("%d %s data size:%d", __LINE__, __FUNCTION__, map.size);
 
     if(!GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT)){
       encoder->encdata_.isKeyFrame = true;
