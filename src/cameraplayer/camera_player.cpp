@@ -579,21 +579,26 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
       capture_path_ = std::string(kCaptureImagePath);
     }
 
-    time_t t_ = time(NULL);
-    tm *timePtr_ = localtime(&t_);
-    struct timeval tmnow_;
-    gettimeofday(&tmnow_, NULL);
+    std::size_t pos = capture_path_.rfind('.');
+    if (pos != std::string::npos) {
+      CMP_DEBUG_PRINT("capture_path_ is with file name ");
+    }
+    else {
+      CMP_DEBUG_PRINT("capture_path_ doe not have file name");
 
-    char image_name[100] = {};
-    snprintf(image_name, 100, "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
-             (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-             (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+      time_t t_ = time(NULL);
+      tm *timePtr_ = localtime(&t_);
+      struct timeval tmnow_;
+      gettimeofday(&tmnow_, NULL);
 
+      char image_name[100] = {};
+      snprintf(image_name, 100, "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
+               (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+               (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+      CMP_DEBUG_PRINT("writeImageToFile image_name : %s\n", image_name);
 
-    CMP_DEBUG_PRINT("writeImageToFile image_name : %s\n", image_name);
-
-		capture_path_ = capture_path_ + image_name;
-
+      capture_path_ = capture_path_ + image_name;
+    }
     CMP_DEBUG_PRINT("writeImageToFile path : %s\n", capture_path_.c_str());
 
     FILE *fp = fopen(capture_path_.c_str(), "wb");
