@@ -40,8 +40,11 @@ const std::string kRecordPath = "/media/internal/";
 
 namespace cmp { namespace player {
 
-CameraPlayer::CameraPlayer()
-    : planeId_(-1),
+CameraPlayer::CameraPlayer():
+    media_id_(""),
+    display_path_(CMP_DEFAULT_DISPLAY),
+    cbFunction_(nullptr),
+    planeId_(-1),
     shmkey_(0),
     width_(0),
     height_(0),
@@ -62,18 +65,24 @@ CameraPlayer::CameraPlayer()
     parser_(NULL),
     decoder_(NULL),
     filter_YUY2_(NULL),
+    filter_NV12_(NULL),
     filter_I420_(NULL),
     filter_JPEG_(NULL),
     filter_RGB_(NULL),
-    filter_NV12_(NULL),
     vconv_(NULL),
     record_convert_(NULL),
+    preview_decoder_(NULL),
+    preview_parser_(NULL),
+    preview_encoder_(NULL),
+    preview_convert_(NULL),
     tee_(NULL),
     capture_queue_(NULL),
     capture_encoder_(NULL),
     capture_sink_(NULL),
     record_queue_(NULL),
     record_encoder_(NULL),
+    record_parse_(NULL),
+    record_decoder_(NULL),
     record_mux_(NULL),
     record_sink_(NULL),
     preview_queue_(NULL),
@@ -90,12 +99,14 @@ CameraPlayer::CameraPlayer()
     current_state_(base::playback_state_t::STOPPED),
     bus_(NULL),
     caps_YUY2_(NULL),
+    caps_NV12_(NULL),
     caps_I420_(NULL),
     caps_JPEG_(NULL),
     caps_RGB_(NULL),
-    caps_NV12_(NULL),
     service_(NULL),
-    load_complete_(false){
+    load_complete_(false),
+    display_mode_("Default"),
+    window_id_("") {
     CMP_DEBUG_PRINT(" this[%p]", this);
 }
 
@@ -606,7 +617,7 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
       CMP_DEBUG_PRINT("File %s Open Failed", capture_path_.c_str());
       return;
     }
-    CMP_DEBUG_PRINT("File %s Open Success");
+    CMP_DEBUG_PRINT("File Open Success");
     fwrite(p, size, 1, fp);
     fclose(fp);
 }
@@ -620,10 +631,9 @@ bool CameraPlayer::GetSourceInfo()
     video_stream_info.codec = CMP_VIDEO_CODEC_MJPEG;
     video_stream_info.frame_rate.num = framerate_;
     video_stream_info.frame_rate.den = 1;
-    CMP_DEBUG_PRINT("[video info] width: %d, height: %d, bitRate: %lld, "
-          "frameRate: %d/%d", video_stream_info.width, video_stream_info.height,
-          video_stream_info.bit_rate, video_stream_info.frame_rate.num,
-          video_stream_info.frame_rate.den);
+    CMP_DEBUG_PRINT("[video info] width: %d, height: %d, frameRate: %d/%d",
+                    video_stream_info.width, video_stream_info.height,
+                    video_stream_info.frame_rate.num, video_stream_info.frame_rate.den);
 
     base::program_info_t program;
     program.video_stream = 1;
@@ -928,7 +938,11 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad)
             CMP_DEBUG_PRINT("record_decoder_(%p) Failed", record_decoder_);
            return false;
         }
-        gst_bin_add(GST_BIN(pipeline_), record_decoder_);
+        if (TRUE != gst_bin_add(GST_BIN(pipeline_), record_decoder_)) {
+            CMP_DEBUG_PRINT ("gst_bin_add failed.\n");
+            return false;
+        }
+
         if (TRUE != gst_element_link_many(record_queue_, record_decoder_, record_convert_, NULL)) {
             CMP_DEBUG_PRINT ("link capture elements could not be linked.\n");
             return false;
@@ -1102,7 +1116,11 @@ bool CameraPlayer::LoadYUY2Pipeline()
     g_object_set(G_OBJECT(parser_), "width", width_ , NULL);
     g_object_set(G_OBJECT(parser_), "height", height_ , NULL);
     gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, parser_, tee_, NULL);
-    gst_element_link_many(source_, filter_YUY2_,parser_, tee_, NULL);
+
+    if (TRUE != gst_element_link_many(source_, filter_YUY2_,parser_, tee_, NULL)) {
+        CMP_DEBUG_PRINT("Elements could not be linked.\n");
+        return false;
+    }
     tee_preview_pad_ = gst_element_get_request_pad(tee_, "src_%u");
 
     if (CreatePreviewBin(tee_preview_pad_)) {

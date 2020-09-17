@@ -121,8 +121,8 @@ class CameraPlayer {
                                                gpointer user_data);
 
   std::string media_id_;
-  uint32_t display_path_ = CMP_DEFAULT_DISPLAY;
-  CALLBACK_T cbFunction_ = nullptr;
+  uint32_t display_path_;
+  CALLBACK_T cbFunction_;
 
   int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
             display_path_idx_;
@@ -147,7 +147,7 @@ class CameraPlayer {
 
   /* GAV Features */
   LSM::CameraWindowManager lsm_camera_window_manager_;
-  std::string display_mode_ = "Default";
+  std::string display_mode_;
   std::string window_id_;
 };
 

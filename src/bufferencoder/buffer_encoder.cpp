@@ -48,7 +48,21 @@ const std::string kFormatYUV = "YUY2";
 namespace cmp {
 namespace player {
 
-BufferEncoder::BufferEncoder() {
+BufferEncoder::BufferEncoder():
+  bus_(nullptr),
+  load_complete_(false),
+  pipeline_(nullptr),
+  source_(nullptr),
+  filter_YUY2_(nullptr),
+  parse_(nullptr),
+  converter_(nullptr),
+  filter_NV12_(nullptr),
+  encoder_(nullptr),
+  sink_(nullptr),
+  caps_YUY2_(nullptr),
+  caps_NV12_(nullptr),
+  encdata_{FALSE,0,0,0,0,0,nullptr,CMP_VIDEO_CODEC_NONE},
+  userData(nullptr){
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
 }
 
@@ -85,11 +99,11 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
   /* get the sample from appsink */
   sample = gst_app_sink_pull_sample (GST_APP_SINK (elt));
   if (NULL != sample) {
-    GstMapInfo map;
+    GstMapInfo map = {};
     GstBuffer *buffer;
     buffer = gst_sample_get_buffer(sample);
     gst_buffer_map(buffer, &map, GST_MAP_READ);
-    CMP_INFO_PRINT("%d %s data size:%d", __LINE__, __FUNCTION__, map.size);
+    CMP_INFO_PRINT("%d %s data size:%u", __LINE__, __FUNCTION__, map.size);
 
     if(!GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT)){
       encoder->encdata_.isKeyFrame = true;
@@ -100,7 +114,7 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
     if ((NULL != map.data) && (map.size != 0)) {
       encoder->encdata_.bufferSize = map.size;
       encoder->encdata_.timeStamp = GST_BUFFER_TIMESTAMP (buffer);
-      CMP_INFO_PRINT("%d %s data size:%d", __LINE__, __FUNCTION__, map.size);
+      CMP_INFO_PRINT("%d %s data size:%u", __LINE__, __FUNCTION__, map.size);
       encoder->SendBackEncodedData(map.data, &encoder->encdata_);
     }
     gst_sample_unref(sample);
@@ -391,7 +405,7 @@ gboolean BufferEncoder::HandleBusMessage(
       if (encoder->cbFunction_) {
         ENCODING_ERRORS_T error;
         error.errorCode = 5;
-        error.errorStr = "Dummy Str";
+        error.errorStr =(gchar *)"Dummy Str";
         encoder->cbFunction_(ENCODER_CB_NOTIFY_ERROR, 0, nullptr, &error);
       }
       break;

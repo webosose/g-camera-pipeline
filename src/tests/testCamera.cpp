@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2020 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 #include <vector>
 #include "string.h"
 
+using namespace std;
+
 int main(int argc, char const *argv[])
 {
     FILE *fp;
@@ -34,10 +36,10 @@ int main(int argc, char const *argv[])
 
     while(option !=7)
     {
-        printf("Enter the option\n");
-        printf("1: Load\n2:Play\n3:UnLoad\n4:StartRecord\n5:StopRecord\n6:CaptureImage\n7:Exit");
-        scanf("%d",&option);
-        printf("Main:%d\n",__LINE__);
+        cout << "Enter the option" << endl;
+        cout << "1: Load\n2:Play\n3:UnLoad\n4:StartRecord\n5:StopRecord\n6:CaptureImage\n7:Exit" << endl;
+        cin >> option;
+        cout << "Main:"<<__LINE__ << endl;
         switch(option)
         {
             case 1:
@@ -45,7 +47,7 @@ int main(int argc, char const *argv[])
                     /* Open the command for reading. */
                     fp = popen(load.c_str(), "r");
                     if (fp == NULL) {
-                        printf("Failed to run command\n" );
+                        cout << "Failed to run command" << endl;
                         exit(1);
                     }
                     /* Read the output a line at a time - output it. */
@@ -54,7 +56,7 @@ int main(int argc, char const *argv[])
                     }
                     str =  str.substr(str.find_last_of(",") + 1);
                     str.erase(str.find("}"));
-                    std::cout<< "str: " << str << std::endl;
+                    cout<< "str: " << str <<endl;
                     /* close */
                     pclose(fp);
                     break;
@@ -84,7 +86,7 @@ int main(int argc, char const *argv[])
             case 5:
                 {
                     stopRecord = stopRecord + str + "}'";
-                    std::cout<< "string stop record: " << stopRecord << std::endl;
+                    cout << "string stop record: " << stopRecord << endl;
                     system(stopRecord.c_str());
                     command.clear();
                     break;
@@ -101,7 +103,6 @@ int main(int argc, char const *argv[])
                     return 0;
                 }
         }
-        continue;
     }
 
     return 0;

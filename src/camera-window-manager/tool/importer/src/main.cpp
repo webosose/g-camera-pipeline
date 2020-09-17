@@ -424,7 +424,6 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     GstElement *pipeline, *source, *demuxer, *parser, *decoder, *sink;
     GMainLoop *loop = nullptr;
 
-    bool usePlaybin = true;
     bool result = false;
 
     result = CameraWindowManager.attachSurface();
@@ -433,10 +432,7 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
         return false;
     }
 
-    if (usePlaybin)
         pipeline = gst_element_factory_make("playbin", "playbin");
-    else
-        pipeline = gst_pipeline_new(nullptr);
 
     if (!pipeline) {
         std::cout << "Cannot create pipeline!" << std::endl;
@@ -450,34 +446,6 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     gst_bus_set_sync_handler(bus, handleSyncBusCallback, &CameraWindowManager, nullptr);
     gst_object_unref(bus);
 
-    if (!usePlaybin) {
-        source = gst_element_factory_make("souphttpsrc", nullptr);
-        if (!source) {
-            std::cout << "failed to create source element" << std::endl;
-          return false;
-        }
-        g_object_set(G_OBJECT(source), "location", "http://10.178.84.247/mp4/bunny.mp4", nullptr);
-        demuxer = gst_element_factory_make("qtdemux", nullptr);
-        if (!demuxer) {
-            std::cout << "failed to create demuxer element" << std::endl;
-            gst_object_unref(GST_OBJECT(pipeline));
-            return false;
-        }
-
-        parser = gst_element_factory_make("h264parse", nullptr);
-        if (!parser) {
-            std::cout << "failed to create parser element" << std::endl;
-            gst_object_unref(GST_OBJECT(pipeline));
-            return false;
-        }
-
-        decoder = gst_element_factory_make("mfxh264dec", nullptr);
-        if (!decoder) {
-            std::cout << "failed to create decoder element" << std::endl;
-            gst_object_unref(GST_OBJECT(pipeline));
-            return false;
-        }
-    }
 #ifdef PLATFORM_RASPBERRYPI4
     sink = gst_element_factory_make("waylandsink", nullptr);
 #else
@@ -496,21 +464,9 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     g_object_set(G_OBJECT(sink), "fullscreen", false, nullptr);
 #endif
 
-    if (usePlaybin) {
-        g_object_set(G_OBJECT(pipeline), "uri", "http://10.178.84.247/mp4/bunny.mp4",
-                     "video-sink", sink,
-                     NULL);
-    }
-    else {
-        gst_bin_add_many(GST_BIN(pipeline), source, demuxer, parser, decoder, sink, nullptr);
-
-        if (!gst_element_link(source, demuxer))
-          std::cout << "source and demuxer link failed!" << std::endl;
-        if (!gst_element_link_many(parser, decoder, sink, nullptr))
-          std::cout << "parser, decoder, and sink link failed!" << std::endl;
-
-        g_signal_connect (demuxer, "pad-added", G_CALLBACK (pad_added_handler), parser);
-    }
+    g_object_set(G_OBJECT(pipeline), "uri", "http://10.178.84.247/mp4/bunny.mp4",
+                 "video-sink", sink,
+                  NULL);
 
     if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         std::cout <<  "Unable to set the pipeline to the playing state" << std::endl;

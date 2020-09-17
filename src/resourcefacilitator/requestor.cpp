@@ -47,11 +47,15 @@ namespace cmp { namespace resource {
 #define FAKE_FRAMERATE_MAX 0
 
 ResourceRequestor::ResourceRequestor(const std::string& appId,
-                                     const std::string& connectionId)
-  : rc_(std::shared_ptr<MRC>(MRC::create())),
-    appId_(appId), instanceId_(""),
-    cb_(nullptr),
-    allowPolicy_(true) {
+                                     const std::string& connectionId):
+  rc_(std::shared_ptr<MRC>(MRC::create())),
+  appId_(appId),
+  instanceId_(""),
+  cb_(nullptr),
+  planeIdCb_(nullptr),
+  acquiredResource_(""),
+  videoResData_{CMP_VIDEO_CODEC_NONE,0,0,0,0,0,0,0},
+  allowPolicy_(true) {
   try {
     if (connectionId.empty()) {
       umsRMC_ = make_shared<uMediaServer::ResourceManagerClient> ();

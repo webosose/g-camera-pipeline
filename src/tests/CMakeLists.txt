@@ -18,7 +18,3 @@ cmake_minimum_required(VERSION 2.8.7)
 
 add_executable(testCamera testCamera.cpp)
 install(TARGETS testCamera DESTINATION ${WEBOS_INSTALL_SBINDIR})
-
-add_executable(testEncoder testEncoder.cpp camshm.cpp)
-TARGET_LINK_LIBRARIES(testEncoder media-encoder-client)
-install(TARGETS testEncoder DESTINATION ${WEBOS_INSTALL_SBINDIR})

@@ -65,7 +65,7 @@ class BufferEncoder {
     GstCaps *caps_YUY2_, *caps_NV12_;
     ENCODED_BUFFER_T encdata_;
     FunctorEncoder callback_;
-    void *userData = nullptr;
+    void *userData;
 
 };
 

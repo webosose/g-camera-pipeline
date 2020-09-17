@@ -269,11 +269,11 @@ bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle,
 {
     pbnjson::JDomParser jsonparser;
     std::string cmd = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("Service : StartCameraRecordEvent  cmd : ",cmd.c_str());
+    CMP_DEBUG_PRINT("Service : StartCameraRecordEvent  cmd : %s ",cmd.c_str());
 
     if (!jsonparser.parse(cmd, pbnjson::JSchema::AllSchema()))
     {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd : ",cmd.c_str());
+        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd :%s ",cmd.c_str());
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();

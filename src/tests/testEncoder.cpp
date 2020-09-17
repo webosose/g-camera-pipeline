@@ -26,9 +26,7 @@
 class MediaEncoderClient;
 int main(int argc, char const *argv[])
 {
-  unsigned char buf[1024];
   ENCODER_INIT_DATA_T loadData;
-  FILE *fp = fopen("/var/webrtc_file_1_video.yuv","r");
   // check if the file to read from exists and if so read the file in chunks
   ifstream ifile("/var/webrtc_file_1_video.yuv", std::ifstream::binary);
   const int BUFFER_SIZE = 1024;
@@ -47,5 +45,7 @@ int main(int argc, char const *argv[])
     //EncoderClient ->Feed((unsigned char*)buffer.data(), BUFFER_SIZE);
     if(!ifile) break;
   }
-  free(buf);
+  delete(EncoderClient);
+  ifile.close();
+  return 0;
 }
