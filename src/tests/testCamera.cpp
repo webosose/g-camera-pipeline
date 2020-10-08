@@ -100,7 +100,7 @@ int main(int argc, char const *argv[])
                 }
             case 7:
                 {
-                    return 0;
+                    break;
                 }
         }
     }

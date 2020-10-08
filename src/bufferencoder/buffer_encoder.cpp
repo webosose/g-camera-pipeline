@@ -103,7 +103,7 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
     GstBuffer *buffer;
     buffer = gst_sample_get_buffer(sample);
     gst_buffer_map(buffer, &map, GST_MAP_READ);
-    CMP_INFO_PRINT("%d %s data size:%u", __LINE__, __FUNCTION__, map.size);
+    CMP_INFO_PRINT("%d %s data size:%lu", __LINE__, __FUNCTION__, map.size);
 
     if(!GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT)){
       encoder->encdata_.isKeyFrame = true;
@@ -114,7 +114,7 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
     if ((NULL != map.data) && (map.size != 0)) {
       encoder->encdata_.bufferSize = map.size;
       encoder->encdata_.timeStamp = GST_BUFFER_TIMESTAMP (buffer);
-      CMP_INFO_PRINT("%d %s data size:%u", __LINE__, __FUNCTION__, map.size);
+      CMP_INFO_PRINT("%d %s data size:%lu", __LINE__, __FUNCTION__, map.size);
       encoder->SendBackEncodedData(map.data, &encoder->encdata_);
     }
     gst_sample_unref(sample);
@@ -144,7 +144,7 @@ int BufferEncoder::feed(const uint8_t* bufferPtr, size_t bufferSize) {
 
   memcpy(feedBuffer, bufferPtr, bufferSize);
 
-  CMP_INFO_PRINT("bufferPtr(%p) length:%d\n", feedBuffer, bufferSize);
+  CMP_INFO_PRINT("bufferPtr(%p) length:%lu\n", feedBuffer, bufferSize);
   GstBuffer *gstBuffer = gst_buffer_new_wrapped(feedBuffer, bufferSize);
   if (!gstBuffer) {
     CMP_INFO_PRINT("Buffer wrapping error");
