@@ -19,6 +19,7 @@ configure_file(sysbus/com.webos.g-camera-pipeline.role.json.in sysbus/com.webos.
 configure_file(sysbus/com.webos.g-camera-pipeline.service.in sysbus/com.webos.g-camera-pipeline.service @ONLY)
 configure_file(sysbus/com.webos.g-camera-pipeline.api.json sysbus/com.webos.g-camera-pipeline.api.json @ONLY)
 configure_file(sysbus/com.webos.g-camera-pipeline.perm.json sysbus/com.webos.g-camera-pipeline.perm.json @ONLY)
+configure_file(sysbus/com.webos.g-camera-pipeline.groups.json sysbus/com.webos.g-camera-pipeline.groups.json @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sysbus/g-camera-pipeline.manifest.json
     DESTINATION /usr/share/luna-service2/manifests.d/)
@@ -30,3 +31,5 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sysbus/com.webos.g-camera-pipeline.api
     DESTINATION /usr/share/luna-service2/api-permissions.d/)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sysbus/com.webos.g-camera-pipeline.perm.json
     DESTINATION /usr/share/luna-service2/client-permissions.d/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sysbus/com.webos.g-camera-pipeline.groups.json
+    DESTINATION /usr/share/luna-service2/groups.d/)

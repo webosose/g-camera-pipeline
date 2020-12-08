@@ -1,7 +1,9 @@
 {
-    "media.pipeline": [
+    "camerapipeline.resourcemanagement": [
         "com.webos.rm.client._*/acquireComplete",
-        "com.webos.rm.client._*/policyAction",
+        "com.webos.rm.client._*/policyAction"
+   ],
+    "camerapipeline.operation": [
         "com.webos.pipeline.*/load",
         "com.webos.pipeline.*/attach",
         "com.webos.pipeline.*/unload",
