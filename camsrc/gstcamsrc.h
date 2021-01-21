@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2019  <<user@hostname.org>>
+ * Copyright (C) 2019-2021 LG Electronics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -84,8 +84,7 @@ static stream_format_t streamformat;
 typedef enum {
           GST_V4L2_IO_MMAP          = 0,
           GST_V4L2_IO_USERPTR       = 1,
-          GST_V4L2_IO_DMABUF_IMPORT = 2,
-          GST_V4L2_IO_DMABUF_EXPORT = 3
+          GST_V4L2_IO_DMABUF_EXPORT = 2
 } GstV4l2IOMode;
 
 struct _Gstcamsrc
@@ -97,6 +96,7 @@ struct _Gstcamsrc
 
   gchar* device;
   GstV4l2IOMode mode;
+  GstBufferPool *pool;
 };
 
 struct _GstcamsrcClass

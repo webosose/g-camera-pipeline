@@ -1,4 +1,4 @@
-# Copyright (c) 2019 LG Electronics, Inc.
+# Copyright (c) 2019-2021 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,46 @@
 find_package(PkgConfig REQUIRED)
 #camsrc
 
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
+
+pkg_check_modules(GSTPLAYER gstreamer-player-1.0 REQUIRED)
+include_directories(${GSTPLAYER_INCLUDE_DIRS})
+link_directories(${GSTPLAYER_LIBRARY_DIRS})
+
+pkg_check_modules(GSTAPP gstreamer-app-1.0 REQUIRED)
+include_directories(${GSTAPP_INCLUDE_DIRS})
+link_directories(${GSTAPP_LIBRARY_DIRS})
+
+pkg_check_modules(GSTBASE gstreamer-base-1.0 REQUIRED)
+include_directories(${GSTBASE_INCLUDE_DIRS})
+link_directories(${GSTBASE_LIBRARY_DIRS})
+
+pkg_check_modules(GSTALLOCATORS gstreamer-allocators-1.0 REQUIRED)
+include_directories(${GSTALLOCATORS_INCLUDE_DIRS})
+link_directories(${GSTALLOCATORS_LIBRARY_DIRS})
+
+pkg_check_modules(GSTREAMER gstreamer-1.0 REQUIRED)
+include_directories(${GSTREAMER_INCLUDE_DIRS})
+link_directories(${GSTREAMER_LIBRARY_DIRS})
+
+pkg_check_modules(GSTPBUTIL gstreamer-pbutils-1.0 REQUIRED)
+include_directories(${GSTPBUTIL_INCLUDE_DIRS})
+link_directories(${GSTPBUTIL_LIBRARY_DIRS})
+
+set(CAMSRC_LIBRARIES
+    ${GSTPLAYER_LIBRARIES}
+    ${GSTREAMER_LIBRARIES}
+    ${GSTPBUTIL_LIBRARIES}
+    ${GSTAPP_LIBRARIES}
+    ${GSTBASE_LIBRARIES}
+    ${GSTALLOCATORS_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${GLIB2_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
 include_directories(${CMAKE_SOURCE_DIR}/camsrc/)
 
 add_library(gstcamsrc SHARED
@@ -27,7 +67,7 @@ add_library(gstcamsrc SHARED
     )
 
 target_link_libraries(gstcamsrc
-    ${GSTREAMER_LIBRARIES}
+    ${CAMSRC_LIBRARIES}
     camera_hal
     )
 

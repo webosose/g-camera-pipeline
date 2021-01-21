@@ -9,7 +9,7 @@
     "permissions": [
         {
             "service":"com.webos.pipeline*",
-            "outbound": ["com.webos.media"]
+            "outbound": ["com.webos.media", "com.webos.service.camera2"]
         },
         {
             "service":"com.webos.rm.client*",

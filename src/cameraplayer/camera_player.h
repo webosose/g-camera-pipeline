@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,13 +28,16 @@
 #include <gst/pbutils/pbutils.h>
 #include <camera_window_manager.h>
 #include <cameraservice/camera_service.h>
+#include <luna-service2/lunaservice.hpp>
 #include "base.h"
 #include "message.h"
 #include "camshm.h"
+#include "cam_posixshm.h"
 #include "camera_types.h"
 
 using namespace std;
 
+static bool getFdCb(LSHandle *, LSMessage *, void *);
 static constexpr char const *waylandDisplayHandleContextType =
     "GstWaylandDisplayHandleContextType";
 using CALLBACK_T = std::function<void(const gint type, const gint64 numValue,
@@ -43,7 +46,7 @@ typedef struct _GstAppSrcContext
 {
     SHMEM_HANDLE shmemHandle;
     gint streamingAllowState;
-    int shmemKey;
+    int key;
     gint isStreaming;
     gint isFirstCallback;
     GstAppSrc *appsrc;
@@ -67,9 +70,11 @@ class CameraPlayer {
   bool Load(const std::string& mediaId,
             const std::string& options, const std::string& payload);
   bool Load(const std::string& str);
+  bool LoadPlayer();
   bool Unload();
   void RegisterCbFunction(CALLBACK_T);
   bool Play();
+  bool subscribeToCameraService();
   bool SetDisplayResource(cmp::base::disp_res_t &res);
   bool TakeSnapshot(const std::string& location);
   bool StartRecord(const std::string& location);
@@ -80,7 +85,9 @@ class CameraPlayer {
                                    GstMessage *message, gpointer user_data);
   static GstBusSyncReply HandleSyncBusMessage(GstBus *bus,
                                      GstMessage *msg, gpointer data);
-
+  static guint mCameraServiceCbTimerID;
+  static gboolean CameraServiceCbTimerCallback(void* data);
+  void CameraServiceCbTimerReset();
  private:
   void PauseInternalSync();
   void ParseOptionString(const std::string& options);
@@ -105,13 +112,13 @@ class CameraPlayer {
   base::error_t HandleErrorMessage(GstMessage *message);
 
   void HandleBusMsgApplication(const GstStructure *appData);
-
   void FreeLoadPipelineElements();
   void FreeCaptureElements();
   void FreeRecordElements();
   void FreePreviewBinElements();
 
   static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
+  static void FeedPosixData(GstElement * appsrc, guint size, gpointer gdata);
   static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
   static GstPadProbeReturn CaptureRemoveProbe(GstPad * pad,
                                                 GstPadProbeInfo * info,
@@ -124,8 +131,8 @@ class CameraPlayer {
   uint32_t display_path_;
   CALLBACK_T cbFunction_;
 
-  int32_t planeId_, shmkey_, width_, height_, framerate_, crtcId_, connId_,
-            display_path_idx_;
+  int32_t planeId_, width_, height_, framerate_, crtcId_, connId_,
+            display_path_idx_,handle_, iomode_;
   int  num_of_images_to_capture_, num_of_captured_images_;
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
   GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_,

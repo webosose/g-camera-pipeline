@@ -1,6 +1,6 @@
 {
-    "com.webos.pipeline.*": [
+    "com.webos.pipeline*": ["camera.operation", "camera.query"
     ],
-    "com.webos.rm.client.*": [
+    "com.webos.rm.client*": ["camera.operation", "camera.query"
     ]
 }
