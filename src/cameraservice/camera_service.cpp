@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -432,9 +432,9 @@ void Service::LoadCommon()
             Notify(CMP_NOTIFY_ERROR, CMP_ERROR_RES_ALLOC,
                                     nullptr, static_cast<void*>(&error));
             if (!resourceRequestor_)
-                CMP_DEBUG_PRINT("NotifyForeground fails");
+                CMP_DEBUG_PRINT("notifyBackground fails");
             else
-                resourceRequestor_->notifyForeground();
+                resourceRequestor_->notifyBackground();
             });
     }
 }

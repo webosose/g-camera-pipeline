@@ -1,4 +1,4 @@
-// Copyright (c) 2020 LG Electronics, Inc.
+// Copyright (c) 2020-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "buffer_encoder.h"
+#include "parser/serializer.h"
+#include "parser/parser.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -30,6 +32,7 @@
 #include <gst/video/video.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstbasesrc.h>
+#include "resourcefacilitator/requestor.h"
 
 #include <log/log.h>
 
@@ -71,8 +74,181 @@ BufferEncoder::~BufferEncoder() {
   gst_element_set_state(pipeline_, GST_STATE_NULL);
 }
 
+bool BufferEncoder::deinit() {
+  CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
+  resourceRequestor_->releaseResource();
+  return true;
+}
+
+bool BufferEncoder::GetSourceInfo(const ENCODER_INIT_DATA_T* loadData)
+{
+    base::video_info_t video_stream_info = {};
+
+    video_stream_info.width = loadData->width;
+    video_stream_info.height = loadData->height;
+    video_stream_info.encode = loadData->codecFormat;
+    video_stream_info.decode = loadData->codecFormat;
+    video_stream_info.frame_rate.num = loadData->frameRate;
+    video_stream_info.frame_rate.den = 1;
+    CMP_DEBUG_PRINT("[video info] width: %d, height: %d, frameRate: %d/%d",
+            video_stream_info.width, video_stream_info.height,
+            video_stream_info.frame_rate.num, video_stream_info.frame_rate.den);
+
+    base::program_info_t program;
+    program.video_stream = 1;
+    source_info_.programs.push_back(program);
+
+    source_info_.video_streams.push_back(video_stream_info);
+
+    return true;
+}
+
+void BufferEncoder::Notify(const gint notification, const gint64 numValue,
+        const gchar *strValue, void *payload)
+{
+    cmp::parser::Composer composer;
+    cmp::base::media_info_t mediaInfo = { media_id_ };
+    switch (notification)
+    {
+        case CMP_NOTIFY_SOURCE_INFO:
+        {
+            base::source_info_t info  = *static_cast<base::source_info_t *>(payload);
+            composer.put("sourceInfo", info);
+            break;
+        }
+
+        case CMP_NOTIFY_VIDEO_INFO:
+        {
+            base::video_info_t info = *static_cast<base::video_info_t*>(payload);
+            composer.put("videoInfo", info);
+            CMP_INFO_PRINT("videoInfo: width %d, height %d", info.width, info.height);
+            break;
+        }
+        case CMP_NOTIFY_ERROR:
+        {
+            base::error_t error = *static_cast<base::error_t *>(payload);
+            error.mediaId = media_id_;
+            composer.put("error", error);
+
+            if (numValue == CMP_ERROR_RES_ALLOC) {
+                CMP_DEBUG_PRINT("policy action occured!");
+            }
+            break;
+        }
+        case CMP_NOTIFY_LOAD_COMPLETED:
+        {
+            composer.put("loadCompleted", mediaInfo);
+            break;
+        }
+
+        case CMP_NOTIFY_UNLOAD_COMPLETED:
+        {
+            composer.put("unloadCompleted", mediaInfo);
+            break;
+        }
+
+        case CMP_NOTIFY_END_OF_STREAM:
+        {
+            composer.put("endOfStream", mediaInfo);
+            break;
+        }
+
+        case CMP_NOTIFY_PLAYING:
+        {
+            composer.put("playing", mediaInfo);
+            break;
+        }
+
+        case CMP_NOTIFY_PAUSED:
+        {
+            composer.put("paused", mediaInfo);
+            break;
+        }
+        case CMP_NOTIFY_ACTIVITY: {
+            CMP_DEBUG_PRINT("notifyActivity to resource requestor");
+            if (resourceRequestor_)
+                resourceRequestor_->notifyActivity();
+            break;
+        }
+
+        default:
+        {
+            CMP_DEBUG_PRINT("This notification(%d) can't be handled here!", notification);
+            break;
+        }
+    }
+
+    if (!composer.result().empty())
+        umc_->sendChangeNotificationJsonString(composer.result());
+}
+
+void BufferEncoder::LoadCommon()
+{
+    if (!resourceRequestor_)
+        CMP_DEBUG_PRINT("NotifyForeground fails");
+    else
+        resourceRequestor_->notifyForeground();
+
+
+    if (resourceRequestor_) {
+        resourceRequestor_->registerUMSPolicyActionCallback([this]() {
+            base::error_t error;
+            error.errorCode = MEDIA_MSG_ERR_POLICY;
+            error.errorText = "Policy Action";
+            Notify(CMP_NOTIFY_ERROR, CMP_ERROR_RES_ALLOC,
+                                    nullptr, static_cast<void*>(&error));
+            if (!resourceRequestor_)
+                CMP_DEBUG_PRINT("notifyBackground fails");
+            else
+                resourceRequestor_->notifyBackground();
+            });
+    }
+}
+
 bool BufferEncoder::init(const ENCODER_INIT_DATA_T* loadData) {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
+  cmp::resource::PortResource_t resourceMMap;
+  ACQUIRE_RESOURCE_INFO_T resource_info;
+  std::string display_mode_ = std::string("Textured");
+  uint32_t display_path_ = CMP_DEFAULT_DISPLAY;
+
+  if (loadData->codecFormat == CMP_VIDEO_CODEC_H264)
+  {
+    umc_ = std::make_unique<UMSConnector>("bufferEncoder", nullptr, nullptr,
+            UMS_CONNECTOR_PRIVATE_BUS);
+
+    resourceRequestor_ = std::make_unique<cmp::resource::ResourceRequestor>
+                                              (app_id_, media_id_);
+    if (!GetSourceInfo(loadData))
+    {
+      CMP_DEBUG_PRINT("get source information failed!");
+      return false;
+    }
+    resource_info.sourceInfo = &source_info_;
+    resource_info.displayMode = const_cast<char*>(display_mode_.c_str());
+    resource_info.result = true;
+
+    LoadCommon();
+
+    if (resourceRequestor_)
+    {
+      if (!resourceRequestor_->acquireResources(
+                  resourceMMap, source_info_, display_mode_, display_path_))
+      {
+        CMP_INFO_PRINT("resource acquisition failed");
+        return false;
+      }
+
+      for (auto it : resourceMMap)
+      {
+        CMP_DEBUG_PRINT("Resource::[%s]=>index:%d", it.first.c_str(), it.second);
+      }
+    }
+  }
+  else
+  {
+    return false;
+  }
 
   if (!CreatePipeline(loadData)) {
     CMP_INFO_PRINT("CreatePipeline Failed");
@@ -185,8 +361,6 @@ bool BufferEncoder::CreateEncoder(CMP_VIDEO_CODEC codecFormat) {
 
   if (codecFormat == CMP_VIDEO_CODEC_H264) {
     encoder_ = gst_element_factory_make ("omxh264enc", "encoder");
-  } else if (codecFormat == CMP_VIDEO_CODEC_VP8) {
-    encoder_ = gst_element_factory_make ("omxvp8enc", "encoder");
   } else {
     CMP_INFO_PRINT("%d %s ==> Unsupported Codedc", __LINE__, __FUNCTION__);
     return false;

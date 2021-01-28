@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ namespace cmp { namespace resource {
 
 struct videoResData_t {
   CMP_VIDEO_CODEC vcodec;
+  CMP_VIDEO_CODEC vdecode;
+  CMP_VIDEO_CODEC vencode;
 
   int width;
   int height;
@@ -94,6 +96,7 @@ class ResourceRequestor {
   int translateScanType(const int escanType) const;
   int translate3DType(const int e3DType) const;
   mrc::ResourceListOptions calcVdecResources();
+  mrc::ResourceListOptions calcVencResources();
   mrc::ResourceListOptions calcDisplayResource(const std::string &display_mode);
 
   std::shared_ptr<MRC> rc_;

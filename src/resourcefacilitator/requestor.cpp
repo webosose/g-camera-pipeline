@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ ResourceRequestor::ResourceRequestor(const std::string& appId,
   cb_(nullptr),
   planeIdCb_(nullptr),
   acquiredResource_(""),
-  videoResData_{CMP_VIDEO_CODEC_NONE,0,0,0,0,0,0,0},
+  videoResData_{CMP_VIDEO_CODEC_NONE,CMP_VIDEO_CODEC_NONE,CMP_VIDEO_CODEC_NONE,0,0,0,0,0,0,0},
   allowPolicy_(true) {
   try {
     if (connectionId.empty()) {
@@ -116,6 +116,14 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
                                                   VResource[0].front().quantity);
   }
 
+  mrc::ResourceListOptions VEncResource = calcVencResources();
+  if (!VResource.empty()) {
+    mrc::concatResourceListOptions(&finalOptions, &VEncResource);
+    CMP_DEBUG_PRINT("VResource size:%lu, %s, %d", VEncResource.size(),
+                                                  VEncResource[0].front().type.c_str(),
+                                                  VEncResource[0].front().quantity);
+  }
+
   mrc::ResourceListOptions DisplayResource = calcDisplayResource(display_mode);
   if (!DisplayResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &DisplayResource);
@@ -168,15 +176,31 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
 
 mrc::ResourceListOptions ResourceRequestor::calcVdecResources() {
   mrc::ResourceListOptions VResource;
-
-  if (videoResData_.vcodec != CMP_VIDEO_CODEC_NONE) {
-    VResource = rc_->calcVdecResourceOptions((MRC::VideoCodecs)translateVideoCodec(videoResData_.vcodec),
+  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vdecode);
+  if (videoResData_.vdecode != CMP_VIDEO_CODEC_NONE) {
+    VResource = rc_->calcVdecResourceOptions((MRC::VideoCodecs)translateVideoCodec(videoResData_.vdecode),
                                              videoResData_.width,
                                              videoResData_.height,
                                              videoResData_.frameRate,
                                              (MRC::ScanType)translateScanType(videoResData_.escanType),
                                              (MRC::_3DType)translate3DType(videoResData_.e3DType));
   }
+
+  return VResource;
+}
+
+mrc::ResourceListOptions ResourceRequestor::calcVencResources() {
+  mrc::ResourceListOptions VResource;
+  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vencode);
+
+  if (videoResData_.vencode != CMP_VIDEO_CODEC_NONE) {
+    VResource = rc_->calcVencResourceOptions((MRC::VideoCodecs)translateVideoCodec(videoResData_.vencode),
+                                             videoResData_.width,
+                                             videoResData_.height,
+                                             videoResData_.frameRate
+                                            );
+  }
+  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vencode);
 
   return VResource;
 }
@@ -377,7 +401,8 @@ bool ResourceRequestor::setSourceInfo(
   cmp::base::video_info_t video_stream_info = sourceInfo.video_streams.front();
   videoResData_.width = video_stream_info.width;
   videoResData_.height = video_stream_info.height;
-  videoResData_.vcodec = (CMP_VIDEO_CODEC)video_stream_info.codec;
+  videoResData_.vencode = (CMP_VIDEO_CODEC)video_stream_info.encode;
+  videoResData_.vdecode = (CMP_VIDEO_CODEC)video_stream_info.decode;
   videoResData_.frameRate =
   std::round(static_cast<float>(video_stream_info.frame_rate.num) /
                  static_cast<float>(video_stream_info.frame_rate.den));

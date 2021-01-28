@@ -743,7 +743,8 @@ bool CameraPlayer::GetSourceInfo()
 
     video_stream_info.width = width_;
     video_stream_info.height = height_;
-    video_stream_info.codec = CMP_VIDEO_CODEC_MJPEG;
+    video_stream_info.decode = CMP_VIDEO_CODEC_MJPEG;
+    video_stream_info.encode = CMP_VIDEO_CODEC_H264;
     video_stream_info.frame_rate.num = framerate_;
     video_stream_info.frame_rate.den = 1;
     CMP_DEBUG_PRINT("[video info] width: %d, height: %d, frameRate: %d/%d",

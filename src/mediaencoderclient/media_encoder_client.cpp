@@ -1,4 +1,4 @@
-// Copyright (c) 2020 LG Electronics, Inc.
+// Copyright (c) 2020-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ bool MediaEncoderClient::Init(const ENCODER_INIT_DATA_T* loadData) {
 
 bool MediaEncoderClient::Deinit() {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
-  return true;
+  return bufferEncoder->deinit();
 }
 
 int MediaEncoderClient::Encode(const uint8_t* bufferPtr, size_t bufferSize) {

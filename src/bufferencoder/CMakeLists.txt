@@ -1,4 +1,4 @@
-# Copyright (c) 2020 LG Electronics, Inc.
+# Copyright (c) 2020-2021 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ set(ENCODER-PIPELINE_LIB buffer-encoder)
 set(ENCODER-PIPELINE_HEADERS
     buffer_encoder.h
     ../base/base.h
+    ../resourcefacilitator/requestor.h
     ../log/log.h
 )
 
@@ -71,6 +72,7 @@ set(ENCODER-PIPELINE_SRC
     buffer_encoder.cpp
     ../parser/parser.cpp
     ../parser/serializer.cpp
+    ../resourcefacilitator/requestor.cpp
     ../log/log.cpp
 )
 
@@ -87,11 +89,15 @@ set(ENCODER-PIPELINE_LIBRARIES
     ${LUNASERVICE_LDFLAGS}
     ${RESOURCE-CALCULATOR_LDFLAGS}
     ${GSTAPP_LIB}
+    resource_mgr_client
+    resource_mgr_client_c
 )
 
 add_library(${ENCODER-PIPELINE_LIB} SHARED ${ENCODER-PIPELINE_SRC})
 
 target_link_libraries(${ENCODER-PIPELINE_LIB}
+    resource_mgr_client
+    resource_mgr_client_c
     ${ENCODER-PIPELINE_LIBRARIES}
 )
 
