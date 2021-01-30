@@ -246,6 +246,7 @@ static bool getFdCb(LSHandle *lsHandle, LSMessage *message, void *user_data)
 {
     struct stat sb;
     jerror *error = NULL;
+    LSError lserror;
     const char *payload = LSMessageGetPayload(message);
     jvalue_ref jin_obj = jdom_create(j_cstr_to_buffer(payload), jschema_all(), &error);
 
@@ -260,6 +261,12 @@ static bool getFdCb(LSHandle *lsHandle, LSMessage *message, void *user_data)
 
     bCallback = 0;
     CMP_DEBUG_PRINT("fd received in callback is : %d", posixshm_fd);
+    if (!LSUnregister(handle, &lserror))
+    {
+        CMP_DEBUG_PRINT("LS LSUnRegister failed ");
+        LSErrorPrint(&lserror, stderr);
+        return false;
+    }
     return true;
 }
 
