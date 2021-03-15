@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2019-2021 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -253,6 +253,20 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
     pShmemBuffer->mark = (SHMEM_MARK_T *) (pSharedmem + sizeof(int) * 4);
     pShmemBuffer->length_buf = (unsigned int *) (pSharedmem + sizeof(int) * 5);
 
+    if (nOpenMode == MODE_OPEN || (pShmemBuffer->sema_id = semget(shmemKey, 1, shmemMode)) == -1)
+    {
+#ifdef SHMEM_COMM_DEBUG
+        if (nOpenMode == MODE_CREATE)
+        DEBUG_PRINT("Failed to create semaphore : %s\n", strerror(errno));
+#endif
+        if ((pShmemBuffer->sema_id = semget((key_t) shmemKey, 1, 0666)) == -1)
+        {
+            DEBUG_PRINT("Failed to get semaphore : %s\n", strerror(errno));
+            free(pShmemBuffer);
+            return SHMEM_COMM_FAIL;
+        }
+    }
+
     if (nOpenMode == MODE_CREATE)
     {
         *pShmemBuffer->unit_size = unitSize;
@@ -301,6 +315,8 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
     //started to write yet
     *pShmemBuffer->write_index = -1;
     *pShmemBuffer->read_index = -1;
+
+    resetShmem(pShmemBuffer);
 
     DEBUG_PRINT("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d\n", *pShmemBuffer->unit_size, SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num); DEBUG_PRINT("shared memory opened successfully! : shmem_id=%d, sema_id=%d\n",
             pShmemBuffer->shmem_id, pShmemBuffer->sema_id);
