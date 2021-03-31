@@ -77,8 +77,8 @@ class CameraPlayer {
   bool subscribeToCameraService();
   bool SetDisplayResource(cmp::base::disp_res_t &res);
   bool TakeSnapshot(const std::string& location);
-  bool StartRecord(const std::string& location, bool audio,
-                     const std::string& audioSrc);
+  bool StartRecord(const std::string& location, const std::string& format,
+                     bool audio, const std::string& audioSrc);
   bool StopRecord();
   void Initialize(cmp::service::Service *service);
 
@@ -106,7 +106,7 @@ class CameraPlayer {
 
   bool CreatePreviewBin(GstPad * pad);
   bool CreateCaptureElements(GstPad * pad);
-  bool CreateRecordElements(GstPad * pad, GstPad *);
+  bool CreateRecordElements(GstPad * pad, GstPad *, const std::string& fileFormat);
   bool CreateAudioRecordElements(const std::string&, GstPad * pad);
   bool LoadYUY2Pipeline();
   bool LoadJPEGPipeline();
@@ -143,10 +143,10 @@ class CameraPlayer {
              *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
              *record_encoder_, *record_parse_, *record_decoder_, *record_mux_, *record_sink_,
              *preview_queue_, *preview_sink_, *record_audio_src_, *record_audio_queue_,
-             *record_audio_convert_, *record_video_queue_;
+             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_;
   GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
-         *tee_record_pad_, *record_audio_convert_pad_, *record_video_queue_pad_,
+         *tee_record_pad_, *record_audio_encoder_pad_, *record_video_queue_pad_,
          *record_audio_mux_pad_, *record_video_mux_pad_;
   GstAppSrcContext context_ ;
   base::source_info_t source_info_;

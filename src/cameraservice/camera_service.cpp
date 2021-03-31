@@ -279,6 +279,7 @@ bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle,
     pbnjson::JValue parsed = jsonparser.getDom();
 
     return instance_->player_->StartRecord(parsed["location"].asString(),
+                                           parsed["format"].asString(),
                                            parsed["audio"].asBool(),
                                            parsed["audioSrc"].asString());
 }
