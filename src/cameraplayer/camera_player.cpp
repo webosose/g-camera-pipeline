@@ -536,19 +536,30 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
         CMP_DEBUG_PRINT("tee_record_pad_ is NULL\n");
         return false;
     }
-    if(audio == true)
+    if((format.compare(kFileFormatMP4) == 0) || (format.compare(kFileFormatAVI) == 0) )
     {
-        if (!CreateAudioRecordElements(audioSrc, record_audio_encoder_pad_))
+        CMP_DEBUG_PRINT("startCameraRecord - Supported format");
+        if(audio == true)
         {
-            CMP_DEBUG_PRINT("CreateAudioRecordElements Failed.\n");
+            CMP_DEBUG_PRINT("startCameraRecord - Supported format with audio");
+            if (!CreateAudioRecordElements(audioSrc, record_audio_encoder_pad_))
+            {
+                CMP_DEBUG_PRINT("CreateAudioRecordElements Failed.\n");
+                FreeRecordElements();
+                return false;
+            }
+        }
+        CMP_DEBUG_PRINT("startCameraRecord - record video");
+        if (!CreateRecordElements(tee_record_pad_, record_audio_encoder_pad_, format))
+        {
+            CMP_DEBUG_PRINT("CreateRecordElements Failed.\n");
             FreeRecordElements();
             return false;
         }
     }
-    if (!CreateRecordElements(tee_record_pad_, record_audio_encoder_pad_, format))
+    else
     {
-        CMP_DEBUG_PRINT("CreateRecordElements Failed.\n");
-        FreeRecordElements();
+        CMP_DEBUG_PRINT("startCameraRecord - Un Supported format");
         return false;
     }
     return true;
@@ -1098,6 +1109,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("record_video_queue_(%p) Failed", record_video_queue_);
         return false;
     }
+    g_object_set(G_OBJECT(record_video_queue_), "max-size-time", 700, NULL);
     record_encoder_ = gst_element_factory_make ("v4l2h264enc", "record-encoder");
     if (!record_encoder_)
     {
@@ -1135,7 +1147,10 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     }
     else if (fileFormat == kFileFormatAVI)
     {
-        record_mux_ = gst_element_factory_make("avimux", "record-mux");
+        if (format_ == kFormatJPEG)
+            record_mux_ = gst_element_factory_make("avimux", "record-mux");
+        else
+            record_mux_ = gst_element_factory_make("matroskamux", "record-mux");
         if (!record_mux_) {
            CMP_DEBUG_PRINT("record_mux_(%p) Failed", record_mux_);
             return false;
@@ -1163,8 +1178,10 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     }
 
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
+    if (format_ == kFormatYUV)
+        g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,
-            filter_NV12_, record_video_queue_, record_mux_, record_sink_, record_parse_, NULL);
+            filter_NV12_, record_video_queue_, record_mux_, record_parse_, record_sink_, NULL);
 
     if (format_ == kFormatJPEG)
     {
@@ -1188,13 +1205,21 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     }
     else
     {
-        if (TRUE != gst_element_link(record_queue_, record_convert_))
+        if (TRUE != gst_element_link_many(record_queue_, record_convert_, NULL))
         {
             CMP_DEBUG_PRINT ("link capture elements could not be linked queue & convert \n");
             return false;
         }
     }
-    if (TRUE != gst_element_link_many(record_convert_, record_encoder_, record_parse_,
+    if (TRUE != gst_element_link(record_convert_, filter_NV12_)) {
+        CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & filter_NV12 \n");
+        return false;
+    }
+    if (TRUE != gst_element_link(filter_NV12_, record_encoder_)) {
+        CMP_DEBUG_PRINT ("link capture elements could not be linked filter_NV12 & encoder \n");
+        return false;
+    }
+    if (TRUE != gst_element_link_many(record_encoder_, record_parse_,
                                        record_video_queue_, NULL))
     {
         CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & record_encoder \n");
@@ -1225,7 +1250,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         record_audio_mux_pad_ = gst_element_get_request_pad(record_mux_, "audio_%u");
         if (!record_audio_mux_pad_)
         {
-            CMP_DEBUG_PRINT ("request pad failed for audio record avimux \n");
+            CMP_DEBUG_PRINT ("request pad failed for audio record mux \n");
             return false;
         }
         if (GST_PAD_LINK_OK != gst_pad_link(record_audio_encoder_pad, record_audio_mux_pad_))
@@ -1296,11 +1321,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
-    if (TRUE != gst_element_sync_state_with_parent(record_convert_))
-    {
-        CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
-        return false;
-    }
+
     if (TRUE != gst_element_sync_state_with_parent(record_encoder_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -1341,8 +1362,13 @@ bool CameraPlayer::CreateAudioRecordElements(const std::string& audioSrc, GstPad
         return false;
     }
     g_object_set(G_OBJECT(record_audio_src_), "do-timestamp", true, NULL);
-    if(audioSrc != "")
+
+    CMP_DEBUG_PRINT ("AudioSrc provided is %s, length = %d", audioSrc.c_str(), audioSrc.length());
+    if(audioSrc.compare("") != 0 && audioSrc.length() >0 )
+    {
+       CMP_DEBUG_PRINT ("Set audioSrc device name to pulsesrc eleemnt");
        g_object_set(G_OBJECT(record_audio_src_), "device", audioSrc.c_str(), NULL);
+    }
 
     record_audio_queue_ = gst_element_factory_make ("queue", "record-audio-queue");
     if (!record_audio_queue_)
@@ -1366,10 +1392,10 @@ bool CameraPlayer::CreateAudioRecordElements(const std::string& audioSrc, GstPad
     }
 
     gst_bin_add_many(GST_BIN(pipeline_), record_audio_src_, record_audio_queue_,
-                        record_audio_convert_, record_audio_encoder_, NULL);
+                     record_audio_convert_, record_audio_encoder_, NULL);
 
     if (TRUE != gst_element_link_many(record_audio_src_, record_audio_queue_,
-                                        record_audio_convert_, record_audio_encoder_, NULL))
+                                      record_audio_convert_, record_audio_encoder_, NULL))
     {
         CMP_DEBUG_PRINT ("link capture elements could not be linked - audio src to encoder \n");
         return false;
@@ -1740,6 +1766,8 @@ void CameraPlayer::FreeRecordElements ()
         delete record_audio_src_;
     if (record_video_queue_)
         delete record_video_queue_;
+    if (record_parse_)
+        delete record_parse_;
 }
 
 void CameraPlayer::FreePreviewBinElements ()
@@ -1907,14 +1935,6 @@ CameraPlayer::RecordRemoveProbe(
         player->record_decoder_ = NULL;
     }
 
-    gst_element_set_state(player->record_parse_,GST_STATE_NULL);
-    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
-                player->record_parse_)) {
-        CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
-    }
-    gst_object_unref(player->record_parse_);
-    player->record_parse_ = NULL;
-
     gst_element_set_state(player->record_encoder_,GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
                 player->record_encoder_)) {
@@ -1922,6 +1942,14 @@ CameraPlayer::RecordRemoveProbe(
     }
     gst_object_unref(player->record_encoder_);
     player->record_encoder_ = NULL;
+
+    gst_element_set_state(player->record_parse_,GST_STATE_NULL);
+    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
+                player->record_parse_)) {
+        CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+    }
+    gst_object_unref(player->record_parse_);
+    player->record_parse_ = NULL;
 
     gst_element_set_state(player->record_convert_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),

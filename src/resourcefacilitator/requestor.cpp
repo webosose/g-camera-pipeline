@@ -117,7 +117,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   }
 
   mrc::ResourceListOptions VEncResource = calcVencResources();
-  if (!VResource.empty()) {
+  if (!VEncResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &VEncResource);
     CMP_DEBUG_PRINT("VResource size:%lu, %s, %d", VEncResource.size(),
                                                   VEncResource[0].front().type.c_str(),
