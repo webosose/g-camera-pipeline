@@ -75,12 +75,10 @@ class CameraPlayer {
   void RegisterCbFunction(CALLBACK_T);
   bool Play();
   bool subscribeToCameraService();
-  bool SetDisplayResource(cmp::base::disp_res_t &res);
   bool TakeSnapshot(const std::string& location);
   bool StartRecord(const std::string& location, const std::string& format,
                      bool audio, const std::string& audioSrc);
   bool StopRecord();
-  void Initialize(cmp::service::Service *service);
 
   static gboolean HandleBusMessage(GstBus *bus,
                                    GstMessage *message, gpointer user_data);
@@ -113,7 +111,6 @@ class CameraPlayer {
   int32_t ConvertErrorCode(GQuark domain, gint code);
   base::error_t HandleErrorMessage(GstMessage *message);
 
-  void HandleBusMsgApplication(const GstStructure *appData);
   void FreeLoadPipelineElements();
   void FreeCaptureElements();
   void FreeRecordElements();

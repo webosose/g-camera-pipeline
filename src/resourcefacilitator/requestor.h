@@ -69,8 +69,6 @@ class ResourceRequestor {
 
   bool releaseResource();
 
-  bool endOfStream();
-
   bool notifyForeground() const;
   bool notifyBackground() const;
   bool notifyActivity() const;
