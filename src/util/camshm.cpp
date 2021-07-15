@@ -275,6 +275,8 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
 
     pShmemBuffer->data_buf = pSharedmem + SHMEM_HEADER_SIZE
             + SHMEM_LENGTH_SIZE * (*pShmemBuffer->unit_num);
+    pShmemBuffer->extra_size = NULL;
+    pShmemBuffer->extra_buf = NULL;
 
     if (shmctl(pShmemBuffer->shmem_id, IPC_STAT, &shm_stat) != -1)
     {
@@ -296,11 +298,6 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
             pShmemBuffer->extra_buf = (pSharedmem + SHMEM_HEADER_SIZE
                     + (*pShmemBuffer->unit_size + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num)
                     + sizeof(int));
-        }
-        else
-        {
-            pShmemBuffer->extra_size = NULL;
-            pShmemBuffer->extra_buf = NULL;
         }
     }
 
