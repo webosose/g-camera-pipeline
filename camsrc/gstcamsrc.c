@@ -367,19 +367,36 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
         {
             case GST_V4L2_IO_MMAP:
                 retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 4, IOMODE_MMAP);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
+
                 retval = camera_hal_if_start_capture(camsrc->p_h_camera);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
+
                 bStarted = 1;
                 frame_buffer.start = malloc(streamformat.buffer_size);
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
+                if(retval != 0)
+                {
+                  free(frame_buffer.start);
+                  return GST_FLOW_ERROR;
+                }
                 length = frame_buffer.length;
                 free(frame_buffer.start);
                 break;
 
             case GST_V4L2_IO_DMABUF_EXPORT:
                 retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 6, IOMODE_DMABUF);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
+
                 bStarted = 1;
                 frame_buffer.length = streamformat.buffer_size;
                 retval = camera_hal_if_get_buffer_fd(camsrc->p_h_camera,&dma_fd,&count);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
+
                 dma_alloc = gst_dmabuf_allocator_new();
                 if(dma_alloc)
                 {
@@ -390,7 +407,13 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                         gst_memory_ref(dma_memory[index]);
                     }
                     retval = camera_hal_if_start_capture(camsrc->p_h_camera);
+                    if(retval != 0)
+                      return GST_FLOW_ERROR;
+
                     retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
+                    if(retval != 0)
+                      return GST_FLOW_ERROR;
+
                     gst_memory_ref(dma_memory[frame_buffer.index]);
                 }
 
@@ -398,6 +421,8 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
 
             case GST_V4L2_IO_USERPTR:
                 retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 4, IOMODE_USERPTR);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
                 break;
 
             default:
@@ -406,6 +431,9 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
     }
 
     retval = camera_hal_if_get_fd(camsrc->p_h_camera,&fd);
+    if(retval != 0)
+      return GST_FLOW_ERROR;
+
     struct pollfd fds[] = {
         { .fd = fd, .events = POLLIN },
     };
@@ -419,6 +447,9 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                 gst_buffer_map (*buf, &map, GST_MAP_WRITE);
                 frame_buffer.start=map.data;
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
+                if(retval != 0)
+                  return GST_FLOW_ERROR;
+
                 gst_buffer_unmap(*buf,&map);
 
                 retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
@@ -433,6 +464,9 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                 if(ret == GST_FLOW_OK)
                 {
                     retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
+                    if(retval != 0)
+                      return GST_FLOW_ERROR;
+
                     gst_buffer_append_memory(buffer, dma_memory[frame_buffer.index]);
                     *buf = buffer;
                     gst_memory_ref(dma_memory[frame_buffer.index]);
@@ -459,7 +493,11 @@ gst_camsrc_change_state (GstPushSrc * element, GstStateChange transition)
             {
                 /* open the device */
                 retval = camera_hal_if_init(&camsrc->p_h_camera, subsystem);
+                if(retval != 0)
+                  break;
                 retval = camera_hal_if_open_device(camsrc->p_h_camera, camsrc->device);
+                if(retval != 0)
+                  break;
             }
         default:
             break;
