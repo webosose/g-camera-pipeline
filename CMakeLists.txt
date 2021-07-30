@@ -56,6 +56,10 @@ set(MEDIA_RESOURE_CALCULATOR_LIBRARIES ${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
 include_directories(${MEDIA_RESOURE_CALCULATOR_INCLUDE_DIRS})
 link_directories(${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
 
+if(${WEBOS_TARGET_MACHINE} STREQUAL "qemux86")
+    add_definitions(-DPLATFORM_QEMUX86)
+endif()
+
 add_subdirectory(src)
 add_subdirectory(camsrc)
 add_subdirectory(files)

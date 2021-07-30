@@ -890,7 +890,11 @@ bool CameraPlayer::LoadPipeline()
 
 bool CameraPlayer::CreatePreviewBin(GstPad * pad)
 {
+#ifdef PLATFORM_QEMUX86
+    vconv_ = gst_element_factory_make("videoconvert", "vconv");
+#else
     vconv_ = gst_element_factory_make("v4l2convert", "vconv");
+#endif
     if (!vconv_)
     {
         CMP_DEBUG_PRINT("vconv_(%p) Failed", vconv_);
@@ -904,7 +908,9 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         return false;
     }
     g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+#ifndef PLATFORM_QEMUX86
     g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", true, NULL);
+#endif
 
     if (!gst_bin_add(GST_BIN(pipeline_), preview_sink_))
     {
@@ -949,7 +955,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         }
         CMP_DEBUG_PRINT ("Tee preview pad: %p\n",pad);
         CMP_DEBUG_PRINT ("preview_queue_pad_: %p\n",preview_queue_pad_);
-
+#ifndef PLATFORM_QEMUX86
         filter_RGB_ = gst_element_factory_make("capsfilter", "filter-RGB");
         if (!filter_RGB_)
         {
@@ -960,11 +966,13 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
                 "format", G_TYPE_STRING, "RGB16",
                 NULL);
         g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
+#endif
         if (GST_PAD_LINK_OK != gst_pad_link(pad, preview_queue_pad_))
         {
             CMP_DEBUG_PRINT ("preview_queue_pad_ could not be linked.\n");
             return false;
         }
+#ifndef PLATFORM_QEMUX86
         if (! gst_bin_add(GST_BIN(pipeline_), filter_RGB_))
         {
             CMP_DEBUG_PRINT ("filter_RGB_ could not be added.\n");
@@ -980,6 +988,13 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
             CMP_DEBUG_PRINT ("Elements could not be linked.\n");
             return false;
         }
+#else
+        if (TRUE !=  gst_element_link(vconv_,preview_sink_))
+        {
+            CMP_DEBUG_PRINT ("Elements could not be linked.\n");
+            return false;
+        }
+#endif
         return true;
     }
     return true;
@@ -1110,12 +1125,17 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         return false;
     }
     g_object_set(G_OBJECT(record_video_queue_), "max-size-time", 700, NULL);
+#ifdef PLATFORM_QEMUX86
+    record_encoder_ = gst_element_factory_make ("avenc_mjpeg", "record-encoder");
+#else
     record_encoder_ = gst_element_factory_make ("v4l2h264enc", "record-encoder");
+#endif
     if (!record_encoder_)
     {
         CMP_DEBUG_PRINT("record_encoder_(%p) Failed", record_encoder_);
         return false;
     }
+#ifndef PLATFORM_QEMUX86
     filter_NV12_ = gst_element_factory_make("capsfilter", "filter-NV");
     if (!filter_NV12_)
     {
@@ -1126,7 +1146,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
             "format", G_TYPE_STRING, "NV12",
             NULL);
     g_object_set(G_OBJECT(filter_NV12_), "caps", caps_NV12_, NULL);
-
+#endif
     record_convert_ = gst_element_factory_make("videoconvert", "record-convert");
     if (!record_convert_)
     {
@@ -1170,18 +1190,21 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("record_sink_(%p) Failed", record_sink_);
         return false;
     }
+#ifndef PLATFORM_QEMUX86
     record_parse_ = gst_element_factory_make("h264parse", "record-parser");
     if (!record_parse_)
     {
         CMP_DEBUG_PRINT("record_parse_(%p) Failed", record_parse_);
         return false;
     }
-
+    gst_bin_add(GST_BIN(pipeline_), filter_NV12_);
+    gst_bin_add(GST_BIN(pipeline_), record_parse_);
+#endif
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
     if (format_ == kFormatYUV)
         g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,
-            filter_NV12_, record_video_queue_, record_mux_, record_parse_, record_sink_, NULL);
+            record_video_queue_, record_mux_, record_sink_, NULL);
 
     if (format_ == kFormatJPEG)
     {
@@ -1211,6 +1234,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
             return false;
         }
     }
+#ifndef PLATFORM_QEMUX86
     if (TRUE != gst_element_link(record_convert_, filter_NV12_)) {
         CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & filter_NV12 \n");
         return false;
@@ -1222,10 +1246,21 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     if (TRUE != gst_element_link_many(record_encoder_, record_parse_,
                                        record_video_queue_, NULL))
     {
-        CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & record_encoder \n");
+        CMP_DEBUG_PRINT ("link capture elements could not be linked - encoder & parse \n");
         return false;
     }
-
+#else
+    if (TRUE != gst_element_link(record_convert_, record_encoder_)) {
+        CMP_DEBUG_PRINT ("link capture elements could not be linked converter & encoder \n");
+        return false;
+    }
+    if (TRUE != gst_element_link_many(record_encoder_,
+                                       record_video_queue_, NULL))
+    {
+        CMP_DEBUG_PRINT ("link capture elements could not be linked - encoder & video_queue \n");
+        return false;
+    }
+#endif
     record_video_queue_pad_ = gst_element_get_static_pad(record_video_queue_, "src");
     if (!record_video_queue_pad_)
     {
@@ -1306,11 +1341,13 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
+#ifndef PLATFORM_QEMUX86
     if (TRUE != gst_element_sync_state_with_parent(record_parse_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
+#endif
     if (TRUE != gst_element_sync_state_with_parent(record_video_queue_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -1327,11 +1364,13 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
+#ifndef PLATFORM_QEMUX86
     if (TRUE != gst_element_sync_state_with_parent(filter_NV12_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
+#endif
     if (TRUE != gst_element_sync_state_with_parent(record_sink_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -1516,9 +1555,10 @@ bool CameraPlayer::LoadYUY2Pipeline()
     g_object_set(G_OBJECT(parser_), "format", GST_VIDEO_FORMAT_YUY2 , NULL);
     g_object_set(G_OBJECT(parser_), "width", width_ , NULL);
     g_object_set(G_OBJECT(parser_), "height", height_ , NULL);
+
     gst_bin_add_many(GST_BIN(pipeline_), source_, filter_YUY2_, parser_, tee_, NULL);
 
-    if (TRUE != gst_element_link_many(source_, filter_YUY2_,parser_, tee_, NULL)) {
+    if (TRUE != gst_element_link_many(source_, filter_YUY2_, parser_, tee_, NULL)) {
         CMP_DEBUG_PRINT("Elements could not be linked.\n");
         return false;
     }
@@ -1943,13 +1983,16 @@ CameraPlayer::RecordRemoveProbe(
     gst_object_unref(player->record_encoder_);
     player->record_encoder_ = NULL;
 
-    gst_element_set_state(player->record_parse_,GST_STATE_NULL);
-    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
-                player->record_parse_)) {
-        CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+    if(player->record_parse_ != NULL)
+    {
+        gst_element_set_state(player->record_parse_,GST_STATE_NULL);
+        if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
+                    player->record_parse_)) {
+            CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+        }
+        gst_object_unref(player->record_parse_);
+        player->record_parse_ = NULL;
     }
-    gst_object_unref(player->record_parse_);
-    player->record_parse_ = NULL;
 
     gst_element_set_state(player->record_convert_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
@@ -1959,13 +2002,16 @@ CameraPlayer::RecordRemoveProbe(
     gst_object_unref(player->record_convert_);
     player->record_convert_ = NULL;
 
-    gst_element_set_state(player->filter_NV12_, GST_STATE_NULL);
-    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
-                player->filter_NV12_)) {
-        CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+    if(player->filter_NV12_ != NULL)
+    {
+        gst_element_set_state(player->filter_NV12_, GST_STATE_NULL);
+        if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
+                    player->filter_NV12_)) {
+            CMP_DEBUG_PRINT("Failed %d\n\n",__LINE__);
+        }
+        gst_object_unref(player->filter_NV12_);
+        player->filter_NV12_ = NULL;
     }
-    gst_object_unref(player->filter_NV12_);
-    player->filter_NV12_ = NULL;
 
     gst_element_set_state(player->record_mux_, GST_STATE_NULL);
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_),
