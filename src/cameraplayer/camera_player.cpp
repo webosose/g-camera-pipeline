@@ -47,6 +47,7 @@ static int posixshm_fd = -1;
 LSHandle* handle = nullptr;
 bool getFdReq = false;
 bool getFdReceived = false;
+bool recordingStarted = false;
 int bCallback = 1;
 GMainLoop* mainLoop = g_main_loop_new(nullptr, false);
 const int kNumOfImages = 1;
@@ -527,6 +528,9 @@ bool CameraPlayer::TakeSnapshot(const std::string& location)
 bool CameraPlayer::StartRecord(const std::string& location, const std::string& format,
                                bool audio, const std::string& audioSrc)
 {
+    if (recordingStarted == true)
+        return false;
+
     if (!location.empty())
         record_path_ = location;
 
@@ -562,6 +566,7 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
         CMP_DEBUG_PRINT("startCameraRecord - Un Supported format");
         return false;
     }
+    recordingStarted = true;
     return true;
 }
 
@@ -569,6 +574,7 @@ bool CameraPlayer::StopRecord()
 {
     gst_pad_add_probe(tee_record_pad_, GST_PAD_PROBE_TYPE_IDLE,
             (GstPadProbeCallback)RecordRemoveProbe, this, NULL);
+    recordingStarted = false;
     return true;
 }
 
