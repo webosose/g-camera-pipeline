@@ -64,6 +64,7 @@ const std::string kCaptureImagePath = "/tmp/";
 const std::string kRecordPath = "/media/internal/";
 const std::string kFileFormatMP4 = "MP4";
 const std::string kFileFormatAVI = "AVI";
+int framerate = 0;
 
 namespace cmp { namespace player {
 guint  CameraPlayer::mCameraServiceCbTimerID = TIMER_ID_NULL;
@@ -379,6 +380,7 @@ bool CameraPlayer::Load(const std::string& str)
     CMP_DEBUG_PRINT("iomode_ : %d", iomode_);
     CMP_DEBUG_PRINT("memsrc_ : %s", memsrc_.c_str());
     CMP_DEBUG_PRINT("posixshm_fd : %d", posixshm_fd);
+    framerate = framerate_;
     if (kMemtypePosixShm == memtype_)
         subscribeToCameraService();
     else
@@ -913,7 +915,10 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         CMP_DEBUG_PRINT("preview_sink_ element creation failed.");
         return false;
     }
-    g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+    if(memtype_ == kMemtypeShmem && format_ == kFormatJPEG)
+        g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+    else
+        g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
 #ifndef PLATFORM_QEMUX86
     g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", true, NULL);
 #endif
@@ -1207,7 +1212,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     gst_bin_add(GST_BIN(pipeline_), record_parse_);
 #endif
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
-    if (format_ == kFormatYUV)
+    if ((format_ == kFormatYUV) || (memtype_ == kMemtypeShmem && format_ == kFormatJPEG))
         g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,
             record_video_queue_, record_mux_, record_sink_, NULL);
@@ -1406,7 +1411,7 @@ bool CameraPlayer::CreateAudioRecordElements(const std::string& audioSrc, GstPad
         CMP_DEBUG_PRINT("record_audio_src_(%p) Failed", record_audio_src_);
         return false;
     }
-    g_object_set(G_OBJECT(record_audio_src_), "do-timestamp", true, NULL);
+    g_object_set(G_OBJECT(record_audio_src_), "do-timestamp", false, NULL);
 
     CMP_DEBUG_PRINT ("AudioSrc provided is %s, length = %d", audioSrc.c_str(), audioSrc.length());
     if(audioSrc.compare("") != 0 && audioSrc.length() >0 )
@@ -1725,6 +1730,7 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
     int len = 0;
+    static GstClockTime timestamp = 0;
     while (len == 0)
     {
         ReadShmem(player->context_.shmemHandle, &data, &len);
@@ -1734,6 +1740,9 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
     memcpy(writeBufferMap.data, data, len);
     gst_buffer_unmap(buf, &writeBufferMap);
+    GST_BUFFER_PTS (buf) = timestamp;
+    GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
+    timestamp += GST_BUFFER_DURATION (buf);
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 }
 
@@ -1742,6 +1751,7 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
     int len = 0;
+    static GstClockTime timestamp = 0;
     while (len == 0)
     {
         ReadPosixShmem(player->context_.shmemHandle, &data, &len);
@@ -1751,6 +1761,9 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
     memcpy(writeBufferMap.data, data, len);
     gst_buffer_unmap(buf, &writeBufferMap);
+    GST_BUFFER_PTS (buf) = timestamp;
+    GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
+    timestamp += GST_BUFFER_DURATION (buf);
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 }
 
