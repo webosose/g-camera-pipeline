@@ -915,7 +915,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         CMP_DEBUG_PRINT("preview_sink_ element creation failed.");
         return false;
     }
-    if(memtype_ == kMemtypeShmem && format_ == kFormatJPEG)
+    if(format_ == kFormatJPEG)
         g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
     else
         g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
@@ -1212,8 +1212,8 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     gst_bin_add(GST_BIN(pipeline_), record_parse_);
 #endif
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
-    if ((format_ == kFormatYUV) || (memtype_ == kMemtypeShmem && format_ == kFormatJPEG))
-        g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
+    g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
+    
     gst_bin_add_many(GST_BIN(pipeline_), record_queue_, record_convert_, record_encoder_,
             record_video_queue_, record_mux_, record_sink_, NULL);
 
