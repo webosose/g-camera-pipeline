@@ -415,6 +415,10 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                       return GST_FLOW_ERROR;
 
                     gst_memory_ref(dma_memory[frame_buffer.index]);
+                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                    if(retval != 0){
+                      return GST_FLOW_ERROR;
+                    }
                 }
 
                 break;
@@ -453,6 +457,9 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                 gst_buffer_unmap(*buf,&map);
 
                 retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                if(retval != 0){
+                  return GST_FLOW_ERROR;
+                }
                 break;
 
             case GST_V4L2_IO_DMABUF_EXPORT:
@@ -468,9 +475,14 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                       return GST_FLOW_ERROR;
 
                     gst_buffer_append_memory(buffer, dma_memory[frame_buffer.index]);
+                    gst_buffer_map (buffer, &map, GST_MAP_READ);
                     *buf = buffer;
                     gst_memory_ref(dma_memory[frame_buffer.index]);
+                    gst_buffer_unmap(buffer,&map);
                     retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                    if(retval != 0){
+                        return GST_FLOW_ERROR;
+                    }
                 }
                 break;
 
@@ -498,6 +510,13 @@ gst_camsrc_change_state (GstPushSrc * element, GstStateChange transition)
                 retval = camera_hal_if_open_device(camsrc->p_h_camera, camsrc->device);
                 if(retval != 0)
                   break;
+            }
+        case GST_STATE_CHANGE_READY_TO_NULL:
+            {
+                retval = camera_hal_if_destroy_dmafd(camsrc->p_h_camera);
+                if(retval != 0){
+                  break;
+                }
             }
         default:
             break;
