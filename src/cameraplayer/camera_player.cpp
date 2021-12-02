@@ -42,6 +42,11 @@
 #define DISCOVER_EXPIRE_TIME (10 * GST_SECOND)
 #define DELAY_5SEC 5000
 #define TIMER_ID_NULL 0
+#define WINDOW_MAX_WIDTH  1920
+#define WINDOW_MAX_HEIGHT 1080
+#define WIDTH_1280 1280
+#define HEIGHT_720 720
+#define DEFAULT_FRAMERATE 30
 
 static int posixshm_fd = -1;
 LSHandle* handle = nullptr;
@@ -105,6 +110,7 @@ CameraPlayer::CameraPlayer():
     preview_parser_(NULL),
     preview_encoder_(NULL),
     preview_convert_(NULL),
+    preview_scale_(NULL),
     tee_(NULL),
     capture_queue_(NULL),
     capture_encoder_(NULL),
@@ -380,6 +386,10 @@ bool CameraPlayer::Load(const std::string& str)
     CMP_DEBUG_PRINT("iomode_ : %d", iomode_);
     CMP_DEBUG_PRINT("memsrc_ : %s", memsrc_.c_str());
     CMP_DEBUG_PRINT("posixshm_fd : %d", posixshm_fd);
+
+    if(memtype_ == kMemtypeShmem && framerate_ == 0)
+       framerate_ = DEFAULT_FRAMERATE;
+
     framerate = framerate_;
     if (kMemtypePosixShm == memtype_)
         subscribeToCameraService();
@@ -574,6 +584,7 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
 
 bool CameraPlayer::StopRecord()
 {
+    CMP_DEBUG_PRINT("StopCameraRecording");
     gst_pad_add_probe(tee_record_pad_, GST_PAD_PROBE_TYPE_IDLE,
             (GstPadProbeCallback)RecordRemoveProbe, this, NULL);
     recordingStarted = false;
@@ -898,15 +909,25 @@ bool CameraPlayer::LoadPipeline()
 
 bool CameraPlayer::CreatePreviewBin(GstPad * pad)
 {
-#ifdef PLATFORM_QEMUX86
     vconv_ = gst_element_factory_make("videoconvert", "vconv");
-#else
-    vconv_ = gst_element_factory_make("v4l2convert", "vconv");
-#endif
     if (!vconv_)
     {
         CMP_DEBUG_PRINT("vconv_(%p) Failed", vconv_);
         return false;
+    }
+    // Removing v4l2convert as it is failing for higher resolutions, 
+    // if in future any performance issue comes we will add this 
+    // element for lower resolution.
+
+    if(width_ > WINDOW_MAX_WIDTH || height_ > WINDOW_MAX_HEIGHT)
+    {
+        CMP_DEBUG_PRINT("videoscale is needed.\n");
+        preview_scale_ = gst_element_factory_make("videoscale", "video-scale");
+        if (!preview_scale_)
+        {
+            CMP_DEBUG_PRINT("preview_scale_(%p) Failed", preview_scale_);
+            return false;
+        }
     }
 
     preview_sink_ = gst_element_factory_make("waylandsink", "preview-sink");
@@ -920,7 +941,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
     else
         g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
 #ifndef PLATFORM_QEMUX86
-    g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", true, NULL);
+    g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", false, NULL);
 #endif
 
     if (!gst_bin_add(GST_BIN(pipeline_), preview_sink_))
@@ -941,19 +962,44 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
             CMP_DEBUG_PRINT("filter_ element creation failed.");
             return false;
         }
-        caps_RGB_ = gst_caps_new_simple("video/x-raw",
+        if(width_ > WINDOW_MAX_WIDTH || height_ > WINDOW_MAX_HEIGHT)
+        {
+            caps_RGB_ = gst_caps_new_simple("video/x-raw",
+                "width", G_TYPE_INT, WINDOW_MAX_WIDTH,
+                "height", G_TYPE_INT, WINDOW_MAX_HEIGHT,
                 "format", G_TYPE_STRING, "RGB16",
                 NULL);
-        g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
-        if (!gst_bin_add(GST_BIN(pipeline_), filter_RGB_))
-        {
-            CMP_DEBUG_PRINT ("convert could not be added.\n");
-            return false;
         }
-        if (TRUE !=  gst_element_link_many(vconv_, filter_RGB_, preview_sink_, NULL))
+        else
         {
-            CMP_DEBUG_PRINT ("Elements could not be linked.\n");
-            return false;
+            caps_RGB_ = gst_caps_new_simple("video/x-raw",
+                    "format", G_TYPE_STRING, "RGB16",
+                    NULL);
+        }
+        g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
+        if(preview_scale_)
+        {
+            CMP_DEBUG_PRINT ("Preview scale adding to bin\n");
+            gst_bin_add_many(GST_BIN(pipeline_), preview_scale_, filter_RGB_, NULL);
+            
+            if (TRUE !=  gst_element_link_many(vconv_, preview_scale_, filter_RGB_, preview_sink_, NULL))
+            {
+                CMP_DEBUG_PRINT ("Preview scale Elements could not be linked.\n");
+                return false;
+            }
+        }
+        else
+        {
+            if (!gst_bin_add(GST_BIN(pipeline_), filter_RGB_))
+            {
+                CMP_DEBUG_PRINT ("convert could not be added.\n");
+                return false;
+            }
+            if (TRUE !=  gst_element_link_many(vconv_, filter_RGB_, preview_sink_, NULL))
+            {
+                CMP_DEBUG_PRINT ("vconv->filter->previewSink Elements could not be linked.\n");
+                return false;
+            }
         }
         preview_queue_pad_ = gst_element_get_static_pad(vconv_, "sink");
         if (GST_PAD_LINK_OK != gst_pad_link(tee_preview_pad_, preview_queue_pad_)) {
@@ -978,10 +1024,22 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
             CMP_DEBUG_PRINT("filter_ element creation failed.");
             return false;
         }
-        caps_RGB_ = gst_caps_new_simple("video/x-raw",
+        if(width_ > WINDOW_MAX_WIDTH || height_ > WINDOW_MAX_HEIGHT)
+        {
+            caps_RGB_ = gst_caps_new_simple("video/x-raw",
+                "width", G_TYPE_INT, WINDOW_MAX_WIDTH,
+                "height", G_TYPE_INT, WINDOW_MAX_HEIGHT,
                 "format", G_TYPE_STRING, "RGB16",
                 NULL);
+        }
+        else
+        {
+            caps_RGB_ = gst_caps_new_simple("video/x-raw",
+                    "format", G_TYPE_STRING, "RGB16",
+                    NULL);
+        }
         g_object_set(G_OBJECT(filter_RGB_), "caps", caps_RGB_, NULL);
+
 #endif
         if (GST_PAD_LINK_OK != gst_pad_link(pad, preview_queue_pad_))
         {
@@ -994,10 +1052,26 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
             CMP_DEBUG_PRINT ("filter_RGB_ could not be added.\n");
             return false;
         }
-        if (TRUE !=  gst_element_link(vconv_,filter_RGB_))
+       if(preview_scale_)
         {
-            CMP_DEBUG_PRINT ("Elements could not be linked.\n");
-            return false;
+            if (!gst_bin_add(GST_BIN(pipeline_), preview_scale_))
+            {
+                CMP_DEBUG_PRINT ("video scale could not be added.\n");
+                return false;
+            }
+            if (TRUE !=  gst_element_link_many(vconv_, preview_scale_, filter_RGB_, NULL))
+            {
+                CMP_DEBUG_PRINT ("Elements could not be linked.\n");
+                return false;
+            }
+        }
+        else
+        {
+            if (TRUE !=  gst_element_link(vconv_,filter_RGB_))
+            {
+                CMP_DEBUG_PRINT ("Elements could not be linked.\n");
+                return false;
+            }
         }
         if (TRUE !=  gst_element_link(filter_RGB_,preview_sink_))
         {
@@ -1602,15 +1676,27 @@ bool CameraPlayer::LoadJPEGPipeline()
             NULL);
 
     g_object_set(G_OBJECT(filter_JPEG_), "caps", caps_JPEG_, NULL);
+  
+    if(width_ > WIDTH_1280 || height_ > HEIGHT_720)
+    {
+        gst_bin_add_many(GST_BIN(pipeline_), source_, filter_JPEG_, parser_, decoder_, tee_,
+                NULL);
 
-    gst_bin_add_many(GST_BIN(pipeline_), source_, filter_JPEG_, parser_, decoder_, tee_,
-            NULL);
-
-    if (TRUE != gst_element_link_many(source_, filter_JPEG_, parser_, decoder_, tee_, NULL)) {
-        CMP_DEBUG_PRINT("Elements could not be linked.\n");
-        return false;
+        if (TRUE != gst_element_link_many(source_, filter_JPEG_, decoder_, tee_, NULL)) {
+            CMP_DEBUG_PRINT("Elements could not be linked.\n");
+            return false;
+        }
     }
+    else
+    {
+        gst_bin_add_many(GST_BIN(pipeline_), source_, filter_JPEG_, parser_, decoder_, tee_,
+                NULL);
 
+        if (TRUE != gst_element_link_many(source_, filter_JPEG_, parser_, decoder_, tee_, NULL)) {
+            CMP_DEBUG_PRINT("Elements could not be linked.\n");
+            return false;
+        }
+    }
     tee_preview_pad_ = gst_element_get_request_pad(tee_, "src_%u");
 
     if (CreatePreviewBin(tee_preview_pad_)) {
@@ -1803,6 +1889,8 @@ void CameraPlayer::FreePreviewBinElements ()
 {
     if (vconv_)
         delete vconv_;
+    if (preview_scale_)
+        delete preview_scale_;
     if (preview_sink_)
         delete preview_sink_;
     if (filter_RGB_)

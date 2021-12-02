@@ -140,7 +140,7 @@ class CameraPlayer {
              *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
              *record_encoder_, *record_parse_, *record_decoder_, *record_mux_, *record_sink_,
              *preview_queue_, *preview_sink_, *record_audio_src_, *record_audio_queue_,
-             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_;
+             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_, *preview_scale_;
   GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
          *tee_record_pad_, *record_audio_encoder_pad_, *record_video_queue_pad_,
