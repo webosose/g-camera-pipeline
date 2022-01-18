@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2019-2021 LG Electronics
+ * Copyright (C) 2019-2022 LG Electronics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -513,10 +513,11 @@ gst_camsrc_change_state (GstPushSrc * element, GstStateChange transition)
             }
         case GST_STATE_CHANGE_READY_TO_NULL:
             {
-                retval = camera_hal_if_destroy_dmafd(camsrc->p_h_camera);
-                if(retval != 0){
-                  break;
+                if(camsrc->mode == GST_V4L2_IO_DMABUF_EXPORT)
+                {
+                    retval = camera_hal_if_destroy_dmafd(camsrc->p_h_camera);
                 }
+                break;
             }
         default:
             break;
