@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 LG Electronics, Inc.
+// Copyright (c) 2019-2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -138,8 +138,8 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   string response;
 
   JValue objArray = pbnjson::Array();
-  for (auto option : finalOptions) {
-    for (auto it : option) {
+  for (const auto& option : finalOptions) {
+    for (const auto& it : option) {
       JValue obj = pbnjson::Object();
       obj.put("resource", it.type + (it.type == "DISP" ? to_string(display_path) : ""));
       obj.put("qty", it.quantity);

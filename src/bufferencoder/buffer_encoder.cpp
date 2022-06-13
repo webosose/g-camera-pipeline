@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 LG Electronics, Inc.
+// Copyright (c) 2020-2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -239,7 +239,7 @@ bool BufferEncoder::init(const ENCODER_INIT_DATA_T* loadData) {
         return false;
       }
 
-      for (auto it : resourceMMap)
+      for (const auto& it : resourceMMap)
       {
         CMP_DEBUG_PRINT("Resource::[%s]=>index:%d", it.first.c_str(), it.second);
       }
