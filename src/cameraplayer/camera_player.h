@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 LG Electronics, Inc.
+// Copyright (c) 2019-2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 #include "camshm.h"
 #include "cam_posixshm.h"
 #include "camera_types.h"
+#include <mutex>
 
 using namespace std;
 
@@ -152,6 +153,7 @@ class CameraPlayer {
   GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_;
   cmp::service::Service *service_;
   bool load_complete_;
+  std::mutex event_lock_;
 
   /* GAV Features */
   LSM::CameraWindowManager lsm_camera_window_manager_;
