@@ -118,11 +118,13 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
         attr[i++] = EGL_RENDERABLE_TYPE;
         attr[i++] = EGL_OPENGL_ES2_BIT;
 
+#ifndef PLATFORM_QEMUX86
         //multi sample
         attr[i++] = EGL_SAMPLE_BUFFERS;
         attr[i++] = 1;
         attr[i++] = EGL_SAMPLES;
         attr[i++] = 4;
+#endif
 
         attr[i++] = EGL_NONE;
 
