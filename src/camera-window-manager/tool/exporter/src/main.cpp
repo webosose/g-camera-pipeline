@@ -258,13 +258,19 @@ bool rendering(GLData *glData, WaylandEGLSurface *surface)
     return true;
 }
 
+void printHelp()
+{
+    std::cout << "Usage: camera_window_manager_exporter [OPTION]..." << std::endl;
+    std::cout << "Options" << std::endl;
+    std::cout << "  -x          x (0)" << std::endl;
+    std::cout << "  -y          y (0)" << std::endl;
+    std::cout << "  -w          export width (1920)" << std::endl;
+    std::cout << "  -h          export height (1080)" << std::endl;
+    std::cout << "  -d          display ID (0)" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc != 1 && argc != 5) {
-    std::cout << "Please input correct agruments! (nothing or x y w h)" << std::endl;
-    return -1;
-    }
-
     Wayland::Foreign foreign;
     Wayland::Exporter exporter;
 
@@ -277,21 +283,56 @@ int main(int argc, char *argv[])
     unsigned int exportWidth  = 1920;
     unsigned int exportHeight = 1080;
     uint32_t exported_type    = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
+    std::string displayID = "0";
 
-    if (argc == 5) {
-      x = std::stoi(std::string(argv[1]));
-      y = std::stoi(std::string(argv[2]));
-      exportWidth = std::stoi(std::string(argv[3]));
-      exportHeight = std::stoi(std::string(argv[4]));
+    for(;;)
+    {
+        switch(getopt(argc, argv, "x:y:w:h:d:?"))
+        {
+            case 'x' :
+                x = atoi(optarg);
+                continue;
+
+            case 'y' :
+                y = atoi(optarg);
+                continue;
+
+            case 'w' :
+                exportWidth = atoi(optarg);
+                continue;
+
+            case 'h' :
+                exportHeight = atoi(optarg);
+                continue;
+
+            case 'd' :
+                if(optarg) displayID = optarg;
+                continue;
+
+            case '?':
+            default :
+              printHelp();
+              return 0;
+
+            case -1:
+              break;
+        }
+
+        break;
     }
+
+    std::cout << "Try 'camera_window_manager_exporter -?' for more information.\n" << std::endl;
+    std::cout << "displayID=" << displayID << std::endl;
+    printf("x=%d, y=%d, exportWidth=%d, exportHeight=%d\n\n", x, y, exportWidth, exportHeight);
 
     foreign.initialize();
 
     surface.wlSurface      = wl_compositor_create_surface(foreign.getCompositor());
     surface.wlShellSurface = wl_shell_get_shell_surface(foreign.getShell(), surface.wlSurface);
     wl_shell_surface_add_listener(surface.wlShellSurface, &shellSurfaceListener, NULL);
-//    surface.webosShellSurface = wl_webos_shell_get_shell_surface(foreign.getWebosShell(), surface.wlSurface);
+    surface.webosShellSurface = wl_webos_shell_get_shell_surface(foreign.getWebosShell(), surface.wlSurface);
 //    wl_webos_shell_surface_set_property(surface.webosShellSurface, "_WEBOS_WINDOW_TYPE", "_WEBOS_WINDOW_TYPE_OVERLAY");
+    wl_webos_shell_surface_set_property(surface.webosShellSurface, "displayAffinity", displayID.c_str());
 
     surface.width  = 1920;
     surface.height = 1080;
