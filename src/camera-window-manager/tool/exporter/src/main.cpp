@@ -267,6 +267,7 @@ void printHelp()
     std::cout << "  -w          export width (1920)" << std::endl;
     std::cout << "  -h          export height (1080)" << std::endl;
     std::cout << "  -d          display ID (0)" << std::endl;
+    std::cout << "  -r          remove rectangle" << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -284,10 +285,11 @@ int main(int argc, char *argv[])
     unsigned int exportHeight = 1080;
     uint32_t exported_type    = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
     std::string displayID = "0";
+    bool draw_render = true;
 
     for(;;)
     {
-        switch(getopt(argc, argv, "x:y:w:h:d:?"))
+        switch(getopt(argc, argv, "x:y:w:h:d:r?"))
         {
             case 'x' :
                 x = atoi(optarg);
@@ -307,6 +309,11 @@ int main(int argc, char *argv[])
 
             case 'd' :
                 if(optarg) displayID = optarg;
+                continue;
+
+            case 'r' :
+                std::cout << "remove rectangle" << std::endl;
+                draw_render = false;
                 continue;
 
             case '?':
@@ -356,7 +363,7 @@ int main(int argc, char *argv[])
     renderInitialize(foreign.getDisplay(), &eglData, &surface, &glData);
 
     while (1) {
-        rendering(&glData, &surface);
+        if(draw_render) rendering(&glData, &surface);
         eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_READ));
         sleep(1);
     }
