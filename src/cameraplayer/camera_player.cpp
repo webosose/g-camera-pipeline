@@ -1945,7 +1945,7 @@ void CameraPlayer::FreeRecordElements ()
 #endif
     if (record_video_queue_)
     {
-        gst_bin_remove(GST_BIN(pipeline_), record_queue_);
+        gst_bin_remove(GST_BIN(pipeline_), record_video_queue_);
         gst_object_unref(record_video_queue_);
     }
     record_video_queue_ = NULL;
@@ -2072,7 +2072,7 @@ CameraPlayer::RecordRemoveProbe(
     gst_object_unref(player->record_video_mux_pad_);
 
     if (player->format_ == kFormatYUV)
-        gst_element_link_many(player->record_queue_, player->record_convert_, NULL);
+        gst_element_unlink_many(player->record_queue_, player->record_convert_, NULL);
 #ifndef PLATFORM_QEMUX86
     gst_element_unlink(player->record_convert_, player->filter_NV12_);
     gst_element_unlink(player->filter_NV12_, player->record_encoder_);
