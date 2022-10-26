@@ -119,6 +119,7 @@ class CameraPlayer {
 
   static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
   static void FeedPosixData(GstElement * appsrc, guint size, gpointer gdata);
+  static void finalizeRecord(gpointer gdata);
   static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
   static GstPadProbeReturn CaptureRemoveProbe(GstPad * pad,
                                                 GstPadProbeInfo * info,
@@ -135,7 +136,7 @@ class CameraPlayer {
             display_path_idx_,handle_, iomode_;
   int  num_of_images_to_capture_, num_of_captured_images_;
   std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
-  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_,
+  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_, *filter_H264_,
              *filter_I420_, *filter_JPEG_, *filter_RGB_, *vconv_, *record_convert_,
              *preview_decoder_, *preview_parser_, *preview_encoder_, *preview_convert_,
              *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
@@ -150,7 +151,7 @@ class CameraPlayer {
   base::source_info_t source_info_;
   base::playback_state_t current_state_;
   GstBus *bus_;
-  GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_;
+  GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_, *caps_H264_;
   cmp::service::Service *service_;
   bool load_complete_;
   std::mutex event_lock_;
