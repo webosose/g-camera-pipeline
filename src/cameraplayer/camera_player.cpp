@@ -1257,6 +1257,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("record_encoder_(%p) Failed", record_encoder_);
         return false;
     }
+#ifndef PLATFORM_QEMUX86
     filter_H264_ = gst_element_factory_make("capsfilter", "filter-h264");
     if (!filter_H264_)
     {
@@ -1267,7 +1268,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
             "level", G_TYPE_STRING, "4",
             NULL);
     g_object_set(G_OBJECT(filter_H264_), "caps", caps_H264_, NULL);
-#ifndef PLATFORM_QEMUX86
+
     filter_NV12_ = gst_element_factory_make("capsfilter", "filter-NV");
     if (!filter_NV12_)
     {
@@ -1473,12 +1474,14 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
+
+#ifndef PLATFORM_QEMUX86
     if (TRUE != gst_element_sync_state_with_parent(filter_H264_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
-#ifndef PLATFORM_QEMUX86
+
     if (TRUE != gst_element_sync_state_with_parent(filter_NV12_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -1985,13 +1988,14 @@ void CameraPlayer::FreeRecordElements ()
         gst_object_unref(record_encoder_);
     }
     record_encoder_ = NULL;
+#ifndef PLATFORM_QEMUX86
     if (filter_H264_)
     {
         gst_bin_remove(GST_BIN(pipeline_), filter_H264_);
         gst_object_unref(filter_H264_);
     }
     filter_H264_ = NULL;
-#ifndef PLATFORM_QEMUX86
+
     if (record_parse_)
     {
         gst_bin_remove(GST_BIN(pipeline_), record_parse_);
@@ -2250,6 +2254,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
     }
     player->record_encoder_ = NULL;
 
+#ifndef PLATFORM_QEMUX86
     if (player->filter_H264_ != NULL)
     {
         gst_element_set_state(player->filter_H264_,GST_STATE_NULL);
@@ -2260,7 +2265,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
         gst_object_unref(player->filter_H264_);
     }
     player->filter_H264_ = NULL;
-#ifndef PLATFORM_QEMUX86
+
     if(player->record_parse_ != NULL)
     {
         gst_element_set_state(player->record_parse_,GST_STATE_NULL);
