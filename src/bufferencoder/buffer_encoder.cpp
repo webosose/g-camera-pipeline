@@ -548,7 +548,7 @@ base::error_t BufferEncoder::HandleErrorMessage(GstMessage *message)
 
   base::error_t error;
   error.errorCode = ConvertErrorCode(domain, (gint)err->code);
-  error.errorText = g_strdup(err->message);
+  error.errorText = g_strdup(err->message)? g_strdup(err->message) : "";
 
   CMP_INFO_PRINT("[GST_MESSAGE_ERROR][domain:%s][from:%s][code:%d]"
                  "[converted:%d][msg:%s]",g_quark_to_string(domain),

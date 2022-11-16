@@ -211,6 +211,10 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
 
     *phShmem = (SHMEM_HANDLE) calloc(1, sizeof(SHMEM_COMM_T));
     pShmemBuffer = (SHMEM_COMM_T *) *phShmem;
+    if (pShmemBuffer == NULL) {
+        DEBUG_PRINT("pShmemBuffer is null\n");
+        return SHMEM_COMM_FAIL;
+    }
 
     DEBUG_PRINT("hShmem = %p, pKey = %p, nOpenMode=%d, unitSize=%d, unitNum=%d\n",
             *phShmem, pShmemKey, nOpenMode, unitSize, unitNum);

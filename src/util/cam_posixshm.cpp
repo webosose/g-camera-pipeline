@@ -128,6 +128,10 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
 
     *phShmem = (SHMEM_HANDLE) malloc(sizeof(POSHMEM_COMM_T));
     pShmemBuffer = (POSHMEM_COMM_T *) *phShmem;
+    if (pShmemBuffer == NULL) {
+        CMP_DEBUG_PRINT("pShmemBuffer is null");
+        return POSHMEM_COMM_FAIL;
+    }
 
     if( fstat (shmfd , &sb) == -1)
     {
@@ -173,8 +177,8 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     //Until the writter starts to write both write index and read index are
     //set to -1 . So the reader can get to know that the writter has not
     //started to write yet
-    *pShmemBuffer->write_index = -1;
-    *pShmemBuffer->read_index  = -1;
+    if(pShmemBuffer->write_index) *pShmemBuffer->write_index = -1;
+    if(pShmemBuffer->read_index) *pShmemBuffer->read_index  = -1;
     DEBUG_PRINT("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d\n",
             *pShmemBuffer->unit_size, SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
     DEBUG_PRINT("shared memory opened successfully!\n");

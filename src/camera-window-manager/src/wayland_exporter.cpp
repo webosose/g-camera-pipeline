@@ -55,7 +55,7 @@ void Exporter::finalize(void)
     }
 }
 
-void Exporter::setWindowID(const char *windowID) { this->windowID = windowID; }
+void Exporter::setWindowID(const char *windowID) { this->windowID = windowID ? windowID : ""; }
 
 const char *Exporter::getWindowID(void) { return windowID.c_str(); }
 

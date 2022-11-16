@@ -1226,6 +1226,11 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
 
     time_t t_ = time(NULL);
     tm *timePtr_ = localtime(&t_);
+    if (timePtr_ == NULL) {
+        CMP_DEBUG_PRINT("localtime failed");
+        return false;
+    }
+
     struct timeval tmnow_;
     gettimeofday(&tmnow_, NULL);
 
@@ -1842,7 +1847,7 @@ base::error_t CameraPlayer::HandleErrorMessage(GstMessage *message)
 
     base::error_t error;
     error.errorCode = ConvertErrorCode(domain, (gint)err->code);
-    error.errorText = g_strdup(err->message);
+    error.errorText = g_strdup(err->message)? g_strdup(err->message) : "";
 
     CMP_DEBUG_PRINT("[GST_MESSAGE_ERROR][domain:%s][from:%s][code:%d]"
             "[converted:%d][msg:%s]",g_quark_to_string(domain),

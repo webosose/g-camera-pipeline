@@ -94,7 +94,12 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     {
         const int NUM_ATTRIBS = 21;
         EGLint *attr          = (EGLint *)malloc(NUM_ATTRIBS * sizeof(EGLint));
-        int i                 = 0;
+        if (attr == NULL) {
+            std::cout << "attr is null" << std::endl;
+            return false;
+        }
+
+        int i     = 0;
 
         attr[i++] = EGL_RED_SIZE;
         attr[i++] = want_red;
@@ -125,6 +130,7 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
 
         if (!eglChooseConfig(eglData->eglDisplay, attr, eglData->eglConfig, configs, &configs) || (configs == 0)) {
             std::cout << "('w')/ eglChooseConfig() failed." << std::endl;
+            free(attr);
             return false;
         }
 

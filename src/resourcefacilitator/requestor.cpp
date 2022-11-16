@@ -62,7 +62,7 @@ ResourceRequestor::ResourceRequestor(const std::string& appId,
       CMP_DEBUG_PRINT("ResourceRequestor creation done");
 
       umsRMC_->registerPipeline("media", appId_); // only rmc case
-      connectionId_ = umsRMC_->getConnectionID(); // after registerPipeline
+      connectionId_ = umsRMC_->getConnectionID() ? umsRMC_->getConnectionID() : ""; // after registerPipeline
     }
     else {
       umsRMC_ = make_shared<uMediaServer::ResourceManagerClient> (connectionId);

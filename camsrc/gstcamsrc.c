@@ -211,10 +211,6 @@ gst_camsrc_set_property (GObject * object, guint prop_id,
 {
     Gstcamsrc *filter = GST_CAMSRC (object);
 
-    if (NULL == filter)
-    {
-        return;
-    }
     switch (prop_id) {
         case PROP_DEVICE:
             filter->device = g_value_dup_string (value);
@@ -414,7 +410,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                     if(retval != 0)
                       return GST_FLOW_ERROR;
 
-                    gst_memory_ref(dma_memory[frame_buffer.index]);
+                    if(frame_buffer.index >= 0) gst_memory_ref(dma_memory[frame_buffer.index]);
                     retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
                     if(retval != 0){
                       return GST_FLOW_ERROR;
