@@ -477,6 +477,18 @@ bool CameraPlayer::Unload()
     /* change the pipeline state to PAUSE internally and then to NULL */
     PauseInternalSync();
 
+    if (recordingStarted) {
+        StopRecord();
+        /* As record elements are removed from pipeline in a callback finalizeRecord(),
+         * need to provide some time to finalize to avoid crash.
+         * Without this delay, crash happened when unload done while recording
+         * TODO: another approach to avoid delay is to bring memcpy() of HAL buffer
+         * and gst buffer into the critical section by not making context switch
+         * while copy memory
+         */
+        usleep(500 * 1000);
+    }
+
     gst_element_set_state(pipeline_, GST_STATE_NULL);
     gst_object_unref(GST_OBJECT(pipeline_));
     pipeline_ = NULL;
