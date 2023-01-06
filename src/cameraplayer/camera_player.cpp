@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2022 LG Electronics, Inc.
+// Copyright (c) 2019-2023 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1915,129 +1915,55 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 }
 
+#define DESTROY_ELEMENT(elm) \
+    if (elm) \
+        gst_object_unref(elm); \
+    elm = NULL;
+
 void CameraPlayer::FreeLoadPipelineElements ()
 {
-    if (source_)
-        delete source_;
-    if (tee_)
-        delete tee_;
-    if (filter_YUY2_)
-        delete filter_YUY2_;
-    if (filter_I420_)
-        delete filter_I420_;
-    if (preview_queue_)
-        delete preview_queue_;
-    if (parser_)
-        delete parser_;
-    if (decoder_)
-        delete decoder_;
-    if (filter_JPEG_)
-        delete filter_JPEG_;
+    DESTROY_ELEMENT(preview_queue_pad_);
+
+    DESTROY_ELEMENT(source_);
+    DESTROY_ELEMENT(tee_);
+    DESTROY_ELEMENT(filter_JPEG_);
+    DESTROY_ELEMENT(filter_YUY2_);
+    DESTROY_ELEMENT(filter_I420_);
+    DESTROY_ELEMENT(preview_queue_);
+    DESTROY_ELEMENT(parser_);
+    DESTROY_ELEMENT(decoder_);
 }
 
 void CameraPlayer::FreeCaptureElements ()
 {
-    if (capture_queue_)
-        delete capture_queue_;
-    if (capture_sink_)
-        delete capture_sink_;
-    if (decoder_)
-        delete decoder_;
-    if (capture_encoder_)
-        delete capture_encoder_;
+    DESTROY_ELEMENT(capture_queue_pad_);
+
+    DESTROY_ELEMENT(capture_queue_);
+    DESTROY_ELEMENT(capture_sink_);
+    DESTROY_ELEMENT(capture_encoder_);
 }
 
 void CameraPlayer::FreeRecordElements ()
 {
-    if (record_audio_encoder_pad_)
-    {
-        gst_object_unref(record_audio_encoder_pad_);
-    }
-    record_audio_encoder_pad_ = NULL;
-    if (record_audio_convert_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_audio_convert_);
-        gst_object_unref(record_audio_convert_);
-    }
-    record_audio_convert_ = NULL;
-    if (record_audio_encoder_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_audio_encoder_);
-        gst_object_unref(record_audio_encoder_);
-    }
-    record_audio_encoder_ = NULL;
-    if (record_audio_queue_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_audio_queue_);
-        gst_object_unref(record_audio_queue_);
-    }
-    record_audio_queue_ = NULL;
-    if (record_audio_src_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_audio_src_);
-        gst_object_unref(record_audio_src_);
-    }
-    record_audio_src_ = NULL;
+    DESTROY_ELEMENT(record_audio_encoder_pad_);
 
-    if (record_queue_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_queue_);
-        gst_object_unref(record_queue_);
-    }
-    record_queue_ = NULL;
-    if (record_convert_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_convert_);
-        gst_object_unref(record_convert_);
-    }
-    record_convert_ = NULL;
+    DESTROY_ELEMENT(record_audio_convert_);
+    DESTROY_ELEMENT(record_audio_encoder_);
+    DESTROY_ELEMENT(record_audio_queue_);
+    DESTROY_ELEMENT(record_audio_src_);
+    DESTROY_ELEMENT(record_queue_);
+    DESTROY_ELEMENT(record_convert_);
 #ifndef PLATFORM_QEMUX86
-    if (filter_NV12_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), filter_NV12_);
-        gst_object_unref(filter_NV12_);
-    }
-    filter_NV12_ = NULL;
+    DESTROY_ELEMENT(filter_NV12_);
 #endif
-    if (record_encoder_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_encoder_);
-        gst_object_unref(record_encoder_);
-    }
-    record_encoder_ = NULL;
+    DESTROY_ELEMENT(record_encoder_);
 #ifndef PLATFORM_QEMUX86
-    if (filter_H264_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), filter_H264_);
-        gst_object_unref(filter_H264_);
-    }
-    filter_H264_ = NULL;
-
-    if (record_parse_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_parse_);
-        gst_object_unref(record_parse_);
-    }
-    record_parse_ = NULL;
+    DESTROY_ELEMENT(filter_H264_);
+    DESTROY_ELEMENT(record_parse_);
 #endif
-    if (record_video_queue_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_video_queue_);
-        gst_object_unref(record_video_queue_);
-    }
-    record_video_queue_ = NULL;
-    if (record_mux_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_mux_);
-        gst_object_unref(record_mux_);
-    }
-    record_mux_ = NULL;
-    if (record_sink_)
-    {
-        gst_bin_remove(GST_BIN(pipeline_), record_sink_);
-        gst_object_unref(record_sink_);
-    }
-    record_sink_ = NULL;
+    DESTROY_ELEMENT(record_video_queue_);
+    DESTROY_ELEMENT(record_mux_);
+    DESTROY_ELEMENT(record_sink_);
 }
 
 void CameraPlayer::FreePreviewBinElements ()
