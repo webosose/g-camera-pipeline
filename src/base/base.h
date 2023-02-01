@@ -17,6 +17,7 @@
 #ifndef SRC_BASE_BASE_H_
 #define SRC_BASE_BASE_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
