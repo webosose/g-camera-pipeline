@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 LG Electronics, Inc.
+# Copyright (c) 2019-2023 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(g-camera-pipeline)
+
+option(AUTO_PTZ "Enable/Disable auto ptz feature" OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -lrt")
 
@@ -58,6 +60,9 @@ link_directories(${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
 
 if(${WEBOS_TARGET_MACHINE} STREQUAL "qemux86" OR ${WEBOS_TARGET_MACHINE} STREQUAL "qemux86-64")
     add_definitions(-DPLATFORM_QEMUX86)
+else()
+    add_definitions(-DPTZ_ENABLED)
+    set(AUTO_PTZ ON CACHE BOOL "" FORCE)
 endif()
 
 add_subdirectory(src)

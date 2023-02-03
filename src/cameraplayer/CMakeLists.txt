@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2021 LG Electronics, Inc.
+# Copyright (c) 2019-2023 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,7 +69,22 @@ set(G-CAMERA-PIPELINE_HEADERS
     ../resourcefacilitator/requestor.h
     ../util/camshm.h
     ../util/cam_posixshm.h
+   )
+
+if (AUTO_PTZ)
+list(APPEND G-CAMERA_PIPELINE_HEADERS
+    ../postProcess/drawbox.hpp
+    ../postProcess/EmptySolution.hpp
+    ../postProcess/FaceDataManager.hpp
+    ../postProcess/FacePtzSolution.hpp
+    ../postProcess/FpsCalc.hpp
+    ../postProcess/IPostProcessSolution.hpp
+    ../postProcess/PostProcessSolution.hpp
+    ../postProcess/PTZMovingParam.hpp
+    ../postProcess/SmoothSlidingController.hpp
+    ../postProcess/video_crop.hpp
     )
+endif()
 
 set(G-CAMERA-PIPELINE_SRC
     camera_player.cpp
@@ -81,6 +96,20 @@ set(G-CAMERA-PIPELINE_SRC
     ../util/camshm.cpp
     ../util/cam_posixshm.cpp
     )
+
+if (AUTO_PTZ)
+list(APPEND G-CAMERA-PIPELINE_SRC
+    ../postProcess/drawbox.cpp
+    ../postProcess/EmptySolution.cpp
+    ../postProcess/FaceDataManager.cpp
+    ../postProcess/FacePtzSolution.cpp
+    ../postProcess/FpsCalc.cpp
+    ../postProcess/PostProcessSolution.cpp
+    ../postProcess/PTZMovingParam.cpp
+    ../postProcess/SmoothSlidingController.cpp
+    ../postProcess/video_crop.cpp
+   )
+endif()
 
 set(G-CAMERA-PIPELINE_LIBRARIES
     ums_connector

@@ -33,7 +33,11 @@
 #include <poll.h>
 #include <pthread.h>
 #include <sys/mman.h>
-
+#ifdef PTZ_ENABLED
+//Auto PTZ
+#include "../postProcess/FacePtzSolution.hpp"
+//end
+#endif
 #ifdef CMP_DEBUG_PRINT
 #undef CMP_DEBUG_PRINT
 #endif
@@ -112,6 +116,8 @@ CameraPlayer::CameraPlayer():
     preview_encoder_(NULL),
     preview_convert_(NULL),
     preview_scale_(NULL),
+    preview_queue_(NULL),
+    preview_video_crop_(NULL),
     tee_(NULL),
     capture_queue_(NULL),
     capture_encoder_(NULL),
@@ -123,7 +129,6 @@ CameraPlayer::CameraPlayer():
     record_mux_(NULL),
     record_audio_src_(NULL),
     record_sink_(NULL),
-    preview_queue_(NULL),
     record_audio_queue_(NULL),
     record_audio_convert_(NULL),
     record_audio_encoder_(NULL),
@@ -393,6 +398,16 @@ bool CameraPlayer::Load(const std::string& str)
        framerate_ = DEFAULT_FRAMERATE;
 
     framerate = framerate_;
+#ifdef PTZ_ENABLED
+    //Auto PTZ
+    postProcessSolution_ =
+        std::shared_ptr<IPostProcessSolution>(getPostProcessSolution());
+    postProcessSolution_->setParam(PARAM_ID_WIDTH,
+                                   (void *)&width_);
+    postProcessSolution_->setParam(PARAM_ID_HEIGHT,
+                                   (void *)&height_);
+    //end
+#endif
     if (kMemtypePosixShm == memtype_)
         subscribeToCameraService();
     else
@@ -956,6 +971,15 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         CMP_DEBUG_PRINT("vconv_(%p) Failed", vconv_);
         return false;
     }
+#ifdef PTZ_ENABLED
+    //Added due to face detection auto ptz
+    preview_video_crop_ = gst_element_factory_make("videocrop", "preview-video-crop");
+    if (!preview_video_crop_)
+    {
+        CMP_DEBUG_PRINT("preview_video_crop_(%p) Failed", preview_video_crop_);
+        return false;
+    }
+#endif
     // Removing v4l2convert as it is failing for higher resolutions,
     // if in future any performance issue comes we will add this
     // element for lower resolution.
@@ -997,7 +1021,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
 
     if (!gst_bin_add(GST_BIN(pipeline_), preview_sink_))
     {
-        CMP_DEBUG_PRINT ("convert could not be added.\n");
+        CMP_DEBUG_PRINT ("preview sink could not be added.\n");
         return false;
     }
     if (!gst_bin_add(GST_BIN(pipeline_), vconv_))
@@ -1005,6 +1029,13 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         CMP_DEBUG_PRINT ("convert could not be added.\n");
         return false;
     }
+#ifdef PTZ_ENABLED
+    if (!gst_bin_add(GST_BIN(pipeline_), preview_video_crop_))
+    {
+        CMP_DEBUG_PRINT ("video crop could not be added.\n");
+        return false;
+    }
+#endif
     if (format_ == kFormatJPEG)
     {
         filter_RGB_ = gst_element_factory_make("capsfilter", "filter-RGB");
@@ -1032,12 +1063,19 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         {
             CMP_DEBUG_PRINT ("Preview scale adding to bin\n");
             gst_bin_add_many(GST_BIN(pipeline_), preview_scale_, filter_RGB_, NULL);
-
+#ifdef PTZ_ENABLED
+            if (TRUE !=  gst_element_link_many(vconv_, preview_video_crop_, preview_scale_, filter_RGB_, preview_sink_, NULL))
+            {
+                CMP_DEBUG_PRINT ("Preview scale and video crop Elements could not be linked.\n");
+                return false;
+            }
+#else
             if (TRUE !=  gst_element_link_many(vconv_, preview_scale_, filter_RGB_, preview_sink_, NULL))
             {
                 CMP_DEBUG_PRINT ("Preview scale Elements could not be linked.\n");
                 return false;
             }
+#endif
         }
         else
         {
@@ -1046,12 +1084,25 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
                 CMP_DEBUG_PRINT ("convert could not be added.\n");
                 return false;
             }
+#ifdef PTZ_ENABLED
+            if (TRUE !=  gst_element_link_many(vconv_, preview_video_crop_, filter_RGB_, preview_sink_, NULL))
+            {
+                CMP_DEBUG_PRINT ("vconv->videocrop->filter->previewSink Elements could not be linked.\n");
+                return false;
+            }
+#else
             if (TRUE !=  gst_element_link_many(vconv_, filter_RGB_, preview_sink_, NULL))
             {
                 CMP_DEBUG_PRINT ("vconv->filter->previewSink Elements could not be linked.\n");
                 return false;
             }
+#endif
         }
+#ifdef PTZ_ENABLED
+        //Auo PTZ
+        postProcessSolution_->setParam(PARAM_ID_CROP_OBJ, (void *)pipeline_);
+        //end
+#endif
         preview_queue_pad_ = gst_element_get_static_pad(vconv_, "sink");
         if (GST_PAD_LINK_OK != gst_pad_link(tee_preview_pad_, preview_queue_pad_)) {
           CMP_DEBUG_PRINT ("Record Tee could not be linked.\n");
@@ -1878,11 +1929,21 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
     int len = 0;
+    unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
     while (len == 0)
     {
-        ReadShmem(player->context_.shmemHandle, &data, &len);
+        ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
     }
+#ifdef PTZ_ENABLED
+    //Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        CMP_DEBUG_PRINT("meta len = %d, meta = %u", meta_len, *meta);
+        player->postProcessSolution_->pushMetaData(meta, meta_len);
+    }
+    //end
+#endif
     GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
     GstMapInfo writeBufferMap;
     gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
@@ -1891,6 +1952,14 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
     timestamp += GST_BUFFER_DURATION (buf);
+#ifdef PTZ_ENABLED
+    //Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        player->postProcessSolution_->doPostProcess();
+    }
+    //end
+#endif
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 }
 
@@ -1968,14 +2037,11 @@ void CameraPlayer::FreeRecordElements ()
 
 void CameraPlayer::FreePreviewBinElements ()
 {
-    if (vconv_)
-        delete vconv_;
-    if (preview_scale_)
-        delete preview_scale_;
-    if (preview_sink_)
-        delete preview_sink_;
-    if (filter_RGB_)
-        delete filter_RGB_;
+    DESTROY_ELEMENT(vconv_);
+    DESTROY_ELEMENT(preview_scale_);
+    DESTROY_ELEMENT(preview_sink_);
+    DESTROY_ELEMENT(filter_RGB_);
+    DESTROY_ELEMENT(preview_video_crop_);
 }
 
 GstFlowReturn CameraPlayer::GetSample(GstAppSink *elt, gpointer data)
@@ -2258,5 +2324,15 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
     recordingStarted = false;
     return;
 }
+#ifdef PTZ_ENABLED
+IPostProcessSolution *getPostProcessSolution()
+{
+    CMP_DEBUG_PRINT("getPostProcessSolution in");
+    IPostProcessSolution *p = new FacePtzSolution();
+    CMP_DEBUG_PRINT("getPostProcessSolution out");
+    return p;
+
+}
+#endif
 }
 }

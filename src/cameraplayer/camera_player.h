@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2022 LG Electronics, Inc.
+// Copyright (c) 2019-2023 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,7 +59,33 @@ typedef struct ACQUIRE_RESOURCE_INFO {
   gboolean result;
 } ACQUIRE_RESOURCE_INFO_T;
 
-namespace cmp { namespace service { class Service; }}
+#ifdef PTZ_ENABLED
+struct VideoCropRect {
+    uint16_t x{0};
+    uint16_t y{0};
+    uint16_t width{0};
+    uint16_t height{0};
+};
+#endif
+namespace cmp {
+
+#ifdef PTZ_ENABLED
+// Auto PTZ
+class IPostProcessSolution;
+class SmoothSlidingController;
+
+struct FaceInfo {
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint16_t confidence;
+    uint16_t reserved;
+};
+//end
+#endif
+
+namespace service { class Service; }}
 
 namespace cmp { namespace player {
 
@@ -88,6 +114,11 @@ class CameraPlayer {
   static guint mCameraServiceCbTimerID;
   static gboolean CameraServiceCbTimerCallback(void* data);
   void CameraServiceCbTimerReset();
+#ifdef PTZ_ENABLED
+  //Auto PTZ
+  std::shared_ptr<IPostProcessSolution> postProcessSolution_;
+  //end
+#endif
  private:
   void PauseInternalSync();
   void ParseOptionString(const std::string& options);
@@ -127,7 +158,6 @@ class CameraPlayer {
   static GstPadProbeReturn RecordRemoveProbe(GstPad * pad,
                                                GstPadProbeInfo * info,
                                                gpointer user_data);
-
   std::string media_id_;
   uint32_t display_path_;
   CALLBACK_T cbFunction_;
@@ -142,7 +172,8 @@ class CameraPlayer {
              *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
              *record_encoder_, *record_parse_, *record_decoder_, *record_mux_, *record_sink_,
              *preview_queue_, *preview_sink_, *record_audio_src_, *record_audio_queue_,
-             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_, *preview_scale_;
+             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_, *preview_scale_,
+             *preview_video_crop_;
   GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
          *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
          *tee_record_pad_, *record_audio_encoder_pad_, *record_video_queue_pad_,
@@ -161,6 +192,9 @@ class CameraPlayer {
   std::string display_mode_;
   std::string window_id_;
 };
+#ifdef PTZ_ENABLED
+IPostProcessSolution *getPostProcessSolution();
+#endif
 
 }  // namespace player
 }  // namespace cmp
