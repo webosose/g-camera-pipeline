@@ -1952,6 +1952,7 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
     timestamp += GST_BUFFER_DURATION (buf);
+    gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 #ifdef PTZ_ENABLED
     //Auto PTZ
     if (player->postProcessSolution_)
@@ -1960,7 +1961,6 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     }
     //end
 #endif
-    gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 }
 
 void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdata)
@@ -1968,11 +1968,21 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
     int len = 0;
+    unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
     while (len == 0)
     {
-        ReadPosixShmem(player->context_.shmemHandle, &data, &len);
+        ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
     }
+#ifdef PTZ_ENABLED
+    //Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        CMP_DEBUG_PRINT("meta len = %d, meta = %u", meta_len, *meta);
+        player->postProcessSolution_->pushMetaData(meta, meta_len);
+    }
+    //end
+#endif
     GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
     GstMapInfo writeBufferMap;
     gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
@@ -1982,6 +1992,14 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
     timestamp += GST_BUFFER_DURATION (buf);
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
+#ifdef PTZ_ENABLED
+    //Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        player->postProcessSolution_->doPostProcess();
+    }
+    //end
+#endif
 }
 
 #define DESTROY_ELEMENT(elm) \

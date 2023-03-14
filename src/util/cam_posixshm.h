@@ -1,4 +1,4 @@
-// Copyright (c) 2021 LG Electronics, Inc.
+// Copyright (c) 2021-2023 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,11 +29,15 @@ typedef enum _POSHMEM_STATUS_T
 typedef void * SHMEM_HANDLE;
 
 extern POSHMEM_STATUS_T OpenPosixShmem(SHMEM_HANDLE *phShmem, int fd);
-extern POSHMEM_STATUS_T ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize);
+extern POSHMEM_STATUS_T ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
+                                       unsigned char **ppMeta, int *pMetaSize);
 extern POSHMEM_STATUS_T ReadPosixShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-        unsigned char **ppExtraData, int *pExtraSize);
-extern POSHMEM_STATUS_T ReadPosixLastShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize);
+                                         unsigned char **ppMeta, int *pMetaSize,
+                                         unsigned char **ppExtraData, int *pExtraSize);
+extern POSHMEM_STATUS_T ReadPosixLastShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
+                                           unsigned char **ppMeta, int *pMetaSize);
 extern POSHMEM_STATUS_T ReadPosixLastShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData,
+                                          unsigned char **ppMeta, int *pMetaSize,
                                           int *pSize, unsigned char **ppExtraData, int *pExtraSize);
 
 #endif //SRC_HAL_UTILS_POCAMSHM_H_
