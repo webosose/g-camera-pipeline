@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2019-2022 LG Electronics
+ * Copyright (C) 2019-2023 LG Electronics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -238,6 +238,12 @@ static gboolean set_value (GQuark field, const GValue * value, gpointer pfx)
     {
         streamformat.stream_height = field_value;
     }
+#ifdef PLATFORM_QEMUX86
+    else if ((strcasecmp(field_name,"framerate") == 0) && (field_value > 0))
+    {
+        streamformat.stream_fps = field_value;
+    }
+#endif
     else if ((strcasecmp(field_name,"format") == 0))
     {
         if ((strcasecmp(str,"YUY2") == 0) || (strcasecmp(str,"YUYV") == 0))
@@ -258,6 +264,9 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
     streamformat.stream_width = DEFAULT_VIDEO_WIDTH;
     streamformat.stream_height = DEFAULT_VIDEO_HEIGHT;
     streamformat.pixel_format = DEFAULT_PIXEL_FORMAT;
+#ifdef PLATFORM_QEMUX86
+    streamformat.stream_fps = DEFAULT_VIDEO_FPS;
+#endif
 
     /* first see what is possible on our source pad */
     thiscaps = gst_pad_query_caps (GST_BASE_SRC_PAD (basesrc), NULL);

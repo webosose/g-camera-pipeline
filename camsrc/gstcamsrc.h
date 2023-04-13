@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2019-2021 LG Electronics
+ * Copyright (C) 2019-2023 LG Electronics
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -71,6 +71,9 @@ GType gst_camsrc_iomode_get_type(void);
 #define DEFAULT_VIDEO_WIDTH 640
 #define DEFAULT_VIDEO_HEIGHT 480
 #define DEFAULT_PIXEL_FORMAT CAMERA_PIXEL_FORMAT_JPEG
+#ifdef PLATFORM_QEMUX86
+#define DEFAULT_VIDEO_FPS 30
+#endif
 
 typedef struct _Gstcamsrc      Gstcamsrc;
 typedef struct _GstcamsrcClass GstcamsrcClass;
