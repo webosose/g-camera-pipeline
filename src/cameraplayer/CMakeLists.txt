@@ -139,10 +139,11 @@ target_link_libraries(${G-CAMERA-PIPELINE_LIB}
     camera-window-manager
     )
 
-if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64")
+if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64" OR
+   ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3-64")
   message(STATUS "Using config & debug file for raspberrypi4")
-  install(FILES ./raspberrypi4/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
-  install(FILES ./raspberrypi4/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
+  install(FILES ./raspberrypi/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
+  install(FILES ./raspberrypi/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
 elseif (${WEBOS_TARGET_MACHINE} STREQUAL "qemux86" OR ${WEBOS_TARGET_MACHINE} STREQUAL "qemux86-64")
   message(STATUS "Using config & debug file for qemux86")
   install(FILES ./qemux86/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
