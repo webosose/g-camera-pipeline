@@ -74,6 +74,7 @@
 
 #include <linux/videodev2.h>
 
+#include "camera_hal_if_types.h"
 #include "gstcamsrc.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_camsrc_debug);
@@ -238,12 +239,10 @@ static gboolean set_value (GQuark field, const GValue * value, gpointer pfx)
     {
         streamformat.stream_height = field_value;
     }
-#ifdef PLATFORM_QEMUX86
     else if ((strcasecmp(field_name,"framerate") == 0) && (field_value > 0))
     {
         streamformat.stream_fps = field_value;
     }
-#endif
     else if ((strcasecmp(field_name,"format") == 0))
     {
         if ((strcasecmp(str,"YUY2") == 0) || (strcasecmp(str,"YUYV") == 0))
@@ -264,9 +263,7 @@ gst_camsrc_negotiate (GstBaseSrc * basesrc)
     streamformat.stream_width = DEFAULT_VIDEO_WIDTH;
     streamformat.stream_height = DEFAULT_VIDEO_HEIGHT;
     streamformat.pixel_format = DEFAULT_PIXEL_FORMAT;
-#ifdef PLATFORM_QEMUX86
     streamformat.stream_fps = DEFAULT_VIDEO_FPS;
-#endif
 
     /* first see what is possible on our source pad */
     thiscaps = gst_pad_query_caps (GST_BASE_SRC_PAD (basesrc), NULL);
@@ -366,7 +363,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
      * set format and set buffer and this will be done only once at the start*/
     if(!bStarted)
     {
-        retval = camera_hal_if_set_format(camsrc->p_h_camera, streamformat);
+        retval = camera_hal_if_set_format(camsrc->p_h_camera, &streamformat);
         retval = camera_hal_if_get_format(camsrc->p_h_camera, &streamformat);
         switch (camsrc->mode)
         {
@@ -420,7 +417,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                       return GST_FLOW_ERROR;
 
                     if(frame_buffer.index >= 0) gst_memory_ref(dma_memory[frame_buffer.index]);
-                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
                     if(retval != 0){
                       return GST_FLOW_ERROR;
                     }
@@ -461,7 +458,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
 
                 gst_buffer_unmap(*buf,&map);
 
-                retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
                 if(retval != 0){
                   return GST_FLOW_ERROR;
                 }
@@ -484,7 +481,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                     *buf = buffer;
                     gst_memory_ref(dma_memory[frame_buffer.index]);
                     gst_buffer_unmap(buffer,&map);
-                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera,frame_buffer);
+                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
                     if(retval != 0){
                         return GST_FLOW_ERROR;
                     }
