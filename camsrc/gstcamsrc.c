@@ -351,7 +351,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
     Gstcamsrc *camsrc = GST_CAMSRC (src);
     int retval = 0;
     GstMapInfo map;
-    buffer_t frame_buffer;
+    buffer_t frame_buffer = {0};
     int check = 0;
     int fd = 0;
     int index = 0;
@@ -368,7 +368,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
         switch (camsrc->mode)
         {
             case GST_V4L2_IO_MMAP:
-                retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 4, IOMODE_MMAP);
+                retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 4, IOMODE_MMAP, NULL);
                 if(retval != 0)
                   return GST_FLOW_ERROR;
 
@@ -377,19 +377,16 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                   return GST_FLOW_ERROR;
 
                 bStarted = 1;
-                frame_buffer.start = malloc(streamformat.buffer_size);
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
                 if(retval != 0)
                 {
-                  free(frame_buffer.start);
-                  return GST_FLOW_ERROR;
+                    return GST_FLOW_ERROR;
                 }
                 length = frame_buffer.length;
-                free(frame_buffer.start);
                 break;
 
             case GST_V4L2_IO_DMABUF_EXPORT:
-                retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 6, IOMODE_DMABUF);
+                retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 6, IOMODE_DMABUF, NULL);
                 if(retval != 0)
                   return GST_FLOW_ERROR;
 
@@ -426,9 +423,14 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                 break;
 
             case GST_V4L2_IO_USERPTR:
-                retval = camera_hal_if_set_buffer(camsrc->p_h_camera, 4, IOMODE_USERPTR);
-                if(retval != 0)
-                  return GST_FLOW_ERROR;
+                /**
+                 * FIX_ME_IF_WRONG:
+                 *    Actually no USRERPTR has been implemented, because
+                 *    camsrc does not provide a way to push buffer from downstream.
+                 *    Trying USERPTR should always return ERROR.
+                 */
+                return GST_FLOW_ERROR;
+
                 break;
 
             default:
@@ -451,11 +453,10 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                 ret = GST_BASE_SRC_CLASS (parent_class)->alloc (GST_BASE_SRC (src), 0,
                         length, buf);
                 gst_buffer_map (*buf, &map, GST_MAP_WRITE);
-                frame_buffer.start=map.data;
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
                 if(retval != 0)
                   return GST_FLOW_ERROR;
-
+                memcpy(map.data, frame_buffer.start, frame_buffer.length);
                 gst_buffer_unmap(*buf,&map);
 
                 retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
