@@ -510,6 +510,19 @@ bool CameraPlayer::Unload()
 
     SetPlayerState(base::playback_state_t::STOPPED);
 
+    if (memtype_ == kMemtypeShmem)
+    {
+        if (CloseShmem((SHMEM_HANDLE *)(&(context_.shmemHandle))) != SHMEM_COMM_OK)
+        {
+            CMP_DEBUG_PRINT("CloseShmem failed");
+            return false;
+        }
+    }
+    else if (memtype_ == kMemtypePosixShm)
+    {
+        //[TODO] We need POSIX shared memory name.
+    }
+
     if (!detachSurface())
     {
         CMP_DEBUG_PRINT("detachSurface() failed");
@@ -1392,7 +1405,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         return false;
     }
     g_object_set(G_OBJECT(record_sink_), "location", recordfilename, NULL);
-    if(memtype_ == kMemtypeShmem && format_ == kFormatYUV) 
+    if(memtype_ == kMemtypeShmem && format_ == kFormatYUV)
         g_object_set(G_OBJECT(record_sink_), "sync", false, NULL);
     else
         g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
