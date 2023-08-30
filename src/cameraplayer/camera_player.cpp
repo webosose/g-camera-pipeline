@@ -158,7 +158,9 @@ CameraPlayer::CameraPlayer():
     service_(NULL),
     load_complete_(false),
     display_mode_("Default"),
-    window_id_("") {
+    window_id_(""),
+    camera_id_(""),
+    cs_client_(nullptr) {
     CMP_DEBUG_PRINT(" this[%p]", this);
 }
 
@@ -262,6 +264,9 @@ void CameraPlayer::ParseOptionString(const std::string& options)
     }
     if (parsed["options"]["option"].hasKey("memSrc")) {
         memsrc_ = parsed["options"]["option"]["memSrc"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("cameraId")) {
+        camera_id_ = parsed["options"]["option"]["cameraId"].asString();
     }
 
     CMP_DEBUG_PRINT("uri: %s, display-path: %d, window_id: %s, display_mode: %s",
@@ -393,6 +398,7 @@ bool CameraPlayer::Load(const std::string& str)
     CMP_DEBUG_PRINT("iomode_ : %d", iomode_);
     CMP_DEBUG_PRINT("memsrc_ : %s", memsrc_.c_str());
     CMP_DEBUG_PRINT("posixshm_fd : %d", posixshm_fd);
+    CMP_DEBUG_PRINT("camera_id_ : %s", camera_id_.c_str());
 
     if(memtype_ == kMemtypeShmem && framerate_ == 0)
        framerate_ = DEFAULT_FRAMERATE;
@@ -408,10 +414,22 @@ bool CameraPlayer::Load(const std::string& str)
                                    (void *)&height_);
     //end
 #endif
+
+    if (!camera_id_.empty())
+    {
+        if (memtype_ == kMemtypeShmem || memtype_ == kMemtypePosixShm)
+        {
+            CMP_DEBUG_PRINT("creating CameraServiceClient");
+            cs_client_ = new CameraServiceClient();
+            cs_client_->open(camera_id_);
+        }
+    }
+
     if (kMemtypePosixShm == memtype_)
         subscribeToCameraService();
     else
         LoadPlayer();
+
     return true;
 }
 
@@ -531,6 +549,13 @@ bool CameraPlayer::Unload()
 
     if (cbFunction_)
         cbFunction_(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
+
+    if (cs_client_)
+    {
+        cs_client_->close();
+        delete cs_client_;
+        cs_client_ = nullptr;
+    }
 
     return true;
 }

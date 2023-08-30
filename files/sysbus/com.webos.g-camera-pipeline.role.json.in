@@ -4,7 +4,8 @@
     "trustLevel" : "oem",
     "allowedNames": [
         "com.webos.pipeline*",
-        "com.webos.rm.client*"
+        "com.webos.rm.client*",
+        "com.webos.pipeline.ipc*"
     ],
     "permissions": [
         {
@@ -14,6 +15,10 @@
         {
             "service":"com.webos.rm.client*",
             "outbound": ["com.webos.media"]
+        },
+        {
+            "service":"com.webos.pipeline.ipc*",
+            "outbound": ["com.webos.service.camera2"]
         }
     ]
 }

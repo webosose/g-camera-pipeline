@@ -35,6 +35,7 @@
 #include "cam_posixshm.h"
 #include "camera_types.h"
 #include <mutex>
+#include "camera_service_client.h"
 
 using namespace std;
 
@@ -191,6 +192,10 @@ class CameraPlayer {
   LSM::CameraWindowManager lsm_camera_window_manager_;
   std::string display_mode_;
   std::string window_id_;
+
+  /* shmem sync */
+  std::string camera_id_;
+  CameraServiceClient *cs_client_;
 };
 #ifdef PTZ_ENABLED
 IPostProcessSolution *getPostProcessSolution();
