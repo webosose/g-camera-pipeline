@@ -422,6 +422,7 @@ bool CameraPlayer::Load(const std::string& str)
             CMP_DEBUG_PRINT("creating CameraServiceClient");
             cs_client_ = new CameraServiceClient();
             cs_client_->open(camera_id_);
+            cs_client_->startPreview(memtype_);
         }
     }
 
@@ -552,6 +553,7 @@ bool CameraPlayer::Unload()
 
     if (cs_client_)
     {
+        cs_client_->stopPreview();
         cs_client_->close();
         delete cs_client_;
         cs_client_ = nullptr;
