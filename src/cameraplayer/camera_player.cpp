@@ -1984,11 +1984,7 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     }
     //end
 #endif
-    GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-    GstMapInfo writeBufferMap;
-    gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
-    memcpy(writeBufferMap.data, data, len);
-    gst_buffer_unmap(buf, &writeBufferMap);
+    GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
     timestamp += GST_BUFFER_DURATION (buf);
@@ -2023,11 +2019,7 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     }
     //end
 #endif
-    GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-    GstMapInfo writeBufferMap;
-    gboolean bcheck = gst_buffer_map(buf, &writeBufferMap, GST_MAP_WRITE);
-    memcpy(writeBufferMap.data, data, len);
-    gst_buffer_unmap(buf, &writeBufferMap);
+    GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
     timestamp += GST_BUFFER_DURATION (buf);
