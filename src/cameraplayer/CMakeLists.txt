@@ -96,6 +96,7 @@ set(G-CAMERA-PIPELINE_SRC
     ../util/camshm.cpp
     ../util/cam_posixshm.cpp
     camera_service_client.cpp
+    signal_listener.cpp
     )
 
 if (AUTO_PTZ)

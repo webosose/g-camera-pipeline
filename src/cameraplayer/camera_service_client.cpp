@@ -159,13 +159,15 @@ bool CameraServiceClient::cbGetFd(LSHandle *sh, LSMessage *msg, void *ctx)
     return true;
 }
 
-bool CameraServiceClient::open(std::string cameraId)
+bool CameraServiceClient::open(std::string cameraId, int pid)
 {
     CMP_DEBUG_PRINT("CameraServiceClient::open() entered ...");
     if (handle_ != -1)
     {
         return false;
     }
+
+    pid_ = pid;
 
     std::string payload = "{\"id\":\"" + cameraId + "\", \"mode\": \"secondary\"";
     if (pid_ > 0)

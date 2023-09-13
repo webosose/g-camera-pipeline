@@ -160,7 +160,9 @@ CameraPlayer::CameraPlayer():
     display_mode_("Default"),
     window_id_(""),
     camera_id_(""),
-    cs_client_(nullptr) {
+    cs_client_(nullptr),
+    shm_listener_(nullptr)
+{
     CMP_DEBUG_PRINT(" this[%p]", this);
 }
 
@@ -419,10 +421,24 @@ bool CameraPlayer::Load(const std::string& str)
     {
         if (memtype_ == kMemtypeShmem || memtype_ == kMemtypePosixShm)
         {
-            CMP_DEBUG_PRINT("creating CameraServiceClient");
             cs_client_ = new CameraServiceClient();
-            cs_client_->open(camera_id_);
-            cs_client_->startPreview(memtype_);
+            CMP_DEBUG_PRINT("cs_client_ : %p", cs_client_);
+            if (cs_client_)
+            {
+                CMP_DEBUG_PRINT("cs_client_ creation OK");
+                int pid = -1;
+                shm_listener_ = new SignalListener();
+                CMP_DEBUG_PRINT("shm_listener_ : %p", shm_listener_);
+                if (shm_listener_)
+                {
+                    CMP_DEBUG_PRINT("shm_listener_ creation OK");
+                    shm_listener_->initialize(SIGUSR1);
+                    pid = shm_listener_->run();
+                }
+                CMP_DEBUG_PRINT("pid : %d", pid);
+                cs_client_->open(camera_id_, pid);
+                cs_client_->startPreview(memtype_);
+            }
         }
     }
 
@@ -557,6 +573,14 @@ bool CameraPlayer::Unload()
         cs_client_->close();
         delete cs_client_;
         cs_client_ = nullptr;
+    }
+
+    if (shm_listener_)
+    {
+        shm_listener_->setTimeout(0, 100000);
+        shm_listener_->quit();
+        delete shm_listener_;
+        shm_listener_ = nullptr;
     }
 
     return true;
@@ -1046,14 +1070,27 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         if (memtype_ == kMemtypeDevice)
             g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
         else
-            g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+        {
+            if (shm_listener_)
+                g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+            else
+                g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+        }
     }
     else
     {
-        if(memtype_ == kMemtypeShmem)
-            g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
-        else
+        if (shm_listener_)
+        {
+            // apply to both system V and POSIX shmem
             g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        }
+        else
+        {
+            if(memtype_ == kMemtypeShmem)
+                g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+            else
+                g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        }
     }
 #ifndef PLATFORM_QEMUX86
     g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", false, NULL);
@@ -1971,9 +2008,17 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     int len = 0;
     unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
-    while (len == 0)
+    if (player->shm_listener_)
     {
+        player->shm_listener_->wait();
         ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+    }
+    else
+    {
+        while (len == 0)
+        {
+            ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
 #ifdef PTZ_ENABLED
     //Auto PTZ
@@ -2006,9 +2051,17 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     int len = 0;
     unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
-    while (len == 0)
+    if (player->shm_listener_)
     {
+        player->shm_listener_->wait();
         ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+    }
+    else
+    {
+        while (len == 0)
+        {
+            ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
 #ifdef PTZ_ENABLED
     //Auto PTZ

@@ -36,6 +36,7 @@
 #include "camera_types.h"
 #include <mutex>
 #include "camera_service_client.h"
+#include "signal_listener.h"
 
 using namespace std;
 
@@ -196,6 +197,7 @@ class CameraPlayer {
   /* shmem sync */
   std::string camera_id_;
   CameraServiceClient *cs_client_;
+  SignalListener *shm_listener_;
 };
 #ifdef PTZ_ENABLED
 IPostProcessSolution *getPostProcessSolution();
