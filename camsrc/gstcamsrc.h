@@ -71,9 +71,7 @@ GType gst_camsrc_iomode_get_type(void);
 #define DEFAULT_VIDEO_WIDTH 640
 #define DEFAULT_VIDEO_HEIGHT 480
 #define DEFAULT_PIXEL_FORMAT CAMERA_PIXEL_FORMAT_JPEG
-#ifdef PLATFORM_QEMUX86
 #define DEFAULT_VIDEO_FPS 30
-#endif
 
 typedef struct _Gstcamsrc      Gstcamsrc;
 typedef struct _GstcamsrcClass GstcamsrcClass;
