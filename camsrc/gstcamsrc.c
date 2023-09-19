@@ -377,12 +377,6 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
                   return GST_FLOW_ERROR;
 
                 bStarted = 1;
-                retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
-                if(retval != 0)
-                {
-                    return GST_FLOW_ERROR;
-                }
-                length = frame_buffer.length;
                 break;
 
             case GST_V4L2_IO_DMABUF_EXPORT:
@@ -451,7 +445,7 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
         {
             case GST_V4L2_IO_MMAP:
                 ret = GST_BASE_SRC_CLASS (parent_class)->alloc (GST_BASE_SRC (src), 0,
-                        length, buf);
+                        streamformat.buffer_size, buf);
                 gst_buffer_map (*buf, &map, GST_MAP_WRITE);
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
                 if(retval != 0)

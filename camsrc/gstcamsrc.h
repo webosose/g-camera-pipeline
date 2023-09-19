@@ -78,7 +78,6 @@ typedef struct _GstcamsrcClass GstcamsrcClass;
 static gboolean bStarted = 0;
 const char *subsystem = "libv4l2-camera-plugin.so.1";
 const char *devname = "/dev/video0";
-static unsigned long length = 0;
 static stream_format_t streamformat;
 
 
