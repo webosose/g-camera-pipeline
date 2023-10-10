@@ -194,7 +194,7 @@ bool CameraServiceClient::open(std::string cameraId, int pid)
     return true;
 }
 
-int CameraServiceClient::startPreview(std::string memtype)
+int CameraServiceClient::startCamera(std::string memtype)
 {
     if (handle_ == -1)
     {
@@ -215,7 +215,7 @@ int CameraServiceClient::startPreview(std::string memtype)
     {
         return -1;
     }
-    if (!call("luna://com.webos.service.camera2/startPreview", payload, cbGetReplyMsg))
+    if (!call("luna://com.webos.service.camera2/startCamera", payload, cbGetReplyMsg))
     {
         return -1;
     }
@@ -227,7 +227,7 @@ int CameraServiceClient::startPreview(std::string memtype)
     return parsed["key"].asNumber<int>();
 }
 
-bool CameraServiceClient::stopPreview()
+bool CameraServiceClient::stopCamera()
 {
     if (handle_ == -1)
     {
@@ -235,7 +235,7 @@ bool CameraServiceClient::stopPreview()
     }
 
     std::string payload = "{\"handle\":" + std::to_string(handle_) + "}";
-    if (!call("luna://com.webos.service.camera2/stopPreview", payload, cbGetReplyMsg))
+    if (!call("luna://com.webos.service.camera2/stopCamera", payload, cbGetReplyMsg))
     {
         return false;
     }

@@ -25,9 +25,9 @@ public:
     CameraServiceClient();
     ~CameraServiceClient();
     bool open(std::string cameraId, int pid = -1);
-    int startPreview(std::string memtype_ = "shmem");
+    int startCamera(std::string memtype_ = "shmem");
     int getFd();
-    bool stopPreview();
+    bool stopCamera();
     bool close();
 };
 

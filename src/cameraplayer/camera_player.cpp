@@ -437,7 +437,7 @@ bool CameraPlayer::Load(const std::string& str)
                 }
                 CMP_DEBUG_PRINT("pid : %d", pid);
                 cs_client_->open(camera_id_, pid);
-                cs_client_->startPreview(memtype_);
+                cs_client_->startCamera(memtype_);
             }
         }
     }
@@ -569,7 +569,7 @@ bool CameraPlayer::Unload()
 
     if (cs_client_)
     {
-        cs_client_->stopPreview();
+        cs_client_->stopCamera();
         cs_client_->close();
         delete cs_client_;
         cs_client_ = nullptr;
