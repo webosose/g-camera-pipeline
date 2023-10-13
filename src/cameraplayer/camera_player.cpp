@@ -436,17 +436,56 @@ bool CameraPlayer::Load(const std::string& str)
                     pid = shm_listener_->run();
                 }
                 CMP_DEBUG_PRINT("pid : %d", pid);
-                cs_client_->open(camera_id_, pid);
-                cs_client_->startCamera(memtype_);
+                if (cs_client_->open(camera_id_, pid))
+                {
+                    int key = cs_client_->startCamera(memtype_);
+                    if (key == atoi(memsrc_.c_str()))
+                    {
+                        if (memtype_ == kMemtypePosixShm)
+                        {
+                            posixshm_fd = cs_client_->getFd();
+                        }
+                        LoadPlayer();
+                    }
+                    else
+                    {
+                        CMP_DEBUG_PRINT("Wrong cameraId");
+                        cs_client_->stopCamera();
+                        cs_client_->close();
+                        delete cs_client_;
+                        cs_client_ = nullptr;
+                        if (shm_listener_)
+                        {
+                            shm_listener_->setTimeout(0, 100000);
+                            shm_listener_->quit();
+                            delete shm_listener_;
+                            shm_listener_ = nullptr;
+                        }
+                    }
+                }
+                else
+                {
+                    CMP_DEBUG_PRINT("Invalid cameraId");
+                    delete cs_client_;
+                    cs_client_ = nullptr;
+                    if (shm_listener_)
+                    {
+                        shm_listener_->setTimeout(0, 100000);
+                        shm_listener_->quit();
+                        delete shm_listener_;
+                        shm_listener_ = nullptr;
+                    }
+                }
             }
         }
     }
-
-    if (kMemtypePosixShm == memtype_)
-        subscribeToCameraService();
     else
-        LoadPlayer();
-
+    {
+        if (kMemtypePosixShm == memtype_)
+            subscribeToCameraService();
+        else
+            LoadPlayer();
+    }
     return true;
 }
 
