@@ -281,7 +281,7 @@ static bool getFdCb(LSHandle *lsHandle, LSMessage *message, void *user_data)
     jerror *error = NULL;
     LSError lserror;
     const char *payload = LSMessageGetPayload(message);
-    jvalue_ref jin_obj = jdom_create(j_cstr_to_buffer(payload), jschema_all(), &error);
+    jvalue_ref jin_obj = jdom_create(j_cstr_to_buffer(payload ? payload : ""), jschema_all(), &error);
 
     getFdReceived = true;
     int fd=0;
