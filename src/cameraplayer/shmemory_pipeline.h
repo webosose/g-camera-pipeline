@@ -9,6 +9,8 @@
 #include "camera_types.h"
 #include "camshm.h"
 
+static const std::string camera_pipeline_path = "/etc/g-camera-pipeline/camera_pipeline";
+
 using namespace cmp;
 
 #ifdef PTZ_ENABLED
