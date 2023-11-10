@@ -2,6 +2,7 @@
 #include "log.h"
 #include "camera_player.h"
 #include "shmemory_jpeg_pipeline.h"
+#include "shmemory_yuv_pipeline.h"
 
 std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JValue &parsed)
 {
@@ -20,6 +21,10 @@ std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JVa
         if (format == "JPEG")
         {
             return std::make_shared<ShmemoryJpegPipeline>();
+        }
+        else if (format == "YUY2")
+        {
+            return std::make_shared<ShmemoryYuvPipeline>();
         }
     }
 

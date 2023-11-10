@@ -90,6 +90,7 @@ set(G-CAMERA-PIPELINE_SRC
     camera_player.cpp
     shmemory_pipeline.cpp
     shmemory_jpeg_pipeline.cpp
+    shmemory_yuv_pipeline.cpp
     ../pipelinefactory/pipeline_factory.cpp
     ../parser/parser.cpp
     ../parser/serializer.cpp
