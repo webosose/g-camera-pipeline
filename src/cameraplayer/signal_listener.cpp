@@ -20,6 +20,9 @@ SignalListener::~SignalListener()
 {
     pthread_cond_destroy(&cond_);
     pthread_mutex_destroy(&mutex_);
+
+    setTimeout(0, 100000);
+    quit();
 }
 
 void SignalListener::initialize(int signum)
