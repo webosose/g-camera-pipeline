@@ -1,5 +1,6 @@
 #include "shmemory_jpeg_pipeline.h"
 #include "log.h"
+#include "element_factory.h"
 
 bool ShmemoryJpegPipeline::launch()
 {
@@ -16,11 +17,23 @@ bool ShmemoryJpegPipeline::launch()
     }
     else
     {
-        pipeline_desc = "appsrc name=src ! jpegdec ! v4l2convert";
+        pipeline_desc = "appsrc name=src";
+
+        std::string element = ElementFactory::GetPreferredElementName(pipelineType, "jpeg-decoder");
+        if (!element.empty())
+            pipeline_desc += " ! " + element;
+
+        element = ElementFactory::GetPreferredElementName(pipelineType, "video-converter");
+        if (!element.empty())
+            pipeline_desc += " ! " + element;
+
 #ifdef PTZ_ENABLED
         pipeline_desc += " ! videocrop name=preview-video-crop";
 #endif
-        pipeline_desc += " ! waylandsink";
+
+        element = ElementFactory::GetPreferredElementName(pipelineType, "video-sink");
+        if (!element.empty())
+            pipeline_desc += " ! " + element + " name=sink";
     }
 
     CMP_LOG_INFO("pipeline : %s", pipeline_desc.c_str());
@@ -58,6 +71,13 @@ bool ShmemoryJpegPipeline::launch()
                     p->FeedData(src, size);
             }),
             this);
+    }
+
+    // 3. Setup sink
+    auto sink = gst_bin_get_by_name(GST_BIN(pipeline_), "sink");
+    if (sink)
+    {
+        ElementFactory::SetProperties(pipelineType, sink, "video-sink");
     }
 
     CMP_LOG_INFO("end");

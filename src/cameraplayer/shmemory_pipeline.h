@@ -105,6 +105,7 @@ protected:
     void FeedData(GstElement * appsrc, guint size);
 
     GstElement *pipeline_{nullptr};
+    std::string pipelineType;
 };
 
 #endif // _SHMEMORY_PIPELINE_H_

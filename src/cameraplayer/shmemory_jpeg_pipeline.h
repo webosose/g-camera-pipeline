@@ -6,6 +6,11 @@
 class ShmemoryJpegPipeline : public ShmemoryPipeline
 {
 public:
+    ShmemoryJpegPipeline()
+    {
+        pipelineType = "JpegPipeline";
+    }
+
     bool launch();
 };
 #endif // _SHMEMORY_JPEG_PIPELINE_H_

@@ -1,5 +1,6 @@
 #include "shmemory_yuv_pipeline.h"
 #include "log.h"
+#include "element_factory.h"
 
 bool ShmemoryYuvPipeline::launch()
 {
@@ -16,11 +17,17 @@ bool ShmemoryYuvPipeline::launch()
     }
     else
     {
-        pipeline_desc = "appsrc name=src ! v4l2convert";
+        pipeline_desc = "appsrc name=src";
+
+        std::string element = ElementFactory::GetPreferredElementName(pipelineType, "video-converter");
+        if (!element.empty())
+            pipeline_desc += " ! " + element + " name=conv";
 
         //[TODO] Currently, auto PTZ is not supported for the YUV format.
 
-        pipeline_desc += " ! waylandsink";
+        element = ElementFactory::GetPreferredElementName(pipelineType, "video-sink");
+        if (!element.empty())
+            pipeline_desc += " ! " + element + " name=sink";
     }
 
     CMP_LOG_INFO("pipeline : %s", pipeline_desc.c_str());
@@ -59,6 +66,20 @@ bool ShmemoryYuvPipeline::launch()
                     p->FeedData(src, size);
             }),
             this);
+    }
+
+    // 2. Setup converter
+    auto conv = gst_bin_get_by_name(GST_BIN(pipeline_), "conv");
+    if (conv)
+    {
+        ElementFactory::SetProperties(pipelineType, conv, "video-converter");
+    }
+
+    // 3. Setup sink
+    auto sink = gst_bin_get_by_name(GST_BIN(pipeline_), "sink");
+    if (sink)
+    {
+        ElementFactory::SetProperties(pipelineType, sink, "video-sink");
     }
 
     CMP_LOG_INFO("end");
