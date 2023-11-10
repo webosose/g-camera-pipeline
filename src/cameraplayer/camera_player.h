@@ -36,6 +36,7 @@
 #include "camera_types.h"
 #include "camera_service_client.h"
 #include "signal_listener.h"
+#include "camera_pipeline.h"
 
 using namespace std;
 
@@ -90,7 +91,7 @@ namespace service { class Service; }}
 
 namespace cmp { namespace player {
 
-class CameraPlayer {
+class CameraPlayer : public CameraPipeline {
  public:
 
   CameraPlayer();

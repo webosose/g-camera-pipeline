@@ -20,13 +20,13 @@
 
 #include <UMSConnector.h>
 #include "resourcefacilitator/requestor.h"
-#include "cameraplayer/camera_player.h"
 #include "base/base.h"
 #include <base/message.h>
 
 class UMSConnector;
 class UMSConnectorHandle;
 class UMSConnectorMessage;
+class CameraPipeline;
 
 namespace cmp { namespace player { class CameraPlayer; }}
 namespace cmp { namespace base { struct source_info_t; }}
@@ -96,7 +96,7 @@ class Service {
   std::string media_id_;  // connection_id
   std::string app_id_;
   std::unique_ptr<UMSConnector> umc_;
-  std::shared_ptr<cmp::player::CameraPlayer> player_;
+  std::shared_ptr<CameraPipeline> player_;
   std::unique_ptr<cmp::resource::ResourceRequestor> resourceRequestor_;
   bool isLoaded_;
 

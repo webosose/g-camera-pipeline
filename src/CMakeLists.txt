@@ -39,6 +39,8 @@ endif()
 
 include_directories(./cameraplayer)
 
+include_directories(./pipelinefactory)
+
 include_directories(./mediaencoderclient)
 
 include_directories(./bufferencoder)

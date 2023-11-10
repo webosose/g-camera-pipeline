@@ -19,6 +19,8 @@
 #include "parser/serializer.h"
 #include "parser/parser.h"
 #include "log/log.h"
+#include "camera_player.h"
+#include "pipeline_factory.h"
 
 #ifdef CMP_DEBUG_PRINT
 #undef CMP_DEBUG_PRINT
@@ -211,7 +213,7 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
         instance_->resourceRequestor_ = std::make_unique<cmp::resource::ResourceRequestor>
                                             (instance_->app_id_, instance_->media_id_);
 
-    instance_->player_= std::make_shared<cmp::player::CameraPlayer>();
+    instance_->player_= PipelineFactory::CreatePlayer(parsed);
 
     if (!instance_->player_) {
         CMP_INFO_PRINT("Error: Player not created");
