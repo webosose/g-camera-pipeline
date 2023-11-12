@@ -366,3 +366,42 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
 
     return POSHMEM_COMM_OK;
 }
+
+POSHMEM_STATUS_T ClosePosixShmem(SHMEM_HANDLE *phShmem, const char* shmemname, int shmemfd)
+{
+    DEBUG_PRINT("ClosePosixShmem start");
+
+    POSHMEM_COMM_T *shmem_buffer = (POSHMEM_COMM_T *)*phShmem;
+    if (!shmem_buffer)
+    {
+        DEBUG_PRINT("shmem_bufer is NULL");
+        return POSHMEM_COMM_FAIL;
+    }
+
+    int unitNum = *shmem_buffer->unit_num;
+    int unitSize = *shmem_buffer->unit_size;
+    int metaSize = *shmem_buffer->meta_size;
+    int extraSize = *shmem_buffer->extra_size;
+
+    int shmemSize = SHMEM_HEADER_SIZE + (unitSize + SHMEM_LENGTH_SIZE) * unitNum +
+                    (metaSize + SHMEM_LENGTH_SIZE) * unitNum + sizeof(int) + (extraSize)*unitNum;
+
+    void *shmem_addr = shmem_buffer->write_index;
+
+    if (munmap(shmem_addr, shmemSize) == -1)
+    {
+        DEBUG_PRINT("munmap failed!!");
+    }
+
+    if (shm_unlink(shmemname) == -1)
+    {
+        DEBUG_PRINT("shm_unlink failed!!");
+    }
+
+    close(shmemfd);
+    free(shmem_buffer);
+    shmem_buffer = nullptr;
+
+    DEBUG_PRINT("ClosePosixShmem end");
+    return POSHMEM_COMM_OK;
+}

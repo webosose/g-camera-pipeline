@@ -601,7 +601,11 @@ bool CameraPlayer::Unload()
     }
     else if (memtype_ == kMemtypePosixShm)
     {
-        //[TODO] We need POSIX shared memory name.
+        if (ClosePosixShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), "", posixshm_fd) != POSHMEM_COMM_OK)
+        {
+            CMP_DEBUG_PRINT("CloseShmem failed");
+            return false;
+        }
     }
 
     if (!detachSurface())

@@ -39,5 +39,6 @@ extern POSHMEM_STATUS_T ReadPosixLastShmem(SHMEM_HANDLE hShmem, unsigned char **
 extern POSHMEM_STATUS_T ReadPosixLastShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData,
                                           unsigned char **ppMeta, int *pMetaSize,
                                           int *pSize, unsigned char **ppExtraData, int *pExtraSize);
+extern POSHMEM_STATUS_T ClosePosixShmem(SHMEM_HANDLE *phShmem, const char* shmemname, int shmemfd);
 
 #endif //SRC_HAL_UTILS_POCAMSHM_H_
