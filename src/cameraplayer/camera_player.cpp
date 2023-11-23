@@ -326,7 +326,7 @@ gboolean CameraPlayer::CameraServiceCbTimerCallback(void* data)
                 g_source_remove (mCameraServiceCbTimerID);
                 mCameraServiceCbTimerID = TIMER_ID_NULL;
             }
-            player->LoadPlayer();
+            return player->LoadPlayer();
         }
     }
 
@@ -446,7 +446,7 @@ bool CameraPlayer::Load(const std::string& str)
                         {
                             posixshm_fd = cs_client_->getFd();
                         }
-                        LoadPlayer();
+                        return LoadPlayer();
                     }
                     else
                     {
@@ -485,7 +485,7 @@ bool CameraPlayer::Load(const std::string& str)
         if (kMemtypePosixShm == memtype_)
             subscribeToCameraService();
         else
-            LoadPlayer();
+            return LoadPlayer();
     }
     return true;
 }
@@ -542,6 +542,10 @@ void CameraPlayer::PauseInternalSync()
 {
     /* NOTE: Internally Pipeline state changing to pause and then to NULL
      *       on unload API */
+
+    if (pipeline_ == nullptr)
+        return;
+
     CMP_DEBUG_PRINT("Change pipeline state to PAUSE");
     gst_element_set_state(pipeline_, GST_STATE_PAUSED);
 
@@ -579,8 +583,10 @@ bool CameraPlayer::Unload()
         usleep(500 * 1000);
     }
 
-    gst_element_set_state(pipeline_, GST_STATE_NULL);
-    gst_object_unref(GST_OBJECT(pipeline_));
+    if (pipeline_ != NULL) {
+        gst_element_set_state(pipeline_, GST_STATE_NULL);
+        gst_object_unref(GST_OBJECT(pipeline_));
+    }
     pipeline_ = NULL;
 
     SetPlayerState(base::playback_state_t::STOPPED);

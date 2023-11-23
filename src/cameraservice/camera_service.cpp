@@ -165,7 +165,7 @@ void Service::Notify(const gint notification, const gint64 numValue,
         }
     }
 
-    if (!composer.result().empty())
+    if (!composer.result().empty() && umc_)
         umc_->sendChangeNotificationJsonString(composer.result());
 }
 
@@ -308,18 +308,21 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
         CMP_DEBUG_PRINT("already unloaded");
         ret = true;
     } else {
-        if (!instance_->player_ || !instance_->player_->Unload())
-            CMP_DEBUG_PRINT("fails to unload the player");
-        else {
-            instance_->isLoaded_ = false;
-            ret = true;
-            if (instance_->resourceRequestor_){
-                instance_->resourceRequestor_->notifyBackground();
-            instance_->resourceRequestor_->releaseResource();
-            } else
-                CMP_DEBUG_PRINT("NotifyBackground & ReleaseResources fails");
-         }
+        if (instance_->player_) {
+            if (!instance_->player_->Unload())
+                CMP_DEBUG_PRINT("fails to unload the player");
+            else {
+                instance_->isLoaded_ = false;
+                ret = true;
+            }
+            instance_->player_.reset();
+        }
     }
+    if (instance_->resourceRequestor_){
+        instance_->resourceRequestor_->notifyBackground();
+        instance_->resourceRequestor_->releaseResource();
+    } else
+        CMP_DEBUG_PRINT("NotifyBackground & ReleaseResources fails");
 
     if (!ret) {
         base::error_t error;
@@ -329,10 +332,8 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
         instance_->Notify(CMP_NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
     }
 
-    instance_->player_.reset();
-    instance_->Notify(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
-
     CMP_DEBUG_PRINT("UnloadEvent Done");
+
     return ret;
 }
 
