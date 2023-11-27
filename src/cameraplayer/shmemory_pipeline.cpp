@@ -841,3 +841,40 @@ bool ShmemoryPipeline::createSignalListener()
 
     return true;
 }
+
+int ShmemoryPipeline::getProcessCount(const std::string& file_path)
+{
+    std::string command = "lsof | grep " + file_path + " | wc -l";
+    FILE* fp = popen(command.c_str(), "r");
+    if (fp == nullptr) {
+        CMP_LOG_INFO("Error executing command");
+        return -1;
+    }
+
+    char buffer[1024];
+    int process_count = 0;
+    if (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        process_count = std::stoi(buffer);
+    }
+
+    pclose(fp);
+
+    CMP_LOG_INFO("%d processes have opened %s", process_count, file_path.c_str());
+    return process_count;
+}
+
+bool ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
+{
+    CMP_LOG_INFO("%s", socketPath.c_str());
+
+    if (access(socketPath.c_str(), F_OK) == 0)
+    {
+        if (getProcessCount(socketPath) == 0)
+        {
+            CMP_LOG_INFO("unlink %s", socketPath.c_str());
+            unlink(socketPath.c_str());
+        }
+    }
+
+    return true;
+}

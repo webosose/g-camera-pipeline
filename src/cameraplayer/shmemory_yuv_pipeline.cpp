@@ -23,11 +23,26 @@ bool ShmemoryYuvPipeline::launch()
         if (!element.empty())
             pipeline_desc += " ! " + element + " name=conv";
 
-        //[TODO] Currently, auto PTZ is not supported for the YUV format.
+#ifdef PTZ_ENABLED
+        pipeline_desc += " ! videocrop name=preview-video-crop";
+#endif
+
+        pipeline_desc += " ! video/x-raw, format=RGB16";
+        pipeline_desc += " ! videoscale ! video/x-raw, width=" + std::to_string(width_) + ", height=" + std::to_string(height_);
+        pipeline_desc += " ! tee name=t";
 
         element = ElementFactory::GetPreferredElementName(pipelineType, "video-sink");
         if (!element.empty())
-            pipeline_desc += " ! " + element + " name=sink";
+            pipeline_desc += " t. ! queue ! " + element + " name=sink";
+
+        std::string socketPath = "/tmp/" + camera_id_;
+        deleteSocketIfExists(socketPath);
+
+        if (access(socketPath.c_str(),F_OK) == -1) // File is not accessible
+        {
+            CMP_LOG_INFO("add shmsink %s", socketPath.c_str());
+            pipeline_desc += " t. ! queue ! shmsink sync=false socket-path=" + socketPath + " wait-for-connection=false shm_size=10000000";
+        }
     }
 
     CMP_LOG_INFO("pipeline : %s", pipeline_desc.c_str());
