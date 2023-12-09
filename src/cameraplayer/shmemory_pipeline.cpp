@@ -24,7 +24,7 @@ ShmemoryPipeline::ShmemoryPipeline()
     }
     catch (const std::system_error &e)
     {
-        CMP_LOG_INFO("Caught a system_error with code %d meaning %s", e.code().value(), e.what());
+        CMP_LOG_ERROR("Caught a system_error with code %d meaning %s", e.code().value(), e.what());
     }
 
     pthread_setname_np(loopThread_->native_handle(), "player-pipeline");
@@ -52,7 +52,7 @@ ShmemoryPipeline::~ShmemoryPipeline()
         }
         catch (const std::system_error &e)
         {
-            CMP_LOG_INFO("Caught a system_error with code %d meaning %s", e.code().value(), e.what());
+            CMP_LOG_ERROR("Caught a system_error with code %d meaning %s", e.code().value(), e.what());
         }
     }
     g_main_loop_unref(loop_);
@@ -79,13 +79,13 @@ bool ShmemoryPipeline::Load(const std::string& msg)
 
     if (!GetSourceInfo())
     {
-        CMP_LOG_INFO("get source information failed!");
+        CMP_LOG_ERROR("get source information failed!");
         return false;
     }
 
     if (!acquireResource())
     {
-        CMP_LOG_INFO("resouce acquire failed!");
+        CMP_LOG_ERROR("resouce acquire failed!");
         return false;
     }
 
@@ -93,7 +93,7 @@ bool ShmemoryPipeline::Load(const std::string& msg)
 
     if (!attachSurface(true))
     {
-        CMP_LOG_INFO("attachSurface() failed");
+        CMP_LOG_ERROR("attachSurface() failed");
         return false;
     }
 
@@ -101,21 +101,21 @@ bool ShmemoryPipeline::Load(const std::string& msg)
 
     if (openShmemory())
     {
-        CMP_LOG_INFO("openShmemory() failed");
+        CMP_LOG_ERROR("openShmemory() failed");
         return false;
     }
 
     // 0. Check sanity.
     if (pipeline_ != nullptr)
     {
-        CMP_LOG_INFO("Error. pipeline already exists.");
+        CMP_LOG_ERROR("Error. pipeline already exists.");
         return false;
     }
 
     // 1. Build pipeline and launch.
     if (!launch())
     {
-        CMP_LOG_INFO("Pipeline launch fail");
+        CMP_LOG_ERROR("Pipeline launch fail");
         return false;
     }
 
@@ -158,7 +158,7 @@ bool ShmemoryPipeline::Unload()
 
     if (pipeline_ == nullptr)
     {
-        CMP_LOG_INFO("Pipeline is not loaded.");
+        CMP_LOG_WARNING("Pipeline is not loaded.");
         return false;
     }
 
@@ -166,8 +166,8 @@ bool ShmemoryPipeline::Unload()
     bool ret = gst_element_set_state(pipeline_, GST_STATE_NULL);
     if (ret == GST_STATE_CHANGE_FAILURE)
     {
-        CMP_LOG_INFO("Failed to change pipeline state to NULL");
-        CMP_LOG_INFO("Keep doing rest of unload procedure.");
+        CMP_LOG_WARNING("Failed to change pipeline state to NULL");
+        CMP_LOG_WARNING("Keep doing rest of unload procedure.");
     }
 
     GstState state;
@@ -195,13 +195,13 @@ bool ShmemoryPipeline::Unload()
 
     if (closeShmemory())
     {
-        CMP_LOG_INFO("closeShmemory() failed");
+        CMP_LOG_ERROR("closeShmemory() failed");
         return false;
     }
 
     if (!detachSurface())
     {
-        CMP_LOG_INFO("detachSurface() failed");
+        CMP_LOG_ERROR("detachSurface() failed");
         return false;
     }
 
@@ -221,7 +221,7 @@ bool ShmemoryPipeline::Play()
     if (pipeline_ != nullptr &&
         gst_element_set_state(pipeline_, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
     {
-        CMP_LOG_INFO("Failed to change pipeline state to PLAYING");
+        CMP_LOG_ERROR("Failed to change pipeline state to PLAYING");
         return false;
     }
 
@@ -235,7 +235,7 @@ bool ShmemoryPipeline::Pause()
     if (pipeline_ != nullptr &&
         gst_element_set_state(pipeline_, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
     {
-        CMP_LOG_INFO("Failed to change pipeline state to PAUSED");
+        CMP_LOG_ERROR("Failed to change pipeline state to PAUSED");
         return false;
     }
 
@@ -258,7 +258,7 @@ bool ShmemoryPipeline::addBus()
     auto bus = gst_element_get_bus(pipeline_);
     if (!bus)
     {
-        CMP_LOG_INFO("Error. Fail gst_elememt_get_bus!");
+        CMP_LOG_ERROR("Error. Fail gst_elememt_get_bus!");
         return false;
     }
 
@@ -302,17 +302,17 @@ bool ShmemoryPipeline::attachSurface(bool allow_no_window) {
 
     if (!window_id_.empty()) {
         if (!lsm_camera_window_manager_.registerID(window_id_.c_str(), NULL)) {
-            CMP_LOG_INFO("register id to LSM failed!");
+            CMP_LOG_ERROR("register id to LSM failed!");
             return false;
         }
         if (!lsm_camera_window_manager_.attachSurface()) {
-            CMP_LOG_INFO("attach surface to LSM failed!");
+            CMP_LOG_ERROR("attach surface to LSM failed!");
             return false;
         }
         CMP_LOG_INFO("end");
         return true;
     } else {
-        CMP_LOG_INFO("window id is empty!");
+        CMP_LOG_ERROR("window id is empty!");
         bool ret = allow_no_window ? true : false;
         return ret;
     }
@@ -323,15 +323,15 @@ bool ShmemoryPipeline::detachSurface() {
 
     if (!window_id_.empty()) {
         if (!lsm_camera_window_manager_.detachSurface()) {
-            CMP_LOG_INFO("detach surface to LSM failed!");
+            CMP_LOG_ERROR("detach surface to LSM failed!");
             return false;
         }
         if (!lsm_camera_window_manager_.unregisterID()) {
-            CMP_LOG_INFO("unregister id to LSM failed!");
+            CMP_LOG_ERROR("unregister id to LSM failed!");
             return false;
         }
     } else {
-        CMP_LOG_INFO("window id is empty!");
+        CMP_LOG_ERROR("window id is empty!");
     }
 
      CMP_LOG_INFO("end");
@@ -350,7 +350,7 @@ bool ShmemoryPipeline::acquireResource()
 
     if (!resource_info.result)
     {
-        CMP_LOG_INFO("resouce acquire fail!");
+        CMP_LOG_ERROR("resouce acquire fail!");
         return false;
     }
 
@@ -399,7 +399,7 @@ bool ShmemoryPipeline::handleBusMessage(GstBus *bus, GstMessage *msg)
     {
         case GST_MESSAGE_ERROR:
         {
-            CMP_LOG_INFO("Got Error");
+            CMP_LOG_ERROR("Got Error");
             base::error_t error = HandleErrorMessage(msg);
             if (cbFunction_)
                 cbFunction_(CMP_NOTIFY_ERROR, 0, nullptr, &error);
@@ -586,7 +586,7 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
 #ifdef PTZ_ENABLED
     if (postProcessSolution_)
     {
-        CMP_LOG_INFO("meta len = %d bytes", meta_len);
+        CMP_LOG_DEBUG("meta len = %d bytes", meta_len);
         postProcessSolution_->pushMetaData(meta, meta_len);
         postProcessSolution_->doPostProcess();
     }
@@ -608,8 +608,8 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
     if(parsed.hasKey("uri")) {
         uri_ = parsed["uri"].asString();
     } else {
-        CMP_LOG_INFO("UMS_INTERNAL_API_VERSION is not version 2.");
-        CMP_LOG_INFO("Please check the UMS_INTERNAL_API_VERSION in ums.");
+        CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
+        CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
         CMPASSERT(0);
     }
 
@@ -656,7 +656,7 @@ void ShmemoryPipeline::SetGstreamerDebug()
 {
     pbnjson::JValue parsed = pbnjson::JDomParser::fromFile("/etc/g-camera-pipeline/gst_debug.conf");
     if (!parsed.isObject()) {
-        CMP_LOG_INFO("Gst debug file parsing error");
+        CMP_LOG_ERROR("Gst debug file parsing error");
     }
 
     pbnjson::JValue debug = parsed["gst_debug"];
@@ -847,7 +847,7 @@ int ShmemoryPipeline::getProcessCount(const std::string& file_path)
     std::string command = "lsof | grep " + file_path + " | wc -l";
     FILE* fp = popen(command.c_str(), "r");
     if (fp == nullptr) {
-        CMP_LOG_INFO("Error executing command");
+        CMP_LOG_ERROR("Error executing command");
         return -1;
     }
 
@@ -871,7 +871,7 @@ bool ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
     {
         if (getProcessCount(socketPath) == 0)
         {
-            CMP_LOG_INFO("unlink %s", socketPath.c_str());
+            CMP_LOG_WARNING("unlink %s", socketPath.c_str());
             unlink(socketPath.c_str());
         }
     }

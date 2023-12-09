@@ -54,7 +54,7 @@ bool ShmemoryJpegPipeline::launch()
     pipeline_ = gst_parse_launch(pipeline_desc.c_str(), NULL);
     if (pipeline_ == NULL)
     {
-        CMP_LOG_INFO("Error. Pipeline is NULL");
+        CMP_LOG_ERROR("Error. Pipeline is NULL");
         return false;
     }
 

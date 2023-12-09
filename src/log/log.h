@@ -21,9 +21,6 @@
 #include <assert.h>
 
 PmLogContext GetPmLogContext();
-#define CMP_LOG_CRITICAL(...) PmLogCritical(GetPmLogContext(), ##__VA_ARGS__)
-#define CMP_LOG_ERROR(...)    PmLogError(GetPmLogContext(), ##__VA_ARGS__)
-#define CMP_LOG_WARNING(...)  PmLogWarning(GetPmLogContext(), ##__VA_ARGS__)
 
 #define CMP_LOG_INFO(FORMAT__, ...) \
     PmLogInfo(GetPmLogContext(), \
@@ -33,18 +30,13 @@ PmLogContext GetPmLogContext();
     PmLogDebug(GetPmLogContext(), \
     "[%s:%d]" FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#define CMP_LOG_OBJ_SET(OBJ__) PmLogContext GetPmLogContext_##OBJ__()
-#define CMP_LOG_OBJ_CRITICAL(OBJ__, ...) \
-    PmLogCritical(GetPmLogContext_##OBJ__(), ##__VA_ARGS__)
-#define CMP_LOG_OBJ_ERROR(OBJ__, ...) \
-    PmLogError(GetPmLogContext_##OBJ__(), ##__VA_ARGS__)
-#define CMP_LOG_OBJ_WARNING(OBJ__, ...) \
-    PmLogWarning(GetPmLogContext_##OBJ__(), ##__VA_ARGS__)
-#define CMP_LOG_OBJ_INFO(OBJ__, ...) \
-    PmLogInfo(GetPmLogContext_##OBJ__(), ##__VA_ARGS__)
-#define CMP_LOG_OBJ_DEBUG(OBJ__, FORMAT__, ...) \
-    PmLogDebug(GetPmLogContext_##OBJ__(), \
-    "[%s:%d]" FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CMP_LOG_ERROR(FORMAT__, ...) \
+    PmLogError(GetPmLogContext(), \
+    "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define CMP_LOG_WARNING(FORMAT__, ...) \
+    PmLogWarning(GetPmLogContext(), \
+    "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 /* Info Print */
 #define CMP_INFO_PRINT CMP_LOG_INFO
