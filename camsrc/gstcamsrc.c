@@ -62,7 +62,6 @@
 
 #include <gst/gst.h>
 #include <stdio.h>
-#include <poll.h>
 #include <gst/allocators/gstdmabuf.h>
 #include <gst/allocators/gstfdmemory.h>
 
@@ -432,60 +431,47 @@ gst_camsrc_create (GstPushSrc * src, GstBuffer ** buf)
         }
     }
 
-    retval = camera_hal_if_get_fd(camsrc->p_h_camera,&fd);
-    if(retval != 0)
-      return GST_FLOW_ERROR;
-
-    struct pollfd fds[] = {
-        { .fd = fd, .events = POLLIN },
-    };
-    if((check = poll(fds, 1, 2000)) > 0)
+    switch (camsrc->mode)
     {
-        switch (camsrc->mode)
-        {
-            case GST_V4L2_IO_MMAP:
-                ret = GST_BASE_SRC_CLASS (parent_class)->alloc (GST_BASE_SRC (src), 0,
-                        streamformat.buffer_size, buf);
-                gst_buffer_map (*buf, &map, GST_MAP_WRITE);
+        case GST_V4L2_IO_MMAP:
+            ret = GST_BASE_SRC_CLASS (parent_class)->alloc (GST_BASE_SRC (src), 0,
+                    streamformat.buffer_size, buf);
+            gst_buffer_map (*buf, &map, GST_MAP_WRITE);
+            retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
+            if (retval != 0)
+                return GST_FLOW_ERROR;
+            memcpy(map.data, frame_buffer.start, frame_buffer.length);
+            gst_buffer_unmap(*buf,&map);
+
+            retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
+            if (retval != 0){
+                return GST_FLOW_ERROR;
+            }
+            break;
+
+        case GST_V4L2_IO_DMABUF_EXPORT:
+            params.flags = (GstBufferPoolAcquireFlags) GST_BUFFER_POOL_ACQUIRE_FLAG_LAST |
+                GST_BUFFER_POOL_ACQUIRE_FLAG_DONTWAIT;
+            ret = gst_buffer_pool_acquire_buffer (camsrc->pool, &buffer, &params);
+            if(ret == GST_FLOW_OK)
+            {
                 retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
-                if(retval != 0)
-                  return GST_FLOW_ERROR;
-                memcpy(map.data, frame_buffer.start, frame_buffer.length);
-                gst_buffer_unmap(*buf,&map);
-
+                if (retval != 0)
+                    return GST_FLOW_ERROR;
+                gst_buffer_append_memory(buffer, dma_memory[frame_buffer.index]);
+                gst_buffer_map (buffer, &map, GST_MAP_READ);
+                *buf = buffer;
+                gst_memory_ref(dma_memory[frame_buffer.index]);
+                gst_buffer_unmap(buffer,&map);
                 retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
-                if(retval != 0){
-                  return GST_FLOW_ERROR;
+                if (retval != 0){
+                    return GST_FLOW_ERROR;
                 }
-                break;
+            }
+            break;
 
-            case GST_V4L2_IO_DMABUF_EXPORT:
-
-                params.flags = (GstBufferPoolAcquireFlags) GST_BUFFER_POOL_ACQUIRE_FLAG_LAST |
-                    GST_BUFFER_POOL_ACQUIRE_FLAG_DONTWAIT;
-                ret = gst_buffer_pool_acquire_buffer (camsrc->pool, &buffer, &params);
-
-                if(ret == GST_FLOW_OK)
-                {
-                    retval = camera_hal_if_get_buffer(camsrc->p_h_camera,&frame_buffer);
-                    if(retval != 0)
-                      return GST_FLOW_ERROR;
-
-                    gst_buffer_append_memory(buffer, dma_memory[frame_buffer.index]);
-                    gst_buffer_map (buffer, &map, GST_MAP_READ);
-                    *buf = buffer;
-                    gst_memory_ref(dma_memory[frame_buffer.index]);
-                    gst_buffer_unmap(buffer,&map);
-                    retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
-                    if(retval != 0){
-                        return GST_FLOW_ERROR;
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
+        default:
+            break;
     }
     return GST_FLOW_OK;
 }
