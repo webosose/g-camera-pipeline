@@ -1,6 +1,7 @@
 #include "signal_listener.h"
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <log/log.h>
 #include <string.h>
 
@@ -8,15 +9,17 @@
 
 SignalListener::SignalListener() :
     on_monitor_(false),
-    pid_(-1),
-    mutex_{},
-    cond_{}
+    pid_(-1)
 {
     memset(&option_, 0, sizeof(sig_option_t));
+    pthread_cond_init(&cond_, NULL);
+    pthread_mutex_init(&mutex_, NULL);
 }
 
 SignalListener::~SignalListener()
 {
+    pthread_cond_destroy(&cond_);
+    pthread_mutex_destroy(&mutex_);
 }
 
 void SignalListener::initialize(int signum)
@@ -54,11 +57,20 @@ void SignalListener::quit()
 
 void SignalListener::wait()
 {
-    std::chrono::seconds timeout(option_.timeout.tv_sec);
-    std::unique_lock<std::mutex> mlock(mutex_);
-    if (std::cv_status::timeout == cond_.wait_for(mlock, timeout))
+    int ret;
+    struct timeval now;
+    struct timespec timeout_now;
+
+    pthread_mutex_lock(&mutex_);
+    gettimeofday(&now, NULL);
+    timeout_now.tv_sec = now.tv_sec + option_.timeout.tv_sec;
+    timeout_now.tv_nsec = now.tv_usec * 1000 + option_.timeout.tv_nsec;
+    ret = pthread_cond_timedwait(&cond_, &mutex_, &timeout_now);
+    pthread_mutex_unlock(&mutex_);
+
+    if (ret != 0)
     {
-        CMP_DEBUG_PRINT("signal wait timeout reached");
+        CMP_DEBUG_PRINT("signal wait timeout or fail");
     }
     else
     {
@@ -73,8 +85,9 @@ void SignalListener::listen()
     {
         if (-1 != sigtimedwait(&option_.set, NULL, &option_.timeout))
         {
-            std::lock_guard<std::mutex> guard(mutex_);
-            cond_.notify_one();
+            pthread_mutex_lock(&mutex_);
+            pthread_cond_signal(&cond_);
+            pthread_mutex_unlock(&mutex_);
         }
     }
 }

@@ -34,7 +34,6 @@
 #include "camshm.h"
 #include "cam_posixshm.h"
 #include "camera_types.h"
-#include <mutex>
 #include "camera_service_client.h"
 #include "signal_listener.h"
 
@@ -187,7 +186,6 @@ class CameraPlayer {
   GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_, *caps_H264_;
   cmp::service::Service *service_;
   bool load_complete_;
-  std::mutex event_lock_;
 
   /* GAV Features */
   LSM::CameraWindowManager lsm_camera_window_manager_;

@@ -33,6 +33,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <atomic>
 #ifdef PTZ_ENABLED
 //Auto PTZ
 #include "../postProcess/FacePtzSolution.hpp"
@@ -56,7 +57,7 @@ static int posixshm_fd = -1;
 LSHandle* handle = nullptr;
 bool getFdReq = false;
 bool getFdReceived = false;
-bool recordingStarted = false;
+std::atomic<bool> recordingStarted(false);
 int bCallback = 1;
 GMainLoop* mainLoop = g_main_loop_new(nullptr, false);
 const int kNumOfImages = 1;
@@ -566,7 +567,7 @@ bool CameraPlayer::Unload()
     /* change the pipeline state to PAUSE internally and then to NULL */
     PauseInternalSync();
 
-    if (recordingStarted) {
+    if (recordingStarted.load()) {
         StopRecord();
         /* As record elements are removed from pipeline in a callback finalizeRecord(),
          * need to provide some time to finalize to avoid crash.
@@ -672,10 +673,9 @@ bool CameraPlayer::TakeSnapshot(const std::string& location)
 bool CameraPlayer::StartRecord(const std::string& location, const std::string& format,
                                bool audio, const std::string& audioSrc)
 {
-    if (recordingStarted == true)
+    if (recordingStarted.load())
         return false;
 
-    event_lock_.lock();
     if (!location.empty())
         record_path_ = location;
 
@@ -683,7 +683,6 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
     if (tee_record_pad_ == NULL)
     {
         CMP_DEBUG_PRINT("tee_record_pad_ is NULL\n");
-        event_lock_.unlock();
         return false;
     }
     if((format.compare(kFileFormatMP4) == 0) || (format.compare(kFileFormatAVI) == 0) )
@@ -695,7 +694,6 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
             if (!CreateAudioRecordElements(audioSrc, record_audio_encoder_pad_))
             {
                 CMP_DEBUG_PRINT("CreateAudioRecordElements Failed.\n");
-                event_lock_.unlock();
                 FreeRecordElements();
                 return false;
             }
@@ -705,25 +703,22 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
         {
             CMP_DEBUG_PRINT("CreateRecordElements Failed.\n");
             FreeRecordElements();
-            event_lock_.unlock();
             return false;
         }
     }
     else
     {
         CMP_DEBUG_PRINT("startCameraRecord - Un Supported format");
-        event_lock_.unlock();
         return false;
     }
-    recordingStarted = true;
-    event_lock_.unlock();
+    recordingStarted.store(true);
     return true;
 }
 
 bool CameraPlayer::StopRecord()
 {
     // if already stopped, avoid execution
-    if (recordingStarted == false)
+    if (!recordingStarted.load())
         return false;
 
     CMP_DEBUG_PRINT("StopCameraRecording");
@@ -2258,8 +2253,6 @@ CameraPlayer::RecordRemoveProbe(
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(user_data);
 
-    player->event_lock_.lock();
-
     gst_pad_unlink(player->tee_record_pad_, player->record_queue_pad_);
 
     gst_element_send_event(player->record_encoder_, gst_event_new_eos());
@@ -2268,7 +2261,6 @@ CameraPlayer::RecordRemoveProbe(
     {
         gst_element_send_event(player->record_audio_encoder_, gst_event_new_eos());
     }
-    player->event_lock_.unlock();
     return GST_PAD_PROBE_REMOVE;
 }
 void CameraPlayer::finalizeRecord(gpointer user_data)
@@ -2463,7 +2455,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
     player->record_sink_ = NULL;
 
     player->record_path_.clear();
-    recordingStarted = false;
+    recordingStarted.store(false);
     return;
 }
 #ifdef PTZ_ENABLED
