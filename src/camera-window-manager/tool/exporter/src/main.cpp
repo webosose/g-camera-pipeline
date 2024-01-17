@@ -25,6 +25,7 @@
 #include <GLES2/gl2ext.h>
 #include "wayland_foreign.h"
 #include "wayland_exporter.h"
+#include <csignal>
 
 #define VERTEX_ARRAY (0)
 
@@ -54,6 +55,9 @@ typedef struct {
     unsigned int width;
     unsigned int height;
 } WaylandEGLSurface;
+
+Wayland::Foreign foreign;
+Wayland::Exporter exporter;
 
 static void handlePing(void *data, struct wl_shell_surface *shellSurface, uint32_t serial)
 {
@@ -272,10 +276,35 @@ void printHelp()
     std::cout << "  -r          remove rectangle" << std::endl;
 }
 
+void signal_handler(int s)
+{
+    printf("\nCaught signal %d\n", s);
+
+    foreign.flush();
+    exporter.finalize();
+    foreign.finalize();
+
+    printf("exit(1)\n");
+    exit(1);
+}
+
+void singal_catcher(void (*handler)(int))
+{
+    struct sigaction sa;
+
+    sa.sa_handler = handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+}
+
 int main(int argc, char *argv[])
 {
-    Wayland::Foreign foreign;
-    Wayland::Exporter exporter;
+    singal_catcher(signal_handler);
 
     WaylandEGLSurface surface;
     EGLData eglData;
@@ -369,10 +398,6 @@ int main(int argc, char *argv[])
         eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_READ));
         sleep(1);
     }
-
-    foreign.flush();
-    exporter.finalize();
-    foreign.finalize();
 
     return 0;
 }
