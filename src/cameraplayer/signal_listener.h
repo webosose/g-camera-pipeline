@@ -27,6 +27,7 @@ private:
     sig_option_t option_;
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;
+    bool condition_;
     std::thread listen_thread_;
     void listen();
 };

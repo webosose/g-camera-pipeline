@@ -9,7 +9,8 @@
 
 SignalListener::SignalListener() :
     on_monitor_(false),
-    pid_(-1)
+    pid_(-1),
+    condition_(false)
 {
     memset(&option_, 0, sizeof(sig_option_t));
     pthread_cond_init(&cond_, NULL);
@@ -60,7 +61,7 @@ void SignalListener::quit()
 
 void SignalListener::wait()
 {
-    int ret;
+    int ret = 0;
     struct timeval now;
     struct timespec timeout_now;
 
@@ -68,9 +69,12 @@ void SignalListener::wait()
     gettimeofday(&now, NULL);
     timeout_now.tv_sec = now.tv_sec + option_.timeout.tv_sec;
     timeout_now.tv_nsec = now.tv_usec * 1000 + option_.timeout.tv_nsec;
-    ret = pthread_cond_timedwait(&cond_, &mutex_, &timeout_now);
+    while (condition_ == false)
+    {
+        ret = pthread_cond_timedwait(&cond_, &mutex_, &timeout_now);
+    }
+    condition_ = false;
     pthread_mutex_unlock(&mutex_);
-
     if (ret != 0)
     {
         CMP_DEBUG_PRINT("signal wait timeout or fail");
@@ -89,7 +93,11 @@ void SignalListener::listen()
         if (-1 != sigtimedwait(&option_.set, NULL, &option_.timeout))
         {
             pthread_mutex_lock(&mutex_);
-            pthread_cond_signal(&cond_);
+            if (condition_ == false)
+            {
+                condition_ = true;
+                pthread_cond_signal(&cond_);
+            }
             pthread_mutex_unlock(&mutex_);
         }
     }
