@@ -38,8 +38,8 @@ webos_add_compiler_flags(ALL ${GST_CFLAGS})
 pkg_check_modules(GST_VIDEO REQUIRED gstreamer-video-1.0)
 webos_add_compiler_flags(ALL ${GST_VIDEO_CFLAGS})
 
-if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4")
-	add_definitions(-DPLATFORM_RASPBERRYPI4)
+if(USE_RPI)
+    add_definitions(-DUSE_RPI)
 endif()
 
 include_directories(../../include)

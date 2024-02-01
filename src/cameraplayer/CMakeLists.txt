@@ -146,17 +146,15 @@ target_link_libraries(${G-CAMERA-PIPELINE_LIB}
     camera-window-manager
     )
 
-if(${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi4-64" OR
-   ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3" OR ${WEBOS_TARGET_MACHINE} STREQUAL "raspberrypi3-64")
-  message(STATUS "Using config & debug file for raspberrypi4")
+if(USE_RPI)
+  message(STATUS "Using config & debug file for raspberrypi")
   install(FILES ./raspberrypi/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
   install(FILES ./raspberrypi/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
-elseif (${WEBOS_TARGET_MACHINE} STREQUAL "qemux86" OR ${WEBOS_TARGET_MACHINE} STREQUAL "qemux86-64")
-  message(STATUS "Using config & debug file for qemux86")
+# emulator or default
+else()
+  message(STATUS "Using config & debug file for software")
   install(FILES ./qemux86/gst_debug.conf DESTINATION /etc/g-camera-pipeline)
   install(FILES ./qemux86/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
-else()
-  message(FATAL_ERROR the "Check WEBOS_TARGET_MACHINE: " ${WEBOS_TARGET_MACHINE})
 endif()
 
 install(TARGETS cmp-player DESTINATION lib)

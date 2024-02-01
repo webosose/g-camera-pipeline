@@ -452,7 +452,7 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     gst_bus_set_sync_handler(bus, handleSyncBusCallback, &CameraWindowManager, nullptr);
     gst_object_unref(bus);
 
-#ifdef PLATFORM_RASPBERRYPI4
+#ifdef USE_RPI
     sink = gst_element_factory_make("waylandsink", nullptr);
 #else
     sink = gst_element_factory_make("mfxsink", nullptr);
@@ -464,7 +464,7 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
         return false;
     }
 
-#ifndef PLATFORM_RASPBERRYPI4
+#ifndef USE_RPI
     g_object_set(G_OBJECT(sink), "display", display_mode, nullptr); // 2:wayland, 3:egl
     g_object_set(G_OBJECT(sink), "full-color-range", true, nullptr);
     g_object_set(G_OBJECT(sink), "fullscreen", false, nullptr);

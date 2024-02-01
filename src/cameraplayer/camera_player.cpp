@@ -1136,7 +1136,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
                 g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
         }
     }
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", false, NULL);
 #endif
 
@@ -1240,7 +1240,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
         }
         CMP_DEBUG_PRINT ("Tee preview pad: %p\n",pad);
         CMP_DEBUG_PRINT ("preview_queue_pad_: %p\n",preview_queue_pad_);
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
         filter_RGB_ = gst_element_factory_make("capsfilter", "filter-RGB");
         if (!filter_RGB_)
         {
@@ -1269,7 +1269,7 @@ bool CameraPlayer::CreatePreviewBin(GstPad * pad)
             CMP_DEBUG_PRINT ("preview_queue_pad_ could not be linked.\n");
             return false;
         }
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
         if (! gst_bin_add(GST_BIN(pipeline_), filter_RGB_))
         {
             CMP_DEBUG_PRINT ("filter_RGB_ could not be added.\n");
@@ -1436,7 +1436,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     }
     g_object_set(G_OBJECT(record_video_queue_), "max-size-time", 700, NULL);
 
-#ifdef PLATFORM_QEMUX86
+#ifdef USE_EMULATOR
     record_encoder_ = gst_element_factory_make ("avenc_mjpeg", "record-encoder");
 #else
     record_encoder_ = gst_element_factory_make ("v4l2h264enc", "record-encoder");
@@ -1446,7 +1446,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("record_encoder_(%p) Failed", record_encoder_);
         return false;
     }
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     filter_H264_ = gst_element_factory_make("capsfilter", "filter-h264");
     if (!filter_H264_)
     {
@@ -1518,7 +1518,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     else
         g_object_set(G_OBJECT(record_sink_), "sync", true, NULL);
 
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     record_parse_ = gst_element_factory_make("h264parse", "record-parser");
     if (!record_parse_)
     {
@@ -1532,7 +1532,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
 
     gst_bin_add_many(GST_BIN(pipeline_), record_convert_, record_encoder_,
             record_video_queue_, record_mux_, record_sink_, NULL);
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     gst_bin_add(GST_BIN(pipeline_), filter_NV12_);
     gst_bin_add(GST_BIN(pipeline_), filter_H264_);
     gst_bin_add(GST_BIN(pipeline_), record_parse_);
@@ -1546,7 +1546,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
             return false;
         }
     }
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     if (TRUE != gst_element_link(record_convert_, filter_NV12_)) {
         CMP_DEBUG_PRINT ("link capture elements could not be linked - covert & filter_NV12 \n");
         return false;
@@ -1640,7 +1640,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
         return false;
     }
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     if (TRUE != gst_element_sync_state_with_parent(record_parse_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -1664,7 +1664,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
         return false;
     }
 
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     if (TRUE != gst_element_sync_state_with_parent(filter_H264_))
     {
         CMP_DEBUG_PRINT("Sync state failed:%d\n",__LINE__);
@@ -2169,11 +2169,11 @@ void CameraPlayer::FreeRecordElements ()
     DESTROY_ELEMENT(record_audio_src_);
     DESTROY_ELEMENT(record_queue_);
     DESTROY_ELEMENT(record_convert_);
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     DESTROY_ELEMENT(filter_NV12_);
 #endif
     DESTROY_ELEMENT(record_encoder_);
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     DESTROY_ELEMENT(filter_H264_);
     DESTROY_ELEMENT(record_parse_);
 #endif
@@ -2296,7 +2296,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
 
     if (player->format_ == kFormatYUV && player->memtype_ != kMemtypeShmem)
         gst_element_unlink_many(player->record_queue_, player->record_convert_, NULL);
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     gst_element_unlink(player->record_convert_, player->filter_NV12_);
     gst_element_unlink(player->filter_NV12_, player->record_encoder_);
     gst_element_unlink_many(player->record_encoder_, player->filter_H264_, player->record_parse_,
@@ -2384,7 +2384,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
     }
     player->record_convert_ = NULL;
 
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     if(player->filter_NV12_ != NULL)
     {
         gst_element_set_state(player->filter_NV12_, GST_STATE_NULL);
@@ -2407,7 +2407,7 @@ void CameraPlayer::finalizeRecord(gpointer user_data)
     }
     player->record_encoder_ = NULL;
 
-#ifndef PLATFORM_QEMUX86
+#ifndef USE_EMULATOR
     if (player->filter_H264_ != NULL)
     {
         gst_element_set_state(player->filter_H264_,GST_STATE_NULL);
