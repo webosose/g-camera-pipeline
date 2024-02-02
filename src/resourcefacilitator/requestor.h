@@ -21,7 +21,6 @@
 #include <functional>
 #include <memory>
 #include <map>
-#include <dto_types.h>
 #include <resource_calculator.h>
 #include "message.h"
 
