@@ -37,6 +37,10 @@ if(AUTO_PTZ)
 include_directories(./postProcess)
 endif()
 
+if(DISABLE_DISPLAY_RESOURCE)
+  add_definitions(-DDISABLE_DISPLAY_RESOURCE)
+endif()
+
 include_directories(./cameraplayer)
 
 include_directories(./pipelinefactory)
