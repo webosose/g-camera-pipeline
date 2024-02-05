@@ -111,7 +111,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions VResource = calcVdecResources();
   if (!VResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &VResource);
-    CMP_DEBUG_PRINT("VResource size:%lu, %s, %d", VResource.size(),
+    CMP_DEBUG_PRINT("VResource size:%zd, %s, %d", VResource.size(),
                                                   VResource[0].front().type.c_str(),
                                                   VResource[0].front().quantity);
   }
@@ -119,7 +119,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions VEncResource = calcVencResources();
   if (!VEncResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &VEncResource);
-    CMP_DEBUG_PRINT("VResource size:%lu, %s, %d", VEncResource.size(),
+    CMP_DEBUG_PRINT("VResource size:%zd, %s, %d", VEncResource.size(),
                                                   VEncResource[0].front().type.c_str(),
                                                   VEncResource[0].front().quantity);
   }
@@ -127,7 +127,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions DisplayResource = calcDisplayResource(display_mode);
   if (!DisplayResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &DisplayResource);
-    CMP_DEBUG_PRINT("DisplayResource size:%lu, %s, %d", DisplayResource.size(),
+    CMP_DEBUG_PRINT("DisplayResource size:%zd, %s, %d", DisplayResource.size(),
                                                         DisplayResource[0].front().type.c_str(),
                                                         DisplayResource[0].front().quantity);
   }
