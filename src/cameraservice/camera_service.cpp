@@ -37,7 +37,7 @@ Service::Service(const char *service_name): media_id_(""), app_id_(""),
     CMP_DEBUG_PRINT(" this[%p]", this);
 
     umc_ = std::make_unique<UMSConnector>(service_name, nullptr, nullptr,
-            UMS_CONNECTOR_PRIVATE_BUS);
+            UMS_CONNECTOR_ACG_BUS);
 
     static UMSConnectorEventHandler event_handlers[] = {
         // uMediaserver public API
@@ -200,8 +200,22 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
         return false;
     }
 
-    instance_->media_id_ = parsed["id"].asString();
-    instance_->app_id_ = parsed["options"]["option"]["appId"].asString();
+    if (parsed.hasKey("args") && parsed["args"].isArray())
+    {
+        for (ssize_t i = 0; i < parsed["args"].arraySize(); i++)
+        {
+            if (parsed["args"][i]["option"].hasKey("appId") && parsed["args"][i]["option"]["appId"].isString())
+            {
+                instance_->app_id_ = parsed["args"][i]["option"]["appId"].asString();
+                break;
+            }
+        }
+    }
+    else
+    {
+        instance_->media_id_ = parsed["id"].asString();
+        instance_->app_id_ = parsed["options"]["option"]["appId"].asString();
+    }
 
     CMP_DEBUG_PRINT("media_id_ : %s", instance_->media_id_.c_str());
     CMP_DEBUG_PRINT("app_id_ : %s", instance_->app_id_.c_str());

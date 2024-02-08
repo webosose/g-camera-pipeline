@@ -28,13 +28,24 @@ int main(int argc, char * argv[]) {
   char service_name[MAX_SERVICE_STRING+1] = {'\0',};
   bool service_name_specified = false;
 
-  while ((c = getopt(argc, argv, "s:")) != -1) {
+  while ((c = getopt(argc, argv, "c:s:r:d:v:a:")) != -1) {
     switch (c) {
       case 's':
         snprintf(service_name, MAX_SERVICE_STRING, "%s", optarg);
         service_name_specified = true;
         break;
-
+      case 'c':{
+        //snprintf(controllerServiceName, sizeof(controllerServiceName), optarg);
+        //controller_name_specified = 1;
+        break;
+      }
+      case 'r':{
+        //isSubscribed = atoi (optarg);
+        break;
+      }
+      case 'a':
+        //appId = optarg;
+        break;
       case '?':
         CMP_DEBUG_PRINT("unknown service name");
         break;

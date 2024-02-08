@@ -60,8 +60,8 @@ private:
     CameraWindowManager(const CameraWindowManager &);
     void operator=(const CameraWindowManager &);
 
-    gint video_width = 0;
-    gint video_height = 0;
+    gint video_width = 1920;
+    gint video_height = 1080;
 
     std::shared_ptr<Wayland::Foreign> foreign;
     std::shared_ptr<Wayland::Surface> surface;

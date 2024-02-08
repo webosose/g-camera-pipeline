@@ -610,47 +610,97 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
     }
     pbnjson::JValue parsed = jdparser.getDom();
 
-    if(parsed.hasKey("uri")) {
-        uri_ = parsed["uri"].asString();
-    } else {
-        CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
-        CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
-        CMPASSERT(0);
+    if (parsed.hasKey("args") && parsed["args"].isArray())
+    {
+        if (parsed["args"].arraySize() > 0) {
+            uri_ = parsed["args"][0].asString();
+        }
+        for (ssize_t i = 1; i < parsed["args"].arraySize(); i++)
+        {
+            if (parsed["args"][i].hasKey("option"))
+            {
+                if (parsed["args"][i]["option"].hasKey("displayPath")) {
+                    int32_t display_path = parsed["args"][i]["option"]["displayPath"].asNumber<int32_t>();
+                    display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
+                }
+                if (parsed["args"][i]["option"].hasKey("windowId")) {
+                    window_id_ = parsed["args"][i]["option"]["windowId"].asString();
+                }
+                if (parsed["args"][i]["option"].hasKey("handle")) {
+                    handle_ = parsed["args"][i]["option"]["handle"].asNumber<int>();
+                }
+                if (parsed["args"][i]["option"].hasKey("videoDisplayMode")) {
+                    display_mode_ = parsed["args"][i]["option"]["videoDisplayMode"].asString();
+                }
+                if (parsed["args"][i]["option"].hasKey("format")) {
+                    format_ = parsed["args"][i]["option"]["format"].asString();
+                }
+                if (parsed["args"][i]["option"].hasKey("width")) {
+                    width_ = parsed["args"][i]["option"]["width"].asNumber<int>();
+                }
+                if (parsed["args"][i]["option"].hasKey("height")) {
+                    height_ = parsed["args"][i]["option"]["height"].asNumber<int>();
+                }
+                if (parsed["args"][i]["option"].hasKey("frameRate")) {
+                    framerate_ = parsed["args"][i]["option"]["frameRate"].asNumber<int>();
+                }
+                if (parsed["args"][i]["option"].hasKey("memType")) {
+                    memtype_ = parsed["args"][i]["option"]["memType"].asString();
+                }
+                if (parsed["args"][i]["option"].hasKey("memSrc")) {
+                    memsrc_ = parsed["args"][i]["option"]["memSrc"].asString();
+                }
+                if (parsed["args"][i]["option"].hasKey("cameraId")) {
+                    camera_id_ = parsed["args"][i]["option"]["cameraId"].asString();
+                }
+                break;
+            }
+        }
     }
+    else
+    {
+        if(parsed.hasKey("uri")) {
+            uri_ = parsed["uri"].asString();
+        } else {
+            CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
+            CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
+            CMPASSERT(0);
+        }
 
-    if (parsed["options"]["option"].hasKey("displayPath")) {
-        int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-        display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
-    }
-    if (parsed["options"]["option"].hasKey("windowId")) {
-        window_id_ = parsed["options"]["option"]["windowId"].asString();
-    }
-    if (parsed["options"]["option"].hasKey("handle")) {
-        handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
-    }
-    if (parsed["options"]["option"].hasKey("videoDisplayMode")) {
-        display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
-    }
-    if (parsed["options"]["option"].hasKey("format")) {
-        format_ = parsed["options"]["option"]["format"].asString();
-    }
-    if (parsed["options"]["option"].hasKey("width")) {
-        width_ = parsed["options"]["option"]["width"].asNumber<int>();
-    }
-    if (parsed["options"]["option"].hasKey("height")) {
-        height_ = parsed["options"]["option"]["height"].asNumber<int>();
-    }
-    if (parsed["options"]["option"].hasKey("frameRate")) {
-        framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
-    }
-    if (parsed["options"]["option"].hasKey("memType")) {
-        memtype_ = parsed["options"]["option"]["memType"].asString();
-    }
-    if (parsed["options"]["option"].hasKey("memSrc")) {
-        memsrc_ = parsed["options"]["option"]["memSrc"].asString();
-    }
-    if (parsed["options"]["option"].hasKey("cameraId")) {
-        camera_id_ = parsed["options"]["option"]["cameraId"].asString();
+        if (parsed["options"]["option"].hasKey("displayPath")) {
+            int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
+            display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
+        }
+        if (parsed["options"]["option"].hasKey("windowId")) {
+            window_id_ = parsed["options"]["option"]["windowId"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("handle")) {
+            handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
+        }
+        if (parsed["options"]["option"].hasKey("videoDisplayMode")) {
+            display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("format")) {
+            format_ = parsed["options"]["option"]["format"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("width")) {
+            width_ = parsed["options"]["option"]["width"].asNumber<int>();
+        }
+        if (parsed["options"]["option"].hasKey("height")) {
+            height_ = parsed["options"]["option"]["height"].asNumber<int>();
+        }
+        if (parsed["options"]["option"].hasKey("frameRate")) {
+            framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
+        }
+        if (parsed["options"]["option"].hasKey("memType")) {
+            memtype_ = parsed["options"]["option"]["memType"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("memSrc")) {
+            memsrc_ = parsed["options"]["option"]["memSrc"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("cameraId")) {
+            camera_id_ = parsed["options"]["option"]["cameraId"].asString();
+        }
     }
 
     CMP_LOG_INFO("uri: %s, display-path: %d, window_id: %s, display_mode: %s",
