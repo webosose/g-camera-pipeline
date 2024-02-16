@@ -575,7 +575,12 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
     static GstClockTime timestamp = 0;
 
     if (shm_listener_) shm_listener_->wait();
-    readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len);
+
+    if(readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len) != 0)
+    {
+        CMP_LOG_ERROR("shared memory read fail");
+        return;
+    }
 
     GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;

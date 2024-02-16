@@ -4,7 +4,6 @@
 #include <signal.h>
 #include <condition_variable>
 #include <thread>
-#include <pthread.h>
 
 class SignalListener
 {
@@ -25,8 +24,8 @@ private:
     bool on_monitor_;
     int pid_;
     sig_option_t option_;
-    pthread_mutex_t mutex_;
-    pthread_cond_t cond_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
     bool condition_;
     std::thread listen_thread_;
     void listen();
