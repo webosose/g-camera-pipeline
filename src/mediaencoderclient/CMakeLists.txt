@@ -21,7 +21,7 @@ set(ENCODER_CLIENT_HEADERS
 add_library(media-encoder-client SHARED media_encoder_client.cpp)
 target_link_libraries(media-encoder-client buffer-encoder)
 
-install(TARGETS media-encoder-client DESTINATION lib)
+install(TARGETS media-encoder-client DESTINATION ${WEBOS_INSTALL_LIBDIR})
 install(FILES ${ENCODER_CLIENT_HEADERS} DESTINATION include/cmp)
 
 #install media-encoder-client.pc file

@@ -101,5 +101,5 @@ target_link_libraries(${ENCODER-PIPELINE_LIB}
     ${ENCODER-PIPELINE_LIBRARIES}
 )
 
-install(TARGETS buffer-encoder DESTINATION lib)
+install(TARGETS buffer-encoder DESTINATION ${WEBOS_INSTALL_LIBDIR})
 install(FILES ${ENCODER-PIPELINE_HEADERS} DESTINATION include/cmp)

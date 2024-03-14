@@ -157,5 +157,5 @@ else()
   install(FILES ./qemux86/gst_elements.conf DESTINATION /etc/g-camera-pipeline)
 endif()
 
-install(TARGETS cmp-player DESTINATION lib)
+install(TARGETS cmp-player DESTINATION ${WEBOS_INSTALL_LIBDIR})
 install(FILES ${G-CAMERA-PIPELINE_HEADERS} DESTINATION include/cmp)
