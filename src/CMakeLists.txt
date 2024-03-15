@@ -37,8 +37,13 @@ if(AUTO_PTZ)
 include_directories(./postProcess)
 endif()
 
+# requestor.cpp in bufferencoder and cameraplayer
 if(USE_DISPLAY_RESOURCE)
   add_definitions(-DUSE_DISPLAY_RESOURCE)
+endif()
+
+if(PRO_UMS)
+  add_definitions(-DPRO_UMS)
 endif()
 
 include_directories(./cameraplayer)

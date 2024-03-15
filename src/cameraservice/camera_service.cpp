@@ -36,8 +36,13 @@ Service::Service(const char *service_name): media_id_(""), app_id_(""),
 {
     CMP_DEBUG_PRINT(" this[%p]", this);
 
+#ifdef PRO_UMS
+    umc_ = std::make_unique<UMSConnector>(service_name, nullptr, nullptr,
+            UMS_CONNECTOR_PRIVATE_BUS);
+#else
     umc_ = std::make_unique<UMSConnector>(service_name, nullptr, nullptr,
             UMS_CONNECTOR_ACG_BUS);
+#endif
 
     static UMSConnectorEventHandler event_handlers[] = {
         // uMediaserver public API
