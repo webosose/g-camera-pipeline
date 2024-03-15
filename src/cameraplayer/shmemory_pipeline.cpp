@@ -576,9 +576,15 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
 
     if (shm_listener_) shm_listener_->wait();
 
-    if(readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len) != 0)
+    if (readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len) != 0)
     {
         CMP_LOG_ERROR("shared memory read fail");
+        return;
+    }
+
+    if (data == nullptr)
+    {
+        CMP_LOG_ERROR("FeedData is null");
         return;
     }
 
