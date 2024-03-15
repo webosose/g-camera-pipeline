@@ -211,11 +211,11 @@ mrc::ResourceListOptions ResourceRequestor::calcDisplayResource(const std::strin
   if (videoResData_.vcodec != CMP_VIDEO_CODEC_NONE) {
     /* need to change display_mode type from string to enum */
     if (display_mode.compare("PunchThrough") == 0) {
-#ifndef DISABLE_DISPLAY_RESOURCE
+#ifdef USE_DISPLAY_RESOURCE
       DisplayResource = rc_->calcDisplayPlaneResourceOptions(mrc::ResourceCalculator::RenderMode::kModePunchThrough);
 #endif
     } else if (display_mode.compare("Textured") == 0) {
-#ifndef DISABLE_DISPLAY_RESOURCE
+#ifdef USE_DISPLAY_RESOURCE
       DisplayResource = rc_->calcDisplayPlaneResourceOptions(mrc::ResourceCalculator::RenderMode::kModeTexture);
 #endif
     } else {

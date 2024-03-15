@@ -66,7 +66,7 @@ else()
 endif()
 
 add_subdirectory(src)
-if(NOT DISABLE_CAMSRC)
+if(USE_CAMSRC)
     add_subdirectory(camsrc)
 endif()
 add_subdirectory(files)
