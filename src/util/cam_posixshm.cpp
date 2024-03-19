@@ -180,13 +180,6 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     int shmemSize = 0;
     struct stat sb ;
 
-    *phShmem = (SHMEM_HANDLE) malloc(sizeof(POSHMEM_COMM_T));
-    pShmemBuffer = (POSHMEM_COMM_T *) *phShmem;
-    if (pShmemBuffer == NULL) {
-        CMP_LOG_ERROR("pShmemBuffer is null");
-        return POSHMEM_COMM_FAIL;
-    }
-
     if( fstat (shmfd , &sb) == -1)
     {
         CMP_LOG_ERROR("Failed to get size of shared memory");
@@ -195,10 +188,18 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     shmemSize = sb.st_size;
     CMP_LOG_INFO("shared memory opened successfully!");
 
+    *phShmem = (SHMEM_HANDLE) malloc(sizeof(POSHMEM_COMM_T));
+    pShmemBuffer = (POSHMEM_COMM_T *) *phShmem;
+    if (pShmemBuffer == NULL) {
+        CMP_LOG_ERROR("pShmemBuffer is null");
+        return POSHMEM_COMM_FAIL;
+    }
+
     pSharedmem = (unsigned char *)mmap(0, shmemSize, PROT_READ|PROT_WRITE, MAP_SHARED, shmfd, 0);
     if(pSharedmem == MAP_FAILED)
     {
         CMP_LOG_ERROR("mmap failed");
+        free(pShmemBuffer);
         return POSHMEM_COMM_FAIL;
     }
 
