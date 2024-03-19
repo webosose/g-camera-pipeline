@@ -166,9 +166,6 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
 SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                           unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
                           int *pExtraSize, int readMode);
-SHMEM_STATUS_T _WriteShmem(SHMEM_HANDLE hShmem, unsigned char *pData, int dataSize,
-                           unsigned char *pMeta, int metaSize, unsigned char *pExtraData,
-                           int extraDataSize);
 
 // Internal Functions
 
@@ -221,44 +218,7 @@ static int resetShmem(SHMEM_COMM_T *shmem_buffer)
     return semctl(shmem_buffer->sema_id, 0, SETVAL, se);
 }
 
-int getShmemCount(SHMEM_COMM_T *shmem_buffer)
-{
-    if (shmem_buffer == NULL)
-    {
-        DEBUG_PRINT("Invalid argument\n");
-        return -1;
-    }
-
-    return semctl(shmem_buffer->sema_id, 0, GETVAL, 0);
-}
-
-int increseReadIndex(SHMEM_COMM_T *pShmem_buffer, int lread_index)
-{
-    lread_index += 1;
-    if (lread_index == *pShmem_buffer->unit_num)
-    {
-        *pShmem_buffer->read_index = 0;
-        lread_index = 0;
-    }
-    else
-        *pShmem_buffer->read_index = lread_index;
-
-    return lread_index;
-}
-
 // API functions
-
-SHMEM_STATUS_T CreateShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, int metaSize,
-                           int unitNum)
-{
-    return _OpenShmem(phShmem, pShmemKey, unitSize, metaSize, unitNum, 0, MODE_CREATE);
-}
-
-SHMEM_STATUS_T CreateShmemEx(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, int metaSize,
-                             int unitNum, int extraSize)
-{
-    return _OpenShmem(phShmem, pShmemKey, unitSize, metaSize, unitNum, extraSize, MODE_CREATE);
-}
 
 extern SHMEM_STATUS_T OpenShmem(SHMEM_HANDLE *phShmem, key_t shmemKey)
 {
@@ -426,27 +386,6 @@ SHMEM_STATUS_T ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize
     return _ReadShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_FIRST);
 }
 
-SHMEM_STATUS_T ReadLastShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                             unsigned char **ppMeta, int *pMetaSize)
-{
-    return _ReadShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_LAST);
-}
-
-SHMEM_STATUS_T ReadShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                           unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
-                           int *pExtraSize)
-{
-    return _ReadShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, ppExtraData, pExtraSize,
-                      READ_FIRST);
-}
-
-SHMEM_STATUS_T ReadLastShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                               unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
-                               int *pExtraSize)
-{
-    return _ReadShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, ppExtraData, pExtraSize, READ_LAST);
-}
-
 SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                           unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
                           int *pExtraSize, int readMode)
@@ -517,113 +456,6 @@ SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSiz
 
         break;
     } while (1);
-
-    return SHMEM_COMM_OK;
-}
-
-SHMEM_STATUS_T WriteShmemEx(SHMEM_HANDLE hShmem, unsigned char *pData, int dataSize,
-                            unsigned char *pMeta, int metaSize, unsigned char *pExtraData,
-                            int extraDataSize)
-{
-    return _WriteShmem(hShmem, pData, dataSize, pMeta, metaSize, pExtraData, extraDataSize);
-}
-
-SHMEM_STATUS_T WriteShmem(SHMEM_HANDLE hShmem, unsigned char *pData, int dataSize,
-                          unsigned char *pMeta, int metaSize)
-{
-    return _WriteShmem(hShmem, pData, dataSize, pMeta, metaSize, NULL, 0);
-}
-
-SHMEM_STATUS_T _WriteShmem(SHMEM_HANDLE hShmem, unsigned char *pData, int dataSize,
-                           unsigned char *pMeta, int metaSize, unsigned char *pExtraData,
-                           int extraDataSize)
-{
-    SHMEM_COMM_T *shmem_buffer = (SHMEM_COMM_T *) hShmem;
-    int lread_index;
-    int lwrite_index;
-    int mark;
-    int unit_size;
-    int meta_size;
-    int unit_num;
-
-    if (!shmem_buffer)
-    {
-        DEBUG_PRINT("shmem_buffer is NULL\n");
-        return SHMEM_COMM_FAIL;
-    }
-
-    if (-1 == *shmem_buffer->write_index)
-    {
-        *shmem_buffer->write_index = 0;
-    }
-#ifdef SHMEM_COMM_DEBUG
-    {
-        int sem_count;
-        sem_count = semctl(shmem_buffer->sema_id, 0, GETVAL, 0);
-    }
-#endif
-
-    mark         = *shmem_buffer->mark;
-    unit_size    = *shmem_buffer->unit_size;
-    meta_size    = *shmem_buffer->meta_size;
-    unit_num     = *shmem_buffer->unit_num;
-    lwrite_index = *shmem_buffer->write_index;
-    if (extraDataSize > 0 && extraDataSize != *shmem_buffer->extra_size)
-    {
-        DEBUG_PRINT("extraDataSize should be same with extrasize used when open\n");
-        return SHMEM_COMM_FAIL;
-    }
-
-    if (mark == SHMEM_COMM_MARK_RESET)
-    {
-        DEBUG_PRINT("warning - read process isn't reset yet!\n");
-    }
-
-    if ((dataSize == 0) || (dataSize > unit_size))
-    {
-        DEBUG_PRINT("size error(%d > %d)!\n", dataSize, unit_size);
-        return SHMEM_COMM_FAIL;
-    }
-
-    //Once the writer writes the last buffer, it is made to point to the first
-    //buffer again
-    if (lwrite_index == (unit_num - 1))
-    {
-        DEBUG_PRINT("Overflow write data(read index = %d, write_index = %d, unit_num = %d)!\n",
-                    lread_index, lwrite_index, *shmem_buffer->unit_num);
-        //*shmem_buffer->mark = (*shmem_buffer->mark) | SHMEM_COMM_MARK_RESET;
-        *shmem_buffer->write_index = 0;
-
-        resetShmem(shmem_buffer);
-        unlockShmem(shmem_buffer);
-        return SHMEM_COMM_OVERFLOW;
-    }
-
-    *(int *) (shmem_buffer->length_buf + lwrite_index) = dataSize;
-    memcpy(shmem_buffer->data_buf + lwrite_index * (*shmem_buffer->unit_size), pData, dataSize);
-
-    if (metaSize < meta_size)
-    {
-        *(int *)(shmem_buffer->length_meta + lwrite_index) = metaSize;
-        memcpy(shmem_buffer->data_meta + lwrite_index * (*shmem_buffer->meta_size), pMeta,
-               metaSize);
-    }
-
-    if (NULL != pExtraData && extraDataSize > 0)
-    {
-        memcpy(shmem_buffer->extra_buf + lwrite_index * (*shmem_buffer->extra_size), pExtraData,
-                extraDataSize);
-    }
-
-    *shmem_buffer->write_index += 1;
-    if (*shmem_buffer->write_index == *shmem_buffer->unit_num)
-        *shmem_buffer->write_index = 0;
-
-    unlockShmem(shmem_buffer);
-
-#ifdef SHMEM_COMM_DEBUG
-    //DEBUG_PRINT("Write %u bytes[RI=%d, WI=%d]\n",size, *shmem_buffer->read_index, *shmem_buffer->write_index);
-#endif
 
     return SHMEM_COMM_OK;
 }

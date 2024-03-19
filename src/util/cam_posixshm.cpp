@@ -278,26 +278,6 @@ POSHMEM_STATUS_T ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int
     return _ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_FIRST);
 }
 
-POSHMEM_STATUS_T ReadLastPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                    unsigned char **ppMeta, int *pMetaSize)
-{
-    return _ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_LAST);
-}
-
-POSHMEM_STATUS_T ReadPosixShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                  unsigned char **ppMeta, int *pMetaSize,
-                                  unsigned char **ppExtraData, int *pExtraSize)
-{
-    return _ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, ppExtraData, pExtraSize, READ_FIRST);
-}
-
-POSHMEM_STATUS_T ReadLastPosixShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                      unsigned char **ppMeta, int *pMetaSize,
-                                      unsigned char **ppExtraData, int *pExtraSize)
-{
-    return _ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, ppExtraData, pExtraSize, READ_LAST);
-}
-
 POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                                  unsigned char **ppMeta, int *pMetaSize,
                                  unsigned char **ppExtraData, int *pExtraSize, int readMode)

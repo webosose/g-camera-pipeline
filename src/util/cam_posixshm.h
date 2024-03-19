@@ -31,14 +31,6 @@ typedef void * SHMEM_HANDLE;
 extern POSHMEM_STATUS_T OpenPosixShmem(SHMEM_HANDLE *phShmem, int fd);
 extern POSHMEM_STATUS_T ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                                        unsigned char **ppMeta, int *pMetaSize);
-extern POSHMEM_STATUS_T ReadPosixShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                         unsigned char **ppMeta, int *pMetaSize,
-                                         unsigned char **ppExtraData, int *pExtraSize);
-extern POSHMEM_STATUS_T ReadPosixLastShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                           unsigned char **ppMeta, int *pMetaSize);
-extern POSHMEM_STATUS_T ReadPosixLastShmemEx(SHMEM_HANDLE hShmem, unsigned char **ppData,
-                                          unsigned char **ppMeta, int *pMetaSize,
-                                          int *pSize, unsigned char **ppExtraData, int *pExtraSize);
 extern POSHMEM_STATUS_T ClosePosixShmem(SHMEM_HANDLE *phShmem, const char* shmemname, int shmemfd);
 
 #endif //SRC_HAL_UTILS_POCAMSHM_H_
