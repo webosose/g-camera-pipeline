@@ -26,14 +26,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "camshm.h"
+#include "log.h"
 
 //#define SHMEM_COMM_DEBUG
-
-#ifdef SHMEM_COMM_DEBUG
-#define DEBUG_PRINT(fmt, args...) printf("\x1b[1;40;32m[SHM_API:%s] " fmt "\x1b[0m\r\n", __FUNCTION__, ##args)
-#else
-#define DEBUG_PRINT(fmt, args...)
-#endif
 
 // constants
 
@@ -176,7 +171,7 @@ static int lockShmem(SHMEM_COMM_T *shmem_buffer)
 
     if (shmem_buffer == NULL)
     {
-        DEBUG_PRINT("Invalid argument\n");
+        CMP_LOG_ERROR("Invalid argument");
         return -1;
     }
 
@@ -193,7 +188,7 @@ static int unlockShmem(SHMEM_COMM_T *shmem_buffer)
 
     if (shmem_buffer == NULL)
     {
-        DEBUG_PRINT("Invalid argument\n");
+        CMP_LOG_ERROR("Invalid argument");
         return -1;
     }
 
@@ -210,7 +205,7 @@ static int resetShmem(SHMEM_COMM_T *shmem_buffer)
 
     if (shmem_buffer == NULL)
     {
-        DEBUG_PRINT("Invalid argument\n");
+        CMP_LOG_ERROR("Invalid argument");
         return -1;
     }
 
@@ -238,11 +233,11 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
     *phShmem = (SHMEM_HANDLE) calloc(1, sizeof(SHMEM_COMM_T));
     pShmemBuffer = (SHMEM_COMM_T *) *phShmem;
     if (pShmemBuffer == NULL) {
-        DEBUG_PRINT("pShmemBuffer is null\n");
+        CMP_LOG_INFO("pShmemBuffer is null");
         return SHMEM_COMM_FAIL;
     }
 
-    DEBUG_PRINT("hShmem = %p, pKey = %p, nOpenMode=%d, unitSize=%d, unitNum=%d\n",
+    CMP_LOG_INFO("hShmem = %p, pKey = %p, nOpenMode=%d, unitSize=%d, unitNum=%d",
             *phShmem, pShmemKey, nOpenMode, unitSize, unitNum);
 
     if (nOpenMode == MODE_CREATE)
@@ -263,17 +258,17 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
         shmemKey = *pShmemKey;
     }
 
-    DEBUG_PRINT("shmem_key=%d\r\n", shmemKey);
+    CMP_LOG_INFO("shmem_key=%d\r", shmemKey);
 
     pShmemBuffer->shmem_id = shmget((key_t) shmemKey, shmemSize, shmemMode);
     if (pShmemBuffer->shmem_id == -1)
     {
-        DEBUG_PRINT("Can't open shared memory: %s\n", strerror(errno));
+        CMP_LOG_ERROR("Can't open shared memory: %s", strerror(errno));
         free(pShmemBuffer);
         return SHMEM_COMM_FAIL;
     }
 
-    DEBUG_PRINT("shared memory created/opened successfully!\n");
+    CMP_LOG_INFO("shared memory created/opened successfully!");
 
     pSharedmem                = (unsigned char *) shmat(pShmemBuffer->shmem_id, NULL, 0);
     pShmemBuffer->write_index = (int *) (pSharedmem + sizeof(int) * 0);
@@ -287,11 +282,11 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
     {
 #ifdef SHMEM_COMM_DEBUG
         if (nOpenMode == MODE_CREATE)
-        DEBUG_PRINT("Failed to create semaphore : %s\n", strerror(errno));
+        CMP_LOG_ERROR("Failed to create semaphore : %s", strerror(errno));
 #endif
         if ((pShmemBuffer->sema_id = semget((key_t) shmemKey, 1, 0666)) == -1)
         {
-            DEBUG_PRINT("Failed to get semaphore : %s\n", strerror(errno));
+            CMP_LOG_ERROR("Failed to get semaphore : %s", strerror(errno));
             free(pShmemBuffer);
             return SHMEM_COMM_FAIL;
         }
@@ -340,11 +335,11 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
     if (shmctl(pShmemBuffer->shmem_id, IPC_STAT, &shm_stat) != -1)
     {
 #ifdef SHMEM_COMM_DEBUG
-        DEBUG_PRINT("shm_stat.shm_nattch=%d\n", (int)shm_stat.shm_nattch);
+        CMP_LOG_INFO("shm_stat.shm_nattch=%d", (int)shm_stat.shm_nattch);
         if (shm_stat.shm_nattch == 1)
-            DEBUG_PRINT("we are the first client\n");
+            CMP_LOG_INFO("we are the first client");
 
-        DEBUG_PRINT("shared memory size = %d\n", shm_stat.shm_segsz);
+        CMP_LOG_INFO("shared memory size = %d", shm_stat.shm_segsz);
 #endif
         // shared momory size larger than total, we use extra data
         if (shm_stat.shm_segsz > extra_size_offset)
@@ -373,9 +368,9 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
 
     resetShmem(pShmemBuffer);
 
-    DEBUG_PRINT("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d\n", *pShmemBuffer->unit_size,
+    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d", *pShmemBuffer->unit_size,
                 SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
-    DEBUG_PRINT("shared memory opened successfully! : shmem_id=%d, sema_id=%d\n",
+    CMP_LOG_INFO("shared memory opened successfully! : shmem_id=%d, sema_id=%d",
             pShmemBuffer->shmem_id, pShmemBuffer->sema_id);
     return SHMEM_COMM_OK;
 }
@@ -399,7 +394,7 @@ SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSiz
     first_read = false;
     if (!shmem_buffer)
     {
-        DEBUG_PRINT("shmem buffer is NULL");
+        CMP_LOG_ERROR("shmem buffer is NULL");
         return SHMEM_COMM_FAIL;
     }
     lread_index = *shmem_buffer->write_index;
@@ -409,7 +404,7 @@ SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSiz
 #ifdef SHMEM_COMM_DEBUG
         int sem_count;
         sem_count = semctl(shmem_buffer->sema_id, 0, GETVAL, 0);
-        DEBUG_PRINT("sem_count=%d\n", sem_count);
+        CMP_LOG_INFO("sem_count=%d", sem_count);
 #endif
         if (-1 != *shmem_buffer->write_index)
         {
@@ -433,7 +428,7 @@ SHMEM_STATUS_T _ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSiz
 
             if ((size == 0) || (size > *shmem_buffer->unit_size))
             {
-                DEBUG_PRINT("size error(%d)!\n", size);
+                CMP_LOG_ERROR("size error(%d)!", size);
                 return SHMEM_COMM_SIZE;
             }
 
@@ -465,13 +460,13 @@ SHMEM_STATUS_T CloseShmem(SHMEM_HANDLE *phShmem)
     void *shmem_addr;
     struct shmid_ds shm_stat;
     SHMEM_COMM_T *shmem_buffer;
-    DEBUG_PRINT("start");
+    CMP_LOG_INFO("start");
 
     shmem_buffer = (SHMEM_COMM_T *) *phShmem;
 
     if (!shmem_buffer)
     {
-        DEBUG_PRINT("shmem_bufer is NULL\n");
+        CMP_LOG_ERROR("shmem_bufer is NULL");
         return SHMEM_COMM_FAIL;
     }
 
@@ -483,11 +478,11 @@ SHMEM_STATUS_T CloseShmem(SHMEM_HANDLE *phShmem)
 
     if (shmctl(shmem_buffer->shmem_id, IPC_STAT, &shm_stat) != -1)
     {
-        DEBUG_PRINT("shm_stat.shm_nattch=%d\n", (int)shm_stat.shm_nattch);
+        CMP_LOG_INFO("shm_stat.shm_nattch=%d", (int)shm_stat.shm_nattch);
 
         if (shm_stat.shm_nattch == 0)
         {
-            DEBUG_PRINT("This is the only attached client\n");
+            CMP_LOG_INFO("This is the only attached client");
             semctl(shmem_buffer->sema_id, 0, IPC_RMID, NULL);
             shmctl(shmem_buffer->shmem_id, IPC_RMID, NULL);
         }
@@ -495,6 +490,6 @@ SHMEM_STATUS_T CloseShmem(SHMEM_HANDLE *phShmem)
 
     free(shmem_buffer);
     shmem_buffer = NULL;
-    DEBUG_PRINT("end");
+    CMP_LOG_INFO("end");
     return SHMEM_COMM_OK;
 }

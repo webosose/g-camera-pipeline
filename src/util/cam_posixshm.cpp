@@ -35,7 +35,7 @@
 #include <sys/mman.h>
 #include "camera_types.h"
 #include "parser/parser.h"
-#include <log/log.h>
+#include "log.h"
 #include <sys/time.h>
 #include <sys/signalfd.h>
 #include <sys/socket.h>
@@ -45,12 +45,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <assert.h>
-
-#ifdef POSHMEM_COMM_DEBUG
-#define DEBUG_PRINT(fmt, args...) printf("\x1b[1;40;32m[SHM_API:%s] " fmt "\x1b[0m\r\n", __FUNCTION__, ##args)
-#else
-#define DEBUG_PRINT(fmt, args...)
-#endif
 
 // constants
 
@@ -189,22 +183,22 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     *phShmem = (SHMEM_HANDLE) malloc(sizeof(POSHMEM_COMM_T));
     pShmemBuffer = (POSHMEM_COMM_T *) *phShmem;
     if (pShmemBuffer == NULL) {
-        CMP_DEBUG_PRINT("pShmemBuffer is null");
+        CMP_LOG_ERROR("pShmemBuffer is null");
         return POSHMEM_COMM_FAIL;
     }
 
     if( fstat (shmfd , &sb) == -1)
     {
-        DEBUG_PRINT("Failed to get size of shared memory \n");
+        CMP_LOG_ERROR("Failed to get size of shared memory");
         return POSHMEM_COMM_FAIL;
     }
     shmemSize = sb.st_size;
-    DEBUG_PRINT("shared memory opened successfully!\n");
+    CMP_LOG_INFO("shared memory opened successfully!");
 
     pSharedmem = (unsigned char *)mmap(0, shmemSize, PROT_READ|PROT_WRITE, MAP_SHARED, shmfd, 0);
     if(pSharedmem == MAP_FAILED)
     {
-        DEBUG_PRINT("mmap failed \n");
+        CMP_LOG_ERROR("mmap failed");
         return POSHMEM_COMM_FAIL;
     }
 
@@ -266,9 +260,9 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     //started to write yet
     if(pShmemBuffer->write_index) *pShmemBuffer->write_index = -1;
     if(pShmemBuffer->read_index) *pShmemBuffer->read_index  = -1;
-    DEBUG_PRINT("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d\n",
+    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d",
             *pShmemBuffer->unit_size, SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
-    DEBUG_PRINT("shared memory opened successfully!\n");
+    CMP_LOG_INFO("shared memory opened successfully!");
     return POSHMEM_COMM_OK;
 }
 
@@ -291,7 +285,7 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
     first_read = false;
     if (!shmem_buffer)
     {
-        DEBUG_PRINT("shmem buffer is NULL");
+        CMP_LOG_ERROR("shmem buffer is NULL");
         return POSHMEM_COMM_FAIL;
     }
     lread_index = *shmem_buffer->write_index;
@@ -320,7 +314,7 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
 
             if ((size == 0) || (size > *shmem_buffer->unit_size))
             {
-                DEBUG_PRINT("size error(%d)!\n", size);
+                CMP_LOG_ERROR("size error(%d)!", size);
                 return POSHMEM_COMM_FAIL;
             }
 
@@ -349,12 +343,12 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
 
 POSHMEM_STATUS_T ClosePosixShmem(SHMEM_HANDLE *phShmem, const char* shmemname, int shmemfd)
 {
-    DEBUG_PRINT("ClosePosixShmem start");
+    CMP_LOG_INFO("ClosePosixShmem start");
 
     POSHMEM_COMM_T *shmem_buffer = (POSHMEM_COMM_T *)*phShmem;
     if (!shmem_buffer)
     {
-        DEBUG_PRINT("shmem_bufer is NULL");
+        CMP_LOG_ERROR("shmem_bufer is NULL");
         return POSHMEM_COMM_FAIL;
     }
 
@@ -370,18 +364,18 @@ POSHMEM_STATUS_T ClosePosixShmem(SHMEM_HANDLE *phShmem, const char* shmemname, i
 
     if (munmap(shmem_addr, shmemSize) == -1)
     {
-        DEBUG_PRINT("munmap failed!!");
+        CMP_LOG_ERROR("munmap failed!!");
     }
 
     if (shm_unlink(shmemname) == -1)
     {
-        DEBUG_PRINT("shm_unlink failed!!");
+        CMP_LOG_WARNING("shm_unlink failed!!");
     }
 
     close(shmemfd);
     free(shmem_buffer);
     shmem_buffer = nullptr;
 
-    DEBUG_PRINT("ClosePosixShmem end");
+    CMP_LOG_INFO("ClosePosixShmem end");
     return POSHMEM_COMM_OK;
 }
