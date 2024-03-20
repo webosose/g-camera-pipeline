@@ -26,6 +26,7 @@
 #include "wayland_foreign.h"
 #include "wayland_exporter.h"
 #include <csignal>
+#include <nlohmann/json.hpp>
 
 #define VERTEX_ARRAY (0)
 
@@ -350,10 +351,6 @@ int main(int argc, char *argv[])
         break;
     }
 
-    std::cout << "Try 'window_exporter -?' for more information.\n" << std::endl;
-    std::cout << "displayID=" << displayID << std::endl;
-    printf("x=%d, y=%d, exportWidth=%d, exportHeight=%d\n\n", x, y, exportWidth, exportHeight);
-
     foreign.initialize();
 
     surface.wlSurface      = wl_compositor_create_surface(foreign.getCompositor());
@@ -373,14 +370,28 @@ int main(int argc, char *argv[])
     if (result == false) {
         std::cout << "exporter.initialize error" << std::endl;
         return 0;
-    } else {
-        std::cout << "exporter.initialize success" << std::endl;
+    }
+
+    try {
+        nlohmann::json exporterOutput;
+
+        exporterOutput["info"]["message"]= "Try 'window_exporter -?' for more information.";
+        exporterOutput["info"]["displayID"] = displayID;
+        exporterOutput["info"]["coordinates"]["x"] = x;
+        exporterOutput["info"]["coordinates"]["y"] = y;
+        exporterOutput["info"]["exportDimensions"]["exportWidth"] = exportWidth;
+        exporterOutput["info"]["exportDimensions"]["exportHeight"] = exportHeight;
+        exporterOutput["exporterStatus"] = "exporter.initialize success";
+        exporterOutput["exportedWindowID"] = exporter.getWindowID();
+
+        std::cout << exporterOutput.dump(4) << std::endl;
+    }
+    catch (std::exception& e) {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
     }
 
     exporter.setRegion(region_src, region_dst);
     foreign.flush();
-
-    std::cout << "exported window ID is : " << exporter.getWindowID() << std::endl;
 
     renderInitialize(foreign.getDisplay(), &eglData, &surface, &glData);
 
