@@ -36,8 +36,8 @@ public:
     virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride,
                                uint32_t offsetUV) override;
     virtual bool doPostProcess(CropRect &cropRect) override;
-    virtual bool setParam(std::string aParamId, void *aParam) override;
-    virtual void *getParam(std::string aParam) override;
+    virtual bool setParam(const std::string &aParamId, void *aParam) override;
+    virtual void *getParam(const std::string &aParam) override;
     virtual bool needImageOverwrite() override;
 
 private:

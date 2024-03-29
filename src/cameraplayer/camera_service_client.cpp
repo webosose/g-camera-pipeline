@@ -102,7 +102,7 @@ bool CameraServiceClient::releaseLSHandle()
     return true;
 }
 
-bool CameraServiceClient::call(std::string uri, std::string payload, bool (*cb)(LSHandle*, LSMessage*, void*))
+bool CameraServiceClient::call(const std::string &uri, const std::string &payload, bool (*cb)(LSHandle*, LSMessage*, void*))
 {
     done_ = 0;
 

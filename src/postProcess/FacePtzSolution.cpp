@@ -57,7 +57,7 @@ bool FacePtzSolution::doPostProcess(CropRect &cropRect)
     return isRectUpdated;
 }
 
-bool FacePtzSolution::setParam(std::string aParamId, void *aParam)
+bool FacePtzSolution::setParam(const std::string &aParamId, void *aParam)
 {
     PostProcessSolution::setParam(aParamId, aParam);
     if (aParamId == PARAM_ID_CROP_OBJ) {
@@ -71,7 +71,7 @@ bool FacePtzSolution::setParam(std::string aParamId, void *aParam)
     }
     return true;
 }
-void *FacePtzSolution::getParam(std::string aParam)
+void *FacePtzSolution::getParam(const std::string &aParam)
 {
     return PostProcessSolution::getParam(aParam);
 }

@@ -37,12 +37,12 @@ bool EmptySolution::doPostProcess(uint8_t *aData, uint32_t aStrride,
 
 bool EmptySolution::doPostProcess(CropRect &cropRect) { return true; }
 
-bool EmptySolution::setParam(std::string aParamId, void *aParam)
+bool EmptySolution::setParam(const std::string &aParamId, void *aParam)
 {
     PostProcessSolution::setParam(aParamId, aParam);
     return true;
 }
-void *EmptySolution::getParam(std::string aParam) { return nullptr; }
+void *EmptySolution::getParam(const std::string &aParam) { return nullptr; }
 
 bool EmptySolution::needImageOverwrite() { return false; }
 }

@@ -34,8 +34,8 @@ public:
     virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride,
                                uint32_t offsetUV)  = 0;
     virtual bool doPostProcess(CropRect &cropRect) = 0;
-    virtual bool setParam(std::string aParamId, void *aParam) = 0;
-    virtual void *getParam(std::string aParam) = 0;
+    virtual bool setParam(const std::string &aParamId, void *aParam) = 0;
+    virtual void *getParam(const std::string &aParam) = 0;
     virtual bool needImageOverwrite()                        = 0;
 };
 }

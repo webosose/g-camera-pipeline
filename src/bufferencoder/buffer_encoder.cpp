@@ -301,7 +301,7 @@ BufferEncoder::on_new_sample_from_sink (GstElement * elt, ProgramData * data)
 
 void BufferEncoder::RegisterCallBack(FunctorEncoder callback) {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
-  callback_ = callback;
+  callback_ = std::move(callback);
 }
 
 int BufferEncoder::feed(const uint8_t* bufferPtr, size_t bufferSize) {
@@ -481,7 +481,7 @@ bool BufferEncoder::LinkElements(const ENCODER_INIT_DATA_T* loadData) {
 void BufferEncoder::RegisterCbFunction(CALLBACK_T callBackFunction)
 {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
-  cbFunction_ = callBackFunction;
+  cbFunction_ = std::move(callBackFunction);
 }
 
 int32_t BufferEncoder::ConvertErrorCode(GQuark domain, gint code)

@@ -20,7 +20,7 @@ private:
     static bool cbGetReplyMsg(LSHandle*, LSMessage*, void*);
     bool acquireLSHandle();
     bool releaseLSHandle();
-    bool call(std::string uri, std::string payload, bool (*cb)(LSHandle*, LSMessage*, void*));
+    bool call(const std::string &uri, const std::string &payload, bool (*cb)(LSHandle*, LSMessage*, void*));
 public:
     CameraServiceClient();
     ~CameraServiceClient();

@@ -213,7 +213,7 @@ bool CameraPlayer::detachSurface() {
 
 void CameraPlayer::RegisterCbFunction(CALLBACK_T callBackFunction)
 {
-    cbFunction_ = callBackFunction;
+    cbFunction_ = std::move(callBackFunction);
 }
 
 void CameraPlayer::ParseOptionString(const std::string& options)

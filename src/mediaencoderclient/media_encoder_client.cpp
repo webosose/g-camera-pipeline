@@ -45,7 +45,7 @@ MediaEncoderClient::~MediaEncoderClient() {
 void MediaEncoderClient::RegisterCallback(
     ENCODER_CALLBACK_T callback, void *uData) {
   CMP_INFO_PRINT("%d %s", __LINE__, __FUNCTION__);
-  callback_ = callback;
+  callback_ = std::move(callback);
   userData_ = uData;
 }
 

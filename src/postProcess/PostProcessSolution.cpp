@@ -30,7 +30,7 @@ bool PostProcessSolution::doPostProcess(uint8_t *aData, uint32_t aStrride,
     return true;
 }
 bool PostProcessSolution::doPostProcess(CropRect &cropRect) { return true; }
-bool PostProcessSolution::setParam(std::string aParamId, void *aParam)
+bool PostProcessSolution::setParam(const std::string &aParamId, void *aParam)
 {
     if (aParam == nullptr)
         return false;
@@ -44,7 +44,7 @@ bool PostProcessSolution::setParam(std::string aParamId, void *aParam)
     }
     return true;
 }
-void *PostProcessSolution::getParam(std::string aParam) { return nullptr; }
+void *PostProcessSolution::getParam(const std::string &aParam) { return nullptr; }
 
 bool PostProcessSolution::needImageOverwrite() { return false; }
 }

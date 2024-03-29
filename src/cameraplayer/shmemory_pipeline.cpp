@@ -928,14 +928,24 @@ bool ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
 {
     CMP_LOG_INFO("%s", socketPath.c_str());
 
-    if (access(socketPath.c_str(), F_OK) == 0)
+    if (access(socketPath.c_str(), F_OK) != 0)
     {
-        if (getProcessCount(socketPath) == 0)
-        {
-            CMP_LOG_WARNING("unlink %s", socketPath.c_str());
-            unlink(socketPath.c_str());
-        }
+        CMP_LOG_ERROR("Failed to access %s", socketPath.c_str());
+        return false;
     }
 
+    if (getProcessCount(socketPath) != 0)
+    {
+        CMP_LOG_ERROR("Process count for %s is not zero", socketPath.c_str());
+        return false;
+    }
+
+    if(unlink(socketPath.c_str()) != 0)
+    {
+        CMP_LOG_ERROR("Failed to unlink %s", socketPath.c_str());
+        return false;
+    }
+
+    CMP_LOG_WARNING("unlinked %s", socketPath.c_str());
     return true;
 }
