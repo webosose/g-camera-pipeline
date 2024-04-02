@@ -40,13 +40,17 @@ VideoCrop::VideoCrop()
       cx_pre_(0), cy_pre_(0), cx_old_(0), cy_old_(0), c_cnt_(0),
       isUpdate_(false)
 {
-    if (access(PTZ_HIST_REF_PATH, F_OK) == 0)
-        dbgSaveHist_ = true;
-
-    unlink(PTZ_HIST_PATH);
+    if (access(PTZ_HIST_REF_PATH, F_OK) == 0) {
+        dbgSaveHistFile.open(PTZ_HIST_PATH, std::ios_base::trunc);
+    }
 }
 
-VideoCrop::~VideoCrop() {}
+VideoCrop::~VideoCrop()
+{
+    if (dbgSaveHistFile.is_open()) {
+        dbgSaveHistFile.close();
+    }
+}
 
 void VideoCrop::init(int w, int h)
 {
@@ -154,20 +158,16 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
         } else {
             zoomState_ = ZOOM_IN;
             CMP_LOG_INFO("GoTo Zoom In!!!(%d)", zoomLevel_);
-            if (dbgSaveHist_) {
-                std::string cmd =
-                    std::string("echo \"ZoomIn\" >> ") + PTZ_HIST_PATH;
-                system(cmd.c_str());
+            if (dbgSaveHistFile.is_open()) {
+                dbgSaveHistFile << "ZoomIn" << std::endl;
             }
         }
         break;
     case ZOOM_IN:
         if (cx_old_ == 0 && cy_old_ == 0) {
             CMP_LOG_INFO("GoTo Zoom Out!!!(%d)", zoomLevel_);
-            if (dbgSaveHist_) {
-                std::string cmd =
-                    std::string("echo \"ZoomOut\" >> ") + PTZ_HIST_PATH;
-                system(cmd.c_str());
+            if (dbgSaveHistFile.is_open()) {
+                dbgSaveHistFile << "ZoomOut" << std::endl;
             }
             zoomState_ = ZOOM_OUT;
         } else {
@@ -191,10 +191,8 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
             if (sy < -PTZ_LIMIT)
                 sy = -PTZ_LIMIT;
             CMP_LOG_INFO("PAN and Tilt!!!!");
-            if (dbgSaveHist_) {
-                std::string cmd =
-                    std::string("echo \"PanTilt\" >> ") + PTZ_HIST_PATH;
-                system(cmd.c_str());
+            if (dbgSaveHistFile.is_open()) {
+                dbgSaveHistFile << "PanTilt" << std::endl;
             }
             zoomState_ = PAN_AND_TILT;
         }

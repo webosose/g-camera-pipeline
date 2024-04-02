@@ -601,20 +601,6 @@ gboolean BufferEncoder::HandleBusMessage(
       break;
     }
 
-    case GST_STATE_PAUSED: {
-      CMP_INFO_PRINT("PAUSED");
-      if (encoder->cbFunction_)
-        encoder->cbFunction_(ENCODER_CB_NOTIFY_PAUSED, 0, nullptr, nullptr);
-      break;
-    }
-
-    case GST_STATE_PLAYING: {
-      CMP_INFO_PRINT("PLAYING");
-      if (encoder->cbFunction_)
-        encoder->cbFunction_(ENCODER_CB_NOTIFY_PLAYING, 0, nullptr, nullptr);
-      break;
-    }
-
     case GST_MESSAGE_STATE_CHANGED: {
       GstState oldState = GST_STATE_NULL;
       GstState newState = GST_STATE_NULL;

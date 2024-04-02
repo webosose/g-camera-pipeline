@@ -18,6 +18,7 @@
 
 #include "IPostProcessSolution.hpp"
 #include "PTZMovingParam.hpp"
+#include <fstream>
 
 namespace cmp
 {
@@ -59,6 +60,6 @@ public:
 
 private:
     PTZMovingParam ptzMovingParam_;
-    bool dbgSaveHist_{false};
+    std::ofstream dbgSaveHistFile;
 };
 }

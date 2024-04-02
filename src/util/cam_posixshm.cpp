@@ -261,7 +261,7 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     //started to write yet
     if(pShmemBuffer->write_index) *pShmemBuffer->write_index = -1;
     if(pShmemBuffer->read_index) *pShmemBuffer->read_index  = -1;
-    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d",
+    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %zu, unit_num = %d",
             *pShmemBuffer->unit_size, SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
     CMP_LOG_INFO("shared memory opened successfully!");
     return POSHMEM_COMM_OK;

@@ -769,7 +769,10 @@ gboolean CameraPlayer::HandleBusMessage(
         case GST_MESSAGE_ELEMENT:
             {
                 const GstStructure *s = gst_message_get_structure (message);
-                CMP_DEBUG_PRINT("GST_MESSAGE_ELEMENT received s : %s", *s);
+                char *s_str = gst_structure_to_string(s);
+                CMP_DEBUG_PRINT("GST_MESSAGE_ELEMENT received s : %s", s_str);
+                g_free(s_str);
+
                 if (gst_structure_has_name (s, "GstBinForwarded"))
                 {
                     GstMessage *forward_msg = NULL;
@@ -794,22 +797,6 @@ gboolean CameraPlayer::HandleBusMessage(
                     player->cbFunction_(CMP_NOTIFY_LOAD_COMPLETED, 0, nullptr, nullptr);
                     player->load_complete_ = true;
                 }
-                break;
-            }
-
-        case GST_STATE_PAUSED:
-            {
-                CMP_DEBUG_PRINT("PAUSED");
-                if (player->cbFunction_)
-                    player->cbFunction_(CMP_NOTIFY_PAUSED, 0, nullptr, nullptr);
-                break;
-            }
-
-        case GST_STATE_PLAYING:
-            {
-                CMP_DEBUG_PRINT("PLAYING");
-                if (player->cbFunction_)
-                    player->cbFunction_(CMP_NOTIFY_PLAYING, 0, nullptr, nullptr);
                 break;
             }
 
@@ -1503,7 +1490,7 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     }
     else
     {
-        CMP_DEBUG_PRINT("Format %s is not supported", fileFormat);
+        CMP_DEBUG_PRINT("Format %s is not supported", fileFormat.c_str());
         return false;
     }
     record_sink_ = gst_element_factory_make("filesink", "record-sink");
@@ -1724,7 +1711,7 @@ bool CameraPlayer::CreateAudioRecordElements(const std::string& audioSrc, GstPad
     }
     g_object_set(G_OBJECT(record_audio_src_), "do-timestamp", false, NULL);
 
-    CMP_DEBUG_PRINT ("AudioSrc provided is %s, length = %d", audioSrc.c_str(), audioSrc.length());
+    CMP_DEBUG_PRINT ("AudioSrc provided is %s, length = %zu", audioSrc.c_str(), audioSrc.length());
     if(audioSrc.compare("") != 0 && audioSrc.length() >0 )
     {
        CMP_DEBUG_PRINT ("Set audioSrc device name to pulsesrc eleemnt");

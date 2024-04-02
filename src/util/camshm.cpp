@@ -368,7 +368,7 @@ SHMEM_STATUS_T _OpenShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize,
 
     resetShmem(pShmemBuffer);
 
-    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d", *pShmemBuffer->unit_size,
+    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %zu, unit_num = %d", *pShmemBuffer->unit_size,
                 SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
     CMP_LOG_INFO("shared memory opened successfully! : shmem_id=%d, sema_id=%d",
             pShmemBuffer->shmem_id, pShmemBuffer->sema_id);
