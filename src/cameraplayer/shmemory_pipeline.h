@@ -88,8 +88,6 @@ class ShmemoryPipeline : public CameraPipeline
     int readShmemory(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                      unsigned char **ppMeta, int *pMetaSize);
 
-    int getProcessCount(const std::string& file_path);
-
 public:
     ShmemoryPipeline();
     virtual ~ShmemoryPipeline();
@@ -103,9 +101,10 @@ public:
 protected:
     int32_t width_{0}, height_{0}, framerate_{0}, display_path_{CMP_DEFAULT_DISPLAY}, handle_{0};
     std::string uri_, memtype_, memsrc_, format_, camera_id_;
+    bool primary{false};
 
     void FeedData(GstElement * appsrc, guint size);
-    bool deleteSocketIfExists(const std::string& socketPath);
+    void deleteSocketIfExists(const std::string& socketPath);
 
     GstElement *pipeline_{nullptr};
     std::string pipelineType;

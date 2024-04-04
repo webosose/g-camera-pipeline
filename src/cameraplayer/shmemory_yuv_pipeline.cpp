@@ -35,11 +35,11 @@ bool ShmemoryYuvPipeline::launch()
         if (!element.empty())
             pipeline_desc += " t. ! queue ! " + element + " name=sink";
 
-        std::string socketPath = "/tmp/" + camera_id_;
-        deleteSocketIfExists(socketPath);
-
-        if (access(socketPath.c_str(),F_OK) == -1) // File is not accessible
+        if (primary)
         {
+            std::string socketPath = "/tmp/" + camera_id_;
+            deleteSocketIfExists(socketPath);
+
             CMP_LOG_INFO("add shmsink %s", socketPath.c_str());
             pipeline_desc += " t. ! queue ! shmsink sync=false socket-path=" + socketPath + " wait-for-connection=false shm_size=10000000";
         }

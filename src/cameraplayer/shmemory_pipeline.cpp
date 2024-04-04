@@ -659,6 +659,9 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
                 if (parsed["args"][i]["option"].hasKey("cameraId")) {
                     camera_id_ = parsed["args"][i]["option"]["cameraId"].asString();
                 }
+                if (parsed["args"][i]["option"].hasKey("primary")) {
+                    primary = parsed["args"][i]["option"]["primary"].asBool();
+                }
                 break;
             }
         }
@@ -706,6 +709,9 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
         }
         if (parsed["options"]["option"].hasKey("cameraId")) {
             camera_id_ = parsed["options"]["option"]["cameraId"].asString();
+        }
+        if (parsed["options"]["option"].hasKey("primary")) {
+            primary = parsed["options"]["option"]["primary"].asBool();
         }
     }
 
@@ -903,49 +909,17 @@ bool ShmemoryPipeline::createSignalListener()
     return true;
 }
 
-int ShmemoryPipeline::getProcessCount(const std::string& file_path)
+void ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
 {
-    std::string command = "lsof | grep " + file_path + " | wc -l";
-    FILE* fp = popen(command.c_str(), "r");
-    if (fp == nullptr) {
-        CMP_LOG_ERROR("Error executing command");
-        return -1;
-    }
-
-    char buffer[1024];
-    int process_count = 0;
-    if (fgets(buffer, sizeof(buffer), fp) != nullptr) {
-        process_count = std::stoi(buffer);
-    }
-
-    pclose(fp);
-
-    CMP_LOG_INFO("%d processes have opened %s", process_count, file_path.c_str());
-    return process_count;
-}
-
-bool ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
-{
-    CMP_LOG_INFO("%s", socketPath.c_str());
-
-    if (access(socketPath.c_str(), F_OK) != 0)
+    if (access(socketPath.c_str(), F_OK) == 0)
     {
-        CMP_LOG_ERROR("Failed to access %s", socketPath.c_str());
-        return false;
+        if (unlink(socketPath.c_str()) == 0)
+        {
+            CMP_LOG_WARNING("Deleted successfully: %s", socketPath.c_str());
+        }
+        else
+        {
+            CMP_LOG_ERROR("Unable to delete: %s", socketPath.c_str());
+        }
     }
-
-    if (getProcessCount(socketPath) != 0)
-    {
-        CMP_LOG_ERROR("Process count for %s is not zero", socketPath.c_str());
-        return false;
-    }
-
-    if(unlink(socketPath.c_str()) != 0)
-    {
-        CMP_LOG_ERROR("Failed to unlink %s", socketPath.c_str());
-        return false;
-    }
-
-    CMP_LOG_WARNING("unlinked %s", socketPath.c_str());
-    return true;
 }

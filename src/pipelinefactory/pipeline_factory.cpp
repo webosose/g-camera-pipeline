@@ -9,7 +9,7 @@ std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JVa
     CMP_LOG_INFO("start");
 
     std::string camera_id, format;
-    if (parsed.hasKey("args") && parsed["args"].isArray()) 
+    if (parsed.hasKey("args") && parsed["args"].isArray())
     {
         for (ssize_t i = 0; i < parsed["args"].arraySize(); i++)
         {
@@ -25,7 +25,7 @@ std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JVa
             }
         }
     }
-    else 
+    else
     {
         if (parsed["options"]["option"].hasKey("cameraId")) {
             camera_id = parsed["options"]["option"]["cameraId"].asString();
