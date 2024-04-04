@@ -15,8 +15,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _LSM_CameraWindowManager_H_
-#define _LSM_CameraWindowManager_H_
+#ifndef LSM_CameraWindowManager_H_
+#define LSM_CameraWindowManager_H_
 
 #include <glib.h>
 #include <memory>

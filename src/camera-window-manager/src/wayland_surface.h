@@ -15,8 +15,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _WAYLAND_SURFACE_H_
-#define _WAYLAND_SURFACE_H_
+#ifndef WAYLAND_SURFACE_H_
+#define WAYLAND_SURFACE_H_
 
 #include "common.h"
 #include <wayland-client.h>
@@ -42,4 +42,4 @@ private:
 
 } // namespace Wayland
 
-#endif //_WAYLAND_SURFACE_H_
+#endif //WAYLAND_SURFACE_H_

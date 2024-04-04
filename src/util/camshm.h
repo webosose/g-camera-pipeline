@@ -16,7 +16,7 @@
 
 #ifndef SRC_HAL_UTILS_CAMSHM_H_
 #define SRC_HAL_UTILS_CAMSHM_H_
-typedef enum _SHMEM_STATUS_T
+typedef enum SHMEM_STATUS_T_
 {
     SHMEM_COMM_OK        = 0x0,
     SHMEM_COMM_FAIL      = -1,

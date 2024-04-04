@@ -1,8 +1,10 @@
-#ifndef _CAMERA_PIPELINE_H_
-#define _CAMERA_PIPELINE_H_
+#ifndef CAMERA_PIPELINE_H_
+#define CAMERA_PIPELINE_H_
 
 #include <string>
+extern "C" {
 #include <gst/gst.h>
+}
 #include <functional>
 
 using CALLBACK_T = std::function<void(const gint type, const gint64 numValue,
@@ -22,4 +24,4 @@ public:
     virtual bool StopRecord() {return true;};
 };
 
-#endif // _CAMERA_PIPELINE_H_
+#endif //CAMERA_PIPELINE_H_

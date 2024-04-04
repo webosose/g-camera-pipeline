@@ -15,11 +15,11 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef COMMON_H_
+#define COMMON_H_
 
 #define DISALLOW_COPY_AND_ASSIGN(ClassName) \
     ClassName(const ClassName &);           \
     void operator=(const ClassName &);
 
-#endif //_COMMON_H_
+#endif //COMMON_H_

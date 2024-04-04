@@ -15,8 +15,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _WAYLAND_EXPORTER_
-#define _WAYLAND_EXPORTER_
+#ifndef WAYLAND_EXPORTER_
+#define WAYLAND_EXPORTER_
 
 #include "common.h"
 #include <string>
@@ -50,4 +50,4 @@ private:
 
 } // namespace Wayland
 
-#endif //_WAYLAND_EXPORTER_
+#endif //WAYLAND_EXPORTER_

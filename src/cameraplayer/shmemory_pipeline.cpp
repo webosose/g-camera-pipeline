@@ -621,7 +621,8 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
         if (parsed["args"].arraySize() > 0) {
             uri_ = parsed["args"][0].asString();
         }
-        for (ssize_t i = 1; i < parsed["args"].arraySize(); i++)
+        int i = 1;
+        for (ssize_t j = 1; j < parsed["args"].arraySize(); j++)
         {
             if (parsed["args"][i].hasKey("option"))
             {
@@ -664,6 +665,7 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
                 }
                 break;
             }
+            i++;
         }
     }
     else

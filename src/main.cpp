@@ -31,7 +31,7 @@ int main(int argc, char * argv[]) {
   while ((c = getopt(argc, argv, "c:s:r:d:v:a:")) != -1) {
     switch (c) {
       case 's':
-        snprintf(service_name, MAX_SERVICE_STRING, "%s", optarg);
+        (void) snprintf(service_name, MAX_SERVICE_STRING, "%s", optarg);
         service_name_specified = true;
         break;
       case 'c':{

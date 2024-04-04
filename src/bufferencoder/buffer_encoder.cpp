@@ -28,7 +28,9 @@
 #include <memory>
 #include <gio/gio.h>
 
+extern "C" {
 #include <gst/gst.h>
+}
 #include <gst/video/video.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstbasesrc.h>

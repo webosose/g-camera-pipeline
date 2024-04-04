@@ -31,7 +31,9 @@
 #include <glib.h>
 #include <glib-unix.h>
 
+extern "C" {
 #include <gst/gst.h>
+}
 #include <gst/video/videooverlay.h>
 
 #define VERTEX_ARRAY (0)

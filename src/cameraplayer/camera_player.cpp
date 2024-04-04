@@ -375,7 +375,11 @@ bool CameraPlayer::subscribeToCameraService()
         return false;
     }
 
-    sprintf(buffer,"{\"handle\":%d}", handle_);
+    if (sprintf(buffer,"{\"handle\":%d}", handle_) < 0)
+    {
+        CMP_DEBUG_PRINT("sprintf Failed.\n");
+    }
+
     CMP_DEBUG_PRINT("result is %s",buffer);
 
     retval = LSCall(handle, "luna://com.webos.service.camera2/getFd", buffer, getFdCb, NULL, NULL,
@@ -912,15 +916,28 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
     {
         CMP_DEBUG_PRINT("capture_path_ doe not have file name");
 
-        time_t t_ = time(NULL);
-        tm *timePtr_ = localtime(&t_);
+        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+        std::time_t t                             = std::chrono::system_clock::to_time_t(now);
+        if (t == static_cast<std::time_t>(-1))
+        {
+            CMP_DEBUG_PRINT("Failed to get current time.");
+            t = 0;
+        }
+        std::tm *timePtr_ = std::localtime(&t);
+        if (timePtr_ == nullptr)
+        {
+            CMP_DEBUG_PRINT("localtime() given null ptr");
+            return;
+        }
+
         struct timeval tmnow_;
         gettimeofday(&tmnow_, NULL);
 
         char image_name[100] = {};
-        snprintf(image_name, 100, "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
-                (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+        (void) snprintf(image_name, sizeof(image_name), "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
+                    (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+
         CMP_DEBUG_PRINT("writeImageToFile image_name : %s\n", image_name);
 
         capture_path_ = capture_path_ + image_name;
@@ -934,8 +951,16 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
         return;
     }
     CMP_DEBUG_PRINT("File Open Success");
-    fwrite(p, size, 1, fp);
-    fclose(fp);
+    size_t bytes_written     = fwrite(p, size, 1, fp);
+    if (bytes_written != size)
+    {
+        CMP_DEBUG_PRINT("Error writing data to file.\n");
+    }
+
+    if (fclose(fp) != 0)
+    {
+        CMP_DEBUG_PRINT("fclose error.\n");
+    }
 }
 
 bool CameraPlayer::GetSourceInfo()
@@ -1395,10 +1420,17 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
     if (record_path_.empty())
         record_path_ = kRecordPath;
 
-    time_t t_ = time(NULL);
-    tm *timePtr_ = localtime(&t_);
-    if (timePtr_ == NULL) {
-        CMP_DEBUG_PRINT("localtime failed");
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    std::time_t t                             = std::chrono::system_clock::to_time_t(now);
+    if (t == static_cast<std::time_t>(-1))
+    {
+        CMP_DEBUG_PRINT("Failed to get current time.");
+        t = 0;
+    }
+    std::tm *timePtr_ = std::localtime(&t);
+    if (timePtr_ == nullptr)
+    {
+        CMP_DEBUG_PRINT("localtime() given null ptr");
         return false;
     }
 
@@ -1469,10 +1501,9 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
            CMP_DEBUG_PRINT("record_mux_(%p) Failed", record_mux_);
             return false;
         }
-        snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.mp4", record_path_.c_str(), timePtr_->tm_mday,
-                (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
-
+        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.mp4", record_path_.c_str(), timePtr_->tm_mday,
+                    (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
     }
     else if (fileFormat == kFileFormatAVI)
     {
@@ -1484,9 +1515,9 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
            CMP_DEBUG_PRINT("record_mux_(%p) Failed", record_mux_);
             return false;
         }
-        snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.avi", record_path_.c_str(), timePtr_->tm_mday,
-                (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.avi", record_path_.c_str(), timePtr_->tm_mday,
+                    (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
+                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
     }
     else
     {

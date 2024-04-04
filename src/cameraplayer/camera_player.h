@@ -20,7 +20,9 @@
 
 #include <glib.h>
 #include <glib-unix.h>
+extern "C" {
 #include <gst/gst.h>
+}
 #include <gst/player/player.h>
 #include <gst/pbutils/pbutils.h>
 #include <gst/app/gstappsrc.h>
@@ -45,7 +47,7 @@ static constexpr char const *waylandDisplayHandleContextType =
     "GstWaylandDisplayHandleContextType";
 using CALLBACK_T = std::function<void(const gint type, const gint64 numValue,
         const gchar *strValue, void *udata)>;
-typedef struct _GstAppSrcContext
+typedef struct GstAppSrcContext_
 {
     SHMEM_HANDLE shmemHandle;
     gint streamingAllowState;

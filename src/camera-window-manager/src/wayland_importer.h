@@ -15,8 +15,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef _WAYLAND_IMPORTER_H_
-#define _WAYLAND_IMPORTER_H_
+#ifndef WAYLAND_IMPORTER_H_
+#define WAYLAND_IMPORTER_H_
 
 #include "common.h"
 #include <wayland-webos-foreign-client-protocol.h>
@@ -48,4 +48,4 @@ private:
 
 } //namespace Wayland
 
-#endif //_WAYLAND_IMPORTER_H_
+#endif //WAYLAND_IMPORTER_H_

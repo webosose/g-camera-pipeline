@@ -1,5 +1,5 @@
-#ifndef _SHMEMORY_PIPELINE_H_
-#define _SHMEMORY_PIPELINE_H_
+#ifndef SHMEMORY_PIPELINE_H_
+#define SHMEMORY_PIPELINE_H_
 
 #include "camera_pipeline.h"
 #include <memory>
@@ -23,7 +23,7 @@ class SignalListener;
 class CameraServiceClient;
 class ShmemoryPipeline : public CameraPipeline
 {
-    typedef struct _GstAppSrcContext
+    typedef struct GstAppSrcContext_
     {
         SHMEM_HANDLE shmemHandle;
         gint streamingAllowState;
@@ -110,4 +110,4 @@ protected:
     std::string pipelineType;
 };
 
-#endif // _SHMEMORY_PIPELINE_H_
+#endif // SHMEMORY_PIPELINE_H_

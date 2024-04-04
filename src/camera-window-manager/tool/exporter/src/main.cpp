@@ -77,7 +77,7 @@ static const struct wl_shell_surface_listener shellSurfaceListener = {
     handleConfigure,
     handlePopupDone};
 
-bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData)
+bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData) noexcept(true)
 {
     int configs;
 
@@ -238,7 +238,7 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     return true;
 }
 
-bool rendering(GLData *glData, WaylandEGLSurface *surface)
+bool rendering(GLData *glData, WaylandEGLSurface *surface) noexcept(true)
 {
     //Update
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -255,7 +255,7 @@ bool rendering(GLData *glData, WaylandEGLSurface *surface)
     return true;
 }
 
-void printHelp()
+void printHelp() noexcept(true)
 {
     std::cout << "Usage: camera_window_manager_exporter [OPTION]..." << std::endl;
     std::cout << "Options" << std::endl;
@@ -279,7 +279,7 @@ void signal_handler(int s)
     exit(1);
 }
 
-void singal_catcher(void (*handler)(int))
+void singal_catcher(void (*handler)(int)) noexcept(true)
 {
     struct sigaction sa;
 
@@ -287,10 +287,22 @@ void singal_catcher(void (*handler)(int))
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+    {
+        printf("SIGINT sigaction error\n");
+    }
+    if (sigaction(SIGSEGV, &sa, NULL) == -1)
+    {
+        printf("SIGSEGV sigaction error\n");
+    }
+    if (sigaction(SIGTERM, &sa, NULL) == -1)
+    {
+        printf("SIGTERM sigaction error\n");
+    }
+    if (sigaction(SIGHUP, &sa, NULL) == -1)
+    {
+        printf("SIGHUP sigaction error\n");
+    }
 }
 
 int main(int argc, char *argv[])

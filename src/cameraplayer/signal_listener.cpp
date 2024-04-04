@@ -26,7 +26,10 @@ void SignalListener::initialize(int signum)
 {
     sigemptyset(&option_.set);
     sigaddset(&option_.set, signum);
-    sigprocmask(SIG_SETMASK, &option_.set, NULL);
+    if (sigprocmask(SIG_SETMASK, &option_.set, NULL) < 0)
+    {
+        CMP_DEBUG_PRINT("sigprocmask error");
+    }
     option_.timeout.tv_sec = DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC;
     option_.timeout.tv_nsec = 0;
     on_monitor_ = false;

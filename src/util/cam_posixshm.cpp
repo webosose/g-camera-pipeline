@@ -48,8 +48,12 @@
 
 // constants
 
-#define SHMEM_HEADER_SIZE (6 * sizeof(int))
-#define SHMEM_LENGTH_SIZE sizeof(int)
+#define SHMEM_HEADER_SIZE ((int)(6 * sizeof(int)))
+#define SHMEM_LENGTH_SIZE ((int)sizeof(int))
+#define SHMEM_UNIT_SIZE_MAX 66355200 // 7680*4320*2
+#define SHMEM_EXTRA_SIZE_MAX ((int)sizeof(unsigned int))
+#define SHMEM_META_SIZE_MAX 4096 // 1024*4
+#define SHMEM_UNIT_NUM_MAX 8
 
 enum
 {
@@ -65,7 +69,7 @@ enum
 
 // structure define
 
-typedef enum _POSHMEM_MARK_T
+typedef enum POSHMEM_MARK_T_
 {
     POSHMEM_COMM_MARK_NORMAL    = 0x0,
     POSHMEM_COMM_MARK_RESET     = 0x1,
@@ -87,7 +91,7 @@ typedef enum _POSHMEM_MARK_T
    extra_size*unit_num : extra data
    */
 
-typedef struct _POSHMEM_COMM_T
+typedef struct POSHMEM_COMM_T_
 {
     /*shared memory overhead*/
     int *write_index;
@@ -159,9 +163,9 @@ typedef struct _POSHMEM_COMM_T
 //         LENGTH(sizeof(int) * unit_num) + DATA(meta_size * unit_num) +
 //         EXTRA_SZ(sizeof(int)) + EXTRA_BUF(extra_size * unit_num))
 
-POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int fd, int unitSize, int metaSize,
+POSHMEM_STATUS_T openPosixShmem(SHMEM_HANDLE *phShmem, int fd, int unitSize, int metaSize,
                                  int unitNum, int extraSize, int nOpenMode);
-POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
+POSHMEM_STATUS_T readPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                                  unsigned char **ppMeta, int *pMetaSize,
                                  unsigned char **ppExtraData, int *pExtraSize, int readMode);
 
@@ -169,10 +173,10 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
 
 extern POSHMEM_STATUS_T OpenPosixShmem(SHMEM_HANDLE *phShmem, int fd)
 {
-    return _OpenPosixShmem(phShmem, fd, 0, 0, 0, 0, MODE_OPEN);
+    return openPosixShmem(phShmem, fd, 0, 0, 0, 0, MODE_OPEN);
 }
 
-POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize, int metaSize,
+POSHMEM_STATUS_T openPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize, int metaSize,
                                  int unitNum, int extraSize, int nOpenMode)
 {
     POSHMEM_COMM_T *pShmemBuffer;
@@ -210,28 +214,46 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     pShmemBuffer->unit_num    = (int *) (pSharedmem + sizeof(int) * 4);
     pShmemBuffer->mark        = (POSHMEM_MARK_T *) (pSharedmem + sizeof(int) * 5);
 
-    size_t length_buf_offset = sizeof(int) * 6;
+    *pShmemBuffer->unit_size = unitSize;
+    *pShmemBuffer->meta_size = metaSize;
+    *pShmemBuffer->unit_num  = unitNum;
 
-    size_t data_buf_offset = SHMEM_HEADER_SIZE + (SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
+    int length_buf_offset  = (int)(sizeof(int) * 6);
+    int data_buf_offset    = 0;
+    int length_meta_offset = 0;
+    int data_meta_offset   = 0;
+    int extra_size_offset  = 0;
+    int extra_buf_offset   = 0;
 
-    size_t length_meta_offset =
-        SHMEM_HEADER_SIZE +
-        ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
+    if ((*pShmemBuffer->unit_size) >= 0 && (*pShmemBuffer->unit_size) <= SHMEM_UNIT_SIZE_MAX &&
+        (*pShmemBuffer->meta_size) >= 0 && (*pShmemBuffer->meta_size) <= SHMEM_META_SIZE_MAX &&
+        (*pShmemBuffer->unit_num) >= 0 && (*pShmemBuffer->unit_num) <= SHMEM_UNIT_NUM_MAX)
+    {
+        data_buf_offset = SHMEM_HEADER_SIZE + (SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
 
-    size_t data_meta_offset =
-        SHMEM_HEADER_SIZE +
-        ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
-        (SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
+        length_meta_offset = SHMEM_HEADER_SIZE + ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) *
+                                                     (*pShmemBuffer->unit_num);
 
-    size_t extra_size_offset =
-        SHMEM_HEADER_SIZE +
-        ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
-        ((*pShmemBuffer->meta_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
+        data_meta_offset =
+            SHMEM_HEADER_SIZE +
+            ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
+            (SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
 
-    size_t extra_buf_offset =
-        SHMEM_HEADER_SIZE +
-        ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
-        ((*pShmemBuffer->meta_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) + sizeof(int);
+        extra_size_offset =
+            SHMEM_HEADER_SIZE +
+            ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
+            ((*pShmemBuffer->meta_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num);
+
+        extra_buf_offset =
+            SHMEM_HEADER_SIZE +
+            ((*pShmemBuffer->unit_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
+            ((*pShmemBuffer->meta_size) + SHMEM_LENGTH_SIZE) * (*pShmemBuffer->unit_num) +
+            ((int)sizeof(int));
+    }
+    else
+    {
+        CMP_LOG_ERROR("range out\n");
+    }
 
     pShmemBuffer->length_buf = (unsigned int *)(pSharedmem + length_buf_offset);
 
@@ -261,7 +283,7 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
     //started to write yet
     if(pShmemBuffer->write_index) *pShmemBuffer->write_index = -1;
     if(pShmemBuffer->read_index) *pShmemBuffer->read_index  = -1;
-    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %zu, unit_num = %d",
+    CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d",
             *pShmemBuffer->unit_size, SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
     CMP_LOG_INFO("shared memory opened successfully!");
     return POSHMEM_COMM_OK;
@@ -270,10 +292,10 @@ POSHMEM_STATUS_T _OpenPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize,
 POSHMEM_STATUS_T ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                                 unsigned char **ppMeta, int *pMetaSize)
 {
-    return _ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_FIRST);
+    return readPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize, NULL, NULL, READ_FIRST);
 }
 
-POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
+POSHMEM_STATUS_T readPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
                                  unsigned char **ppMeta, int *pMetaSize,
                                  unsigned char **ppExtraData, int *pExtraSize, int readMode)
 {
@@ -304,7 +326,10 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
                 }
                 else
                 {
-                    lread_index = *shmem_buffer->unit_num - 1;
+                    if (*shmem_buffer->unit_num > INT_MIN + 1)
+                    {
+                        lread_index = *shmem_buffer->unit_num - 1;
+                    }
                 }
             }
             else
@@ -319,6 +344,18 @@ POSHMEM_STATUS_T _ReadPosixShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, in
                 return POSHMEM_COMM_FAIL;
             }
 
+            if (!(lread_index >= 0 && lread_index <= SHMEM_UNIT_NUM_MAX &&
+                  (*shmem_buffer->unit_size) >= 0 &&
+                  (*shmem_buffer->unit_size) <= SHMEM_UNIT_SIZE_MAX &&
+                  (*shmem_buffer->extra_size) >= 0 &&
+                  (*shmem_buffer->extra_size) <= SHMEM_EXTRA_SIZE_MAX &&
+                  (*shmem_buffer->meta_size) >= 0 &&
+                  (*shmem_buffer->meta_size) <= SHMEM_META_SIZE_MAX))
+            {
+                CMP_LOG_ERROR("size error(%d) lread_index(%d), unit_size(%d), extra_size(%d) !\n", size,
+                      lread_index, *shmem_buffer->unit_size, *shmem_buffer->extra_size);
+                return POSHMEM_COMM_FAIL;
+            }
             read_addr = shmem_buffer->data_buf + (lread_index) * (*shmem_buffer->unit_size);
             *ppData = read_addr;
             *pSize = size;

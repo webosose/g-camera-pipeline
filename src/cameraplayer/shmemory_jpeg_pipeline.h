@@ -1,5 +1,5 @@
-#ifndef _SHMEMORY_JPEG_PIPELINE_H_
-#define _SHMEMORY_JPEG_PIPELINE_H_
+#ifndef SHMEMORY_JPEG_PIPELINE_H_
+#define SHMEMORY_JPEG_PIPELINE_H_
 
 #include "shmemory_pipeline.h"
 
@@ -13,4 +13,4 @@ public:
 
     bool launch();
 };
-#endif // _SHMEMORY_JPEG_PIPELINE_H_
+#endif // SHMEMORY_JPEG_PIPELINE_H_

@@ -17,7 +17,7 @@
 #ifndef SRC_HAL_UTILS_POCAMSHM_H_
 #define SRC_HAL_UTILS_POCAMSHM_H_
 
-typedef enum _POSHMEM_STATUS_T
+typedef enum POSHMEM_STATUS_T_
 {
     POSHMEM_COMM_OK        = 0x0,
     POSHMEM_COMM_FAIL      = -1,

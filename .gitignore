@@ -1,0 +1,5 @@
+build
+resources
+oe-logs
+oe-workdir
+.vscode
