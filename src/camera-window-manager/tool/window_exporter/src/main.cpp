@@ -266,6 +266,7 @@ void printHelp()
     std::cout << "  -h          export height (1080)" << std::endl;
     std::cout << "  -d          display ID (0)" << std::endl;
     std::cout << "  -r          remove rectangle" << std::endl;
+    std::cout << "  -o          overlay window" << std::endl;
 }
 
 void signal_handler(int s)
@@ -309,10 +310,11 @@ int main(int argc, char *argv[])
     uint32_t exported_type    = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
     std::string displayID = "0";
     bool draw_render = true;
+    bool overlay = false;
 
     for(;;)
     {
-        switch(getopt(argc, argv, "x:y:w:h:d:r?"))
+        switch(getopt(argc, argv, "x:y:w:h:d:ro?"))
         {
             case 'x' :
                 x = atoi(optarg);
@@ -339,6 +341,11 @@ int main(int argc, char *argv[])
                 draw_render = false;
                 continue;
 
+            case 'o' :
+                std::cout << "overlay window" << std::endl;
+                overlay = true;
+                continue;
+
             case '?':
             default :
               printHelp();
@@ -357,7 +364,11 @@ int main(int argc, char *argv[])
     surface.wlShellSurface = wl_shell_get_shell_surface(foreign.getShell(), surface.wlSurface);
     wl_shell_surface_add_listener(surface.wlShellSurface, &shellSurfaceListener, NULL);
     surface.webosShellSurface = wl_webos_shell_get_shell_surface(foreign.getWebosShell(), surface.wlSurface);
-//    wl_webos_shell_surface_set_property(surface.webosShellSurface, "_WEBOS_WINDOW_TYPE", "_WEBOS_WINDOW_TYPE_OVERLAY");
+
+    if(overlay)
+    {
+        wl_webos_shell_surface_set_property(surface.webosShellSurface, "_WEBOS_WINDOW_TYPE", "_WEBOS_WINDOW_TYPE_OVERLAY");
+    }
     wl_webos_shell_surface_set_property(surface.webosShellSurface, "displayAffinity", displayID.c_str());
 
     surface.width  = 1920;
