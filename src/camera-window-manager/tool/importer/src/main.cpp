@@ -42,30 +42,35 @@ static guint signal_watch_intr_id;
 static constexpr char const *waylandDisplayHandleContextType =
     "GstWaylandDisplayHandleContextType";
 
-typedef struct {
-    EGLDisplay eglDisplay;
-    EGLContext eglContext;
-    EGLConfig *eglConfig;
-    int configSelect;
-    EGLConfig currentEglConfig;
-} EGLData;
+namespace Impoter
+{
+  typedef struct {
+      EGLDisplay eglDisplay;
+      EGLContext eglContext;
+      EGLConfig *eglConfig;
+      int configSelect;
+      EGLConfig currentEglConfig;
+  } EGLData;
 
-typedef struct {
-    GLuint vbo;
-    GLuint fragShader;
-    GLuint vertShader;
-    GLuint programObject;
-    GLuint texture;
-    unsigned int vertexStride;
-} GLData;
+  typedef struct {
+      GLuint vbo;
+      GLuint fragShader;
+      GLuint vertShader;
+      GLuint programObject;
+      GLuint texture;
+      unsigned int vertexStride;
+  } GLData;
 
-typedef struct {
-    struct wl_egl_window *native;
-    struct wl_surface *wlSurface;
-    EGLSurface eglSurface;
-    unsigned int width;
-    unsigned int height;
-} WaylandEGLSurface;
+  typedef struct {
+      struct wl_egl_window *native;
+      struct wl_surface *wlSurface;
+      EGLSurface eglSurface;
+      unsigned int width;
+      unsigned int height;
+  } WaylandEGLSurface;
+}
+
+using namespace Impoter;
 
 bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData)
 {

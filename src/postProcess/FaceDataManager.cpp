@@ -46,7 +46,7 @@ convertToFaceInfo(uint8_t *meta, int32_t metaLen, uint16_t *facexy,
         pbnjson::JValue faces = parser.getDom();
         if (faces.hasKey("faces")) {
             pbnjson::JValue face = faces["faces"];
-            uint16_t nrF = std::min<uint16_t>(face.arraySize(), NR_MAX_FACE_DETECT);
+            uint16_t nrF = std::min<uint16_t>(static_cast<uint16_t>(face.arraySize()), NR_MAX_FACE_DETECT);
 
             for (uint16_t f = 0; f < nrF; f++) {
                 if (!face[f].hasKey("confidence") || !face[f].hasKey("x") ||
@@ -175,7 +175,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
         facexy[4] = 100;
         nrFace    = 1;
 #endif
-        setFaceInfo(facexy, nrFace);
+        setFaceInfo(facexy, static_cast<uint8_t>(nrFace));
 
         //Find wider face and apply PTZ on wider face alone
         if ((access(FOCUS_WIDER_FACE_CHECK_FILE, F_OK) == 0) && (nrFace > 1))
@@ -209,7 +209,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
             facexy[4] = widerface[4];
 
             nrFace = 1;
-            setFaceInfo(facexy, nrFace);
+            setFaceInfo(facexy, static_cast<uint8_t>(nrFace));
         }
 
         for (auto &faceInfo : faceList_)
@@ -220,7 +220,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
         }
         nrFace = mergeFaceRect(facexy, nrFace);
     }
-    if (ssCtrl_->needFaceUpdate(faceList_.size()) == false)
+    if (ssCtrl_->needFaceUpdate(static_cast<int8_t>(faceList_.size())) == false)
         return;
 
     if (nrFace == 0) {
@@ -232,7 +232,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
         facexy[4] = static_cast<uint16_t>(height_);
         nrFace    = 1;
     }
-    setMergedFaceInfo(facexy, nrFace);
+    setMergedFaceInfo(facexy, static_cast<uint8_t>(nrFace));
 }
 
 void FaceDataManager::cropAndRemapFace(GstElement *crop)

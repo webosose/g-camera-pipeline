@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) {
         //appId = optarg;
         break;
       case '?':
-        CMP_DEBUG_PRINT("unknown service name");
+        CMP_LOG_INFO("unknown service name");
         break;
 
       default:  break;

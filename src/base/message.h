@@ -98,7 +98,7 @@ typedef enum {
 } CMP_PIXEL_FMT;
 
 /* video codec */
-typedef enum {
+enum CMP_VIDEO_CODEC : int32_t {
   CMP_VIDEO_CODEC_NONE,
   CMP_VIDEO_CODEC_H264,
   CMP_VIDEO_CODEC_VC1,
@@ -110,7 +110,7 @@ typedef enum {
   CMP_VIDEO_CODEC_H265,
   CMP_VIDEO_CODEC_MJPEG,
   CMP_VIDEO_CODEC_MAX = CMP_VIDEO_CODEC_MJPEG,
-} CMP_VIDEO_CODEC;
+};
 
 /**
  * Data structure for encoding parameters

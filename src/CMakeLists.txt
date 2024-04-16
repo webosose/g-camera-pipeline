@@ -50,14 +50,14 @@ include_directories(./cameraplayer)
 
 include_directories(./pipelinefactory)
 
-include_directories(./mediaencoderclient)
+#include_directories(./mediaencoderclient)
 
-include_directories(./bufferencoder)
+#include_directories(./bufferencoder)
 
 include_directories(./camera-window-manager/include)
 
-add_subdirectory(bufferencoder)
-add_subdirectory(mediaencoderclient)
+#add_subdirectory(bufferencoder)
+#add_subdirectory(mediaencoderclient)
 add_subdirectory(cameraplayer)
 add_subdirectory(camera-window-manager)
 add_subdirectory(tests)

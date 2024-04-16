@@ -29,11 +29,6 @@
 
 #define LOGTAG "ResourceRequestor"
 
-#ifdef CMP_DEBUG_PRINT
-#undef CMP_DEBUG_PRINT
-#endif
-#define CMP_DEBUG_PRINT CMP_INFO_PRINT
-
 using namespace std;
 using mrc::ResourceCalculator;
 using namespace pbnjson;
@@ -59,7 +54,7 @@ ResourceRequestor::ResourceRequestor(const std::string& appId,
   try {
     if (connectionId.empty()) {
       umsRMC_ = make_shared<uMediaServer::ResourceManagerClient> ();
-      CMP_DEBUG_PRINT("ResourceRequestor creation done");
+      CMP_LOG_INFO("ResourceRequestor creation done");
 
 #ifndef PRO_UMS
       umsRMC_->registerPipeline("media", appId_); // only rmc case
@@ -72,7 +67,7 @@ ResourceRequestor::ResourceRequestor(const std::string& appId,
     }
   }
   catch (const std::exception &e) {
-    CMP_DEBUG_PRINT("Failed to create ResourceRequestor [%s]", e.what());
+    CMP_LOG_ERROR("Failed to create ResourceRequestor [%s]", e.what());
     exit(0);
   }
 
@@ -88,7 +83,7 @@ ResourceRequestor::ResourceRequestor(const std::string& appId,
         std::placeholders::_3,
         std::placeholders::_4,
         std::placeholders::_5));
-  CMP_DEBUG_PRINT("ResourceRequestor creation done");
+  CMP_LOG_INFO("ResourceRequestor creation done");
 }
 
 ResourceRequestor::~ResourceRequestor() {
@@ -106,14 +101,14 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions finalOptions;
 
   if (!setSourceInfo(sourceInfo)) {
-    CMP_DEBUG_PRINT("Failed to set source info!");
+    CMP_LOG_ERROR("Failed to set source info!");
     return false;
   }
 
   mrc::ResourceListOptions VResource = calcVdecResources();
   if (!VResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &VResource);
-    CMP_DEBUG_PRINT("VResource size:%zd, %s, %d", VResource.size(),
+    CMP_LOG_INFO("VResource size:%zd, %s, %d", VResource.size(),
                                                   VResource[0].front().type.c_str(),
                                                   VResource[0].front().quantity);
   }
@@ -121,7 +116,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions VEncResource = calcVencResources();
   if (!VEncResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &VEncResource);
-    CMP_DEBUG_PRINT("VResource size:%zd, %s, %d", VEncResource.size(),
+    CMP_LOG_INFO("VResource size:%zd, %s, %d", VEncResource.size(),
                                                   VEncResource[0].front().type.c_str(),
                                                   VEncResource[0].front().quantity);
   }
@@ -129,7 +124,7 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
   mrc::ResourceListOptions DisplayResource = calcDisplayResource(display_mode);
   if (!DisplayResource.empty()) {
     mrc::concatResourceListOptions(&finalOptions, &DisplayResource);
-    CMP_DEBUG_PRINT("DisplayResource size:%zd, %s, %d", DisplayResource.size(),
+    CMP_LOG_INFO("DisplayResource size:%zd, %s, %d", DisplayResource.size(),
                                                         DisplayResource[0].front().type.c_str(),
                                                         DisplayResource[0].front().quantity);
   }
@@ -145,40 +140,40 @@ bool ResourceRequestor::acquireResources(PortResource_t& resourceMMap,
       JValue obj = pbnjson::Object();
       obj.put("resource", it.type + (it.type == "DISP" ? to_string(display_path) : ""));
       obj.put("qty", it.quantity);
-      CMP_DEBUG_PRINT("calculator return : %s, %d", it.type.c_str(), it.quantity);
+      CMP_LOG_INFO("calculator return : %s, %d", it.type.c_str(), it.quantity);
       objArray << obj;
     }
   }
 
   if (!serializer.toString(objArray, input_schema, payload)) {
-    CMP_DEBUG_PRINT("[%s], fail to serializer to string", __func__);
+    CMP_LOG_ERROR("[%s], fail to serializer to string", __func__);
     return false;
   }
 
-  CMP_DEBUG_PRINT("send acquire to uMediaServer payload:%s", payload.c_str());
+  CMP_LOG_INFO("send acquire to uMediaServer payload:%s", payload.c_str());
 
   if (!umsRMC_->acquire(payload, response)) {
-    CMP_DEBUG_PRINT("fail to acquire!!! response : %s", response.c_str());
+    CMP_LOG_ERROR("fail to acquire!!! response : %s", response.c_str());
     return false;
   }
-  CMP_DEBUG_PRINT("acquire response:%s", response.c_str());
+  CMP_LOG_INFO("acquire response:%s", response.c_str());
 
   try {
     parsePortInformation(response, resourceMMap);
     parseResources(response, acquiredResource_);
   } catch (const std::runtime_error & err) {
-    CMP_DEBUG_PRINT("[%s:%d] err=%s, response:%s",
+    CMP_LOG_ERROR("[%s:%d] err=%s, response:%s",
           __func__, __LINE__, err.what(), response.c_str());
     return false;
   }
 
-  CMP_DEBUG_PRINT("acquired Resource : %s", acquiredResource_.c_str());
+  CMP_LOG_INFO("acquired Resource : %s", acquiredResource_.c_str());
   return true;
 }
 
 mrc::ResourceListOptions ResourceRequestor::calcVdecResources() {
   mrc::ResourceListOptions VResource;
-  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vdecode);
+  CMP_LOG_INFO("Codec type:%d",videoResData_.vdecode);
   if (videoResData_.vdecode != CMP_VIDEO_CODEC_NONE) {
     VResource = rc_->calcVdecResourceOptions((MRC::VideoCodecs)translateVideoCodec(videoResData_.vdecode),
                                              videoResData_.width,
@@ -193,7 +188,7 @@ mrc::ResourceListOptions ResourceRequestor::calcVdecResources() {
 
 mrc::ResourceListOptions ResourceRequestor::calcVencResources() {
   mrc::ResourceListOptions VResource;
-  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vencode);
+  CMP_LOG_INFO("Codec type:%d",videoResData_.vencode);
 
   if (videoResData_.vencode != CMP_VIDEO_CODEC_NONE) {
     VResource = rc_->calcVencResourceOptions((MRC::VideoCodecs)translateVideoCodec(videoResData_.vencode),
@@ -202,7 +197,7 @@ mrc::ResourceListOptions ResourceRequestor::calcVencResources() {
                                              videoResData_.frameRate
                                             );
   }
-  CMP_DEBUG_PRINT("Codec type:%d",videoResData_.vencode);
+  CMP_LOG_INFO("Codec type:%d",videoResData_.vencode);
 
   return VResource;
 }
@@ -221,7 +216,7 @@ mrc::ResourceListOptions ResourceRequestor::calcDisplayResource(const std::strin
       DisplayResource = rc_->calcDisplayPlaneResourceOptions(mrc::ResourceCalculator::RenderMode::kModeTexture);
 #endif
     } else {
-      CMP_DEBUG_PRINT("Wrong display mode: %s", display_mode.c_str());
+      CMP_LOG_ERROR("Wrong display mode: %s", display_mode.c_str());
     }
   }
 
@@ -230,15 +225,15 @@ mrc::ResourceListOptions ResourceRequestor::calcDisplayResource(const std::strin
 
 bool ResourceRequestor::releaseResource() {
   if (acquiredResource_.empty()) {
-    CMP_DEBUG_PRINT("[%s], resource already empty", __func__);
+    CMP_LOG_ERROR("[%s], resource already empty", __func__);
     return true;
   }
 
-  CMP_DEBUG_PRINT("send release to uMediaServer. resource : %s",
+  CMP_LOG_INFO("send release to uMediaServer. resource : %s",
                   acquiredResource_.c_str());
 
   if (!umsRMC_->release(acquiredResource_)) {
-    CMP_DEBUG_PRINT("release error : %s", acquiredResource_.c_str());
+    CMP_LOG_ERROR("release error : %s", acquiredResource_.c_str());
     return false;
   }
 
@@ -274,7 +269,7 @@ bool ResourceRequestor::policyActionHandler(const char *action,
                                             const char *requestorType,
                                             const char *requestorName,
                                             const char *connectionId) {
-  CMP_DEBUG_PRINT("action:%s, resources:%s, type:%s, name:%s, id:%s",
+  CMP_LOG_INFO("action:%s, resources:%s, type:%s, name:%s, id:%s",
       action, resources, requestorType, requestorName, connectionId);
 
   if (allowPolicy_) {
@@ -282,7 +277,7 @@ bool ResourceRequestor::policyActionHandler(const char *action,
       cb_();
     }
     if (!umsRMC_->release(acquiredResource_)) {
-      CMP_DEBUG_PRINT("release error : %s", acquiredResource_.c_str());
+      CMP_LOG_ERROR("release error : %s", acquiredResource_.c_str());
       return false;
     }
   }
@@ -312,7 +307,7 @@ bool ResourceRequestor::parsePortInformation(const std::string& payload,
   }
 
   for (auto& it : resourceMMap) {
-    CMP_DEBUG_PRINT("port Resource - %s, : [%d] ", it.first.c_str(), it.second);
+    CMP_LOG_INFO("port Resource - %s, : [%d] ", it.first.c_str(), it.second);
   }
 
   return true;
@@ -371,7 +366,7 @@ int ResourceRequestor::translateVideoCodec(const CMP_VIDEO_CODEC vcodec) const {
       ev = MRC::kVideoH264;   break;
   }
 
-  CMP_DEBUG_PRINT("vcodec[%d] => ev[%d]", vcodec, ev);
+  CMP_LOG_INFO("vcodec[%d] => ev[%d]", vcodec, ev);
 
   return static_cast<int>(ev);
 }
@@ -402,15 +397,15 @@ int ResourceRequestor::translate3DType(const int e3DType) const {
 bool ResourceRequestor::setSourceInfo(
     const cmp::base::source_info_t &sourceInfo) {
   if (sourceInfo.video_streams.empty()){
-    CMP_DEBUG_PRINT("Video/Audio streams are empty!");
+    CMP_LOG_ERROR("Video/Audio streams are empty!");
     return false;
   }
 
   cmp::base::video_info_t video_stream_info = sourceInfo.video_streams.front();
   videoResData_.width = video_stream_info.width;
   videoResData_.height = video_stream_info.height;
-  videoResData_.vencode = (CMP_VIDEO_CODEC)video_stream_info.encode;
-  videoResData_.vdecode = (CMP_VIDEO_CODEC)video_stream_info.decode;
+  videoResData_.vencode = static_cast<CMP_VIDEO_CODEC>(video_stream_info.encode);
+  videoResData_.vdecode = static_cast<CMP_VIDEO_CODEC>(video_stream_info.decode);
   videoResData_.frameRate =
   std::round(static_cast<float>(video_stream_info.frame_rate.num) /
                  static_cast<float>(video_stream_info.frame_rate.den));
@@ -420,10 +415,10 @@ bool ResourceRequestor::setSourceInfo(
 }
 
 void ResourceRequestor::planeIdHandler(int32_t planePortIdx) {
-  CMP_DEBUG_PRINT("planePortIndex = %d", planePortIdx);
+  CMP_LOG_INFO("planePortIndex = %d", planePortIdx);
   if (nullptr != planeIdCb_) {
     bool res = planeIdCb_(planePortIdx);
-    CMP_DEBUG_PRINT("PlanePort[%d] register : %s",
+    CMP_LOG_INFO("PlanePort[%d] register : %s",
                     planePortIdx, res ? "success!" : "fail!");
   }
 }

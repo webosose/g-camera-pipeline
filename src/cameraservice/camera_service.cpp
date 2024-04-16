@@ -22,11 +22,6 @@
 #include "camera_player.h"
 #include "pipeline_factory.h"
 
-#ifdef CMP_DEBUG_PRINT
-#undef CMP_DEBUG_PRINT
-#endif
-#define CMP_DEBUG_PRINT CMP_INFO_PRINT
-
 namespace cmp { namespace service {
 Service *Service::instance_ = nullptr;
 
@@ -34,7 +29,7 @@ Service::Service(const char *service_name): media_id_(""), app_id_(""),
       umc_(nullptr), player_(nullptr), resourceRequestor_(nullptr),
        isLoaded_(false)
 {
-    CMP_DEBUG_PRINT(" this[%p]", this);
+    CMP_LOG_INFO(" this[%p]", this);
 
 #ifdef PRO_UMS
     umc_ = std::make_unique<UMSConnector>(service_name, nullptr, nullptr,
@@ -86,13 +81,13 @@ Service *Service::GetInstance(const char *service_name)
 Service::~Service()
 {
     if (isLoaded_) {
-        CMP_DEBUG_PRINT("Unload() should be called if it is still loaded");
+        CMP_LOG_INFO("Unload() should be called if it is still loaded");
         player_->Unload();
     }
 
 }
 
-void Service::Notify(const gint notification, const gint64 numValue,
+void Service::Notify(const gint notification, const gint32 numValue,
         const gchar *strValue, void *payload)
 {
     cmp::parser::Composer composer;
@@ -120,7 +115,7 @@ void Service::Notify(const gint notification, const gint64 numValue,
             composer.put("error", error);
 
             if (numValue == CMP_ERROR_RES_ALLOC) {
-                CMP_DEBUG_PRINT("policy action occured!");
+                CMP_LOG_ERROR("policy action occured!");
             }
             break;
         }
@@ -154,20 +149,20 @@ void Service::Notify(const gint notification, const gint64 numValue,
             break;
         }
         case CMP_NOTIFY_ACTIVITY: {
-            CMP_DEBUG_PRINT("notifyActivity to resource requestor");
+            CMP_LOG_INFO("notifyActivity to resource requestor");
             if (resourceRequestor_)
                 resourceRequestor_->notifyActivity();
             break;
         }
         case CMP_NOTIFY_ACQUIRE_RESOURCE: {
-            CMP_DEBUG_PRINT("Notify, CMP_NOTIFY_ACQUIRE_RESOURCE");
+            CMP_LOG_INFO("Notify, CMP_NOTIFY_ACQUIRE_RESOURCE");
             ACQUIRE_RESOURCE_INFO_T* info = static_cast<ACQUIRE_RESOURCE_INFO_T*>(payload);
             info->result = AcquireResources(*(info->sourceInfo), info->displayMode, numValue);
             break;
         }
         default:
         {
-            CMP_DEBUG_PRINT("This notification(%d) can't be handled here!", notification);
+            CMP_LOG_ERROR("This notification(%d) can't be handled here!", notification);
             break;
         }
     }
@@ -191,29 +186,31 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
                         UMSConnectorMessage *message, void *ctxt)
 {
     std::string msg = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("message : %s", msg.c_str());
+    CMP_LOG_INFO("message : %s", msg.c_str());
 
     pbnjson::JDomParser jsonparser;
     if (!jsonparser.parse(msg, pbnjson::JSchema::AllSchema())) {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse Failed!!!");
+        CMP_LOG_ERROR("ERROR : JDomParser.parse Failed!!!");
         return false;
     }
 
     pbnjson::JValue parsed = jsonparser.getDom();
     if (!parsed.hasKey("id") && parsed["id"].isString()){
-        CMP_DEBUG_PRINT("id is invalid");
+        CMP_LOG_ERROR("id is invalid");
         return false;
     }
 
     if (parsed.hasKey("args") && parsed["args"].isArray())
     {
-        for (ssize_t i = 0; i < parsed["args"].arraySize(); i++)
+        int i = 0;
+        for (ssize_t j = 0; j < parsed["args"].arraySize(); j++)
         {
             if (parsed["args"][i]["option"].hasKey("appId") && parsed["args"][i]["option"]["appId"].isString())
             {
                 instance_->app_id_ = parsed["args"][i]["option"]["appId"].asString();
                 break;
             }
+            i++;
         }
     }
     else
@@ -222,11 +219,11 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
         instance_->app_id_ = parsed["options"]["option"]["appId"].asString();
     }
 
-    CMP_DEBUG_PRINT("media_id_ : %s", instance_->media_id_.c_str());
-    CMP_DEBUG_PRINT("app_id_ : %s", instance_->app_id_.c_str());
+    CMP_LOG_INFO("media_id_ : %s", instance_->media_id_.c_str());
+    CMP_LOG_INFO("app_id_ : %s", instance_->app_id_.c_str());
 
     if (instance_->app_id_.empty()){
-        CMP_DEBUG_PRINT("appId is empty! resourceRequestor is not created");
+        CMP_LOG_ERROR("appId is empty! resourceRequestor is not created");
         instance_->app_id_ = "EmptyAppId_" + instance_->media_id_;
     } else
         instance_->resourceRequestor_ = std::make_unique<cmp::resource::ResourceRequestor>
@@ -235,16 +232,16 @@ bool Service::LoadEvent(UMSConnectorHandle *handle,
     instance_->player_= PipelineFactory::CreatePlayer(parsed);
 
     if (!instance_->player_) {
-        CMP_INFO_PRINT("Error: Player not created");
+        CMP_LOG_ERROR("Error: Player not created");
     } else {
         instance_->LoadCommon();
 
         if (instance_->player_->Load(msg)) {
-            CMP_DEBUG_PRINT("Loaded Player");
+            CMP_LOG_INFO("Loaded Player");
             instance_->isLoaded_ = true;
             return true;
         } else {
-            CMP_DEBUG_PRINT("Failed to load player");
+            CMP_LOG_ERROR("Failed to load player");
         }
     }
 
@@ -260,25 +257,25 @@ bool Service::TakeCameraSnapshotEvent(UMSConnectorHandle *handle,
                                 UMSConnectorMessage *message, void *ctxt)
 {
     std::string msg = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("message : %s", msg.c_str());
+    CMP_LOG_INFO("message : %s", msg.c_str());
 
     pbnjson::JDomParser jsonparser;
     if (!jsonparser.parse(msg, pbnjson::JSchema::AllSchema())) {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse Failed!!!");
+        CMP_LOG_ERROR("ERROR : JDomParser.parse Failed!!!");
       return false;
     }
 
     pbnjson::JValue parsed = jsonparser.getDom();
     if (!parsed.hasKey("location") && parsed["location"].isString())
     {
-        CMP_DEBUG_PRINT("id is invalid");
+        CMP_LOG_ERROR("id is invalid");
         return false;
     }
     std::string strLocation = parsed["location"].asString();
 
     if (strLocation.empty())
     {
-        CMP_DEBUG_PRINT("InvalidCameraPlayerClient::TakeCameraSnapshot() Error");
+        CMP_LOG_ERROR("InvalidCameraPlayerClient::TakeCameraSnapshot() Error");
         return false;
     }
 
@@ -290,11 +287,11 @@ bool Service::StartCameraRecordEvent(UMSConnectorHandle *handle,
 {
     pbnjson::JDomParser jsonparser;
     std::string cmd = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("Service : StartCameraRecordEvent  cmd : %s ",cmd.c_str());
+    CMP_LOG_INFO("Service : StartCameraRecordEvent  cmd : %s ",cmd.c_str());
 
     if (!jsonparser.parse(cmd, pbnjson::JSchema::AllSchema()))
     {
-        CMP_DEBUG_PRINT("ERROR : JDomParser.parse cmd :%s ",cmd.c_str());
+        CMP_LOG_ERROR("ERROR : JDomParser.parse cmd :%s ",cmd.c_str());
         return false;
     }
     pbnjson::JValue parsed = jsonparser.getDom();
@@ -323,15 +320,15 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
     bool ret = false;
     base::error_t error;
     std::string msg = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("%s", msg.c_str());
+    CMP_LOG_INFO("%s", msg.c_str());
 
     if (!instance_->isLoaded_) {
-        CMP_DEBUG_PRINT("already unloaded");
+        CMP_LOG_INFO("already unloaded");
         ret = true;
     } else {
         if (instance_->player_) {
             if (!instance_->player_->Unload())
-                CMP_DEBUG_PRINT("fails to unload the player");
+                CMP_LOG_ERROR("fails to unload the player");
             else {
                 instance_->isLoaded_ = false;
                 ret = true;
@@ -343,7 +340,7 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
         instance_->resourceRequestor_->notifyBackground();
         instance_->resourceRequestor_->releaseResource();
     } else
-        CMP_DEBUG_PRINT("NotifyBackground & ReleaseResources fails");
+        CMP_LOG_ERROR("NotifyBackground & ReleaseResources fails");
 
     if (!ret) {
         base::error_t error;
@@ -353,7 +350,7 @@ bool Service::UnloadEvent(UMSConnectorHandle *handle,
         instance_->Notify(CMP_NOTIFY_ERROR, 0, nullptr, static_cast<void*>(&error));
     }
 
-    CMP_DEBUG_PRINT("UnloadEvent Done");
+    CMP_LOG_INFO("UnloadEvent Done");
 
     return ret;
 }
@@ -363,10 +360,10 @@ bool Service::PlayEvent(UMSConnectorHandle *handle,
         UMSConnectorMessage *message, void *ctxt)
 {
     std::string msg = instance_->umc_->getMessageText(message);
-    CMP_DEBUG_PRINT("message : %s", msg.c_str());
+    CMP_LOG_INFO("message : %s", msg.c_str());
 
     if (!instance_->player_ || !instance_->isLoaded_) {
-        CMP_DEBUG_PRINT("Invalid CameraPlayerClient state, player should be loaded");
+        CMP_LOG_ERROR("Invalid CameraPlayerClient state, player should be loaded");
         return false;
     }
 
@@ -376,7 +373,7 @@ bool Service::PlayEvent(UMSConnectorHandle *handle,
 bool Service::PauseEvent(UMSConnectorHandle *handle,
                          UMSConnectorMessage *message, void *ctxt)
 {
-    CMP_DEBUG_PRINT("PauseEvent");
+    CMP_LOG_INFO("PauseEvent");
     return true;
 }
 
@@ -440,7 +437,7 @@ bool Service::ExitEvent(UMSConnectorHandle *handle,
 void Service::LoadCommon()
 {
     if (!resourceRequestor_)
-        CMP_DEBUG_PRINT("NotifyForeground fails");
+        CMP_LOG_ERROR("NotifyForeground fails");
     else
         resourceRequestor_->notifyForeground();
 
@@ -457,7 +454,7 @@ void Service::LoadCommon()
             Notify(CMP_NOTIFY_ERROR, CMP_ERROR_RES_ALLOC,
                                     nullptr, static_cast<void*>(&error));
             if (!resourceRequestor_)
-                CMP_DEBUG_PRINT("notifyBackground fails");
+                CMP_LOG_ERROR("notifyBackground fails");
             else
                 resourceRequestor_->notifyBackground();
             });
@@ -466,20 +463,20 @@ void Service::LoadCommon()
 
 bool Service::AcquireResources(const base::source_info_t &sourceInfo,
                                          const std::string &display_mode,
-                                         uint32_t display_path)
+                                         const int32_t display_path)
 {
-    CMP_DEBUG_PRINT("Service::AcquireResources");
+    CMP_LOG_INFO("Service::AcquireResources");
     cmp::resource::PortResource_t resourceMMap;
 
     if (resourceRequestor_) {
         if (!resourceRequestor_->acquireResources(
                   resourceMMap, sourceInfo, display_mode, display_path)) {
-            CMP_INFO_PRINT("resource acquisition failed");
+            CMP_LOG_ERROR("resource acquisition failed");
             return false;
         }
 
         for (const auto& it : resourceMMap) {
-            CMP_DEBUG_PRINT("Resource::[%s]=>index:%d", it.first.c_str(), it.second);
+            CMP_LOG_INFO("Resource::[%s]=>index:%d", it.first.c_str(), it.second);
         }
     }
 

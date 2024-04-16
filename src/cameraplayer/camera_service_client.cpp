@@ -3,11 +3,6 @@
 #include <pbnjson.hpp>
 #include <log/log.h>
 
-#ifdef CMP_DEBUG_PRINT
-#undef CMP_DEBUG_PRINT
-#endif
-#define CMP_DEBUG_PRINT CMP_INFO_PRINT
-
 static pbnjson::JValue convertStringToJson(const char *rawData)
 {
     pbnjson::JInput input(rawData);
@@ -48,7 +43,7 @@ bool CameraServiceClient::acquireLSHandle()
         name_ = "com.webos.pipeline.ipc._" + std::to_string(getpid());
         if (!LSRegister(name_.c_str(), &sh_, &lserror))
         {
-            CMP_DEBUG_PRINT("CameraServiceClient::acquireLSHandle() FAIL");
+            CMP_LOG_ERROR("CameraServiceClient::acquireLSHandle() FAIL");
 
             LSErrorPrint(&lserror, stderr);
             LSErrorFree(&lserror);
@@ -73,7 +68,7 @@ bool CameraServiceClient::acquireLSHandle()
         }
     }
 
-    CMP_DEBUG_PRINT("CameraServiceClient::acquireLSHandle() OK");
+    CMP_LOG_INFO("CameraServiceClient::acquireLSHandle() OK");
 
     return true;
 }
@@ -130,13 +125,13 @@ bool CameraServiceClient::call(const std::string &uri, const std::string &payloa
 
 bool CameraServiceClient::cbGetReplyMsg(LSHandle *sh, LSMessage *msg, void *ctx)
 {
-    CMP_DEBUG_PRINT("CameraServiceClient::cbGetReplyMsg() entered.");
+    CMP_LOG_INFO("CameraServiceClient::cbGetReplyMsg() entered.");
 
     CameraServiceClient *caller = static_cast<CameraServiceClient*>(ctx);
     const char *str = LSMessageGetPayload(msg);
     caller->reply_from_server_ = str ? str : "";
 
-    CMP_DEBUG_PRINT("reply_from_server: %s", caller->reply_from_server_.c_str());
+    CMP_LOG_INFO("reply_from_server: %s", caller->reply_from_server_.c_str());
 
     caller->done_ = 1;
     return true;
@@ -161,7 +156,7 @@ bool CameraServiceClient::cbGetFd(LSHandle *sh, LSMessage *msg, void *ctx)
 
 bool CameraServiceClient::open(std::string cameraId, int pid)
 {
-    CMP_DEBUG_PRINT("CameraServiceClient::open() entered ...");
+    CMP_LOG_INFO("CameraServiceClient::open() entered ...");
     if (handle_ != -1)
     {
         return false;
@@ -176,7 +171,7 @@ bool CameraServiceClient::open(std::string cameraId, int pid)
     }
     payload += "}";
 
-    CMP_DEBUG_PRINT("payload : %s", payload.c_str());
+    CMP_LOG_INFO("payload : %s", payload.c_str());
 
     if (!call("luna://com.webos.service.camera2/open", payload, cbGetReplyMsg))
     {
@@ -189,7 +184,7 @@ bool CameraServiceClient::open(std::string cameraId, int pid)
     }
     handle_ = parsed["handle"].asNumber<int>();
 
-    CMP_DEBUG_PRINT("CameraServiceClient::open : handle = %d ", handle_);
+    CMP_LOG_INFO("CameraServiceClient::open : handle = %d ", handle_);
 
     return true;
 }
@@ -259,7 +254,7 @@ int CameraServiceClient::getFd()
 
 bool CameraServiceClient::close()
 {
-    CMP_DEBUG_PRINT("CameraServiceClient::close() entered ...");
+    CMP_LOG_INFO("CameraServiceClient::close() entered ...");
 
     if (handle_ == -1)
     {
@@ -278,7 +273,7 @@ bool CameraServiceClient::close()
     }
     pbnjson::JValue parsed = convertStringToJson(reply_from_server_.c_str());
 
-    CMP_DEBUG_PRINT("CameraServiceClient::close : handle = %d ", handle_);
+    CMP_LOG_INFO("CameraServiceClient::close : handle = %d ", handle_);
 
     return parsed["returnValue"].asBool();;
 }

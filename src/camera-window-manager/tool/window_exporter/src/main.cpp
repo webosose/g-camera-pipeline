@@ -30,35 +30,91 @@
 
 #define VERTEX_ARRAY (0)
 
-typedef struct {
-    EGLDisplay eglDisplay;
-    EGLContext eglContext;
-    EGLConfig *eglConfig;
-    int configSelect;
-    EGLConfig currentEglConfig;
-} EGLData;
+namespace windowExpoter
+{
+  typedef struct {
+      EGLDisplay eglDisplay;
+      EGLContext eglContext;
+      EGLConfig *eglConfig;
+      int configSelect;
+      EGLConfig currentEglConfig;
+  } EGLData;
 
-typedef struct {
-    GLuint vbo;
-    GLuint fragShader;
-    GLuint vertShader;
-    GLuint programObject;
-    GLuint texture;
-    unsigned int vertexStride;
-} GLData;
+  typedef struct {
+      GLuint vbo;
+      GLuint fragShader;
+      GLuint vertShader;
+      GLuint programObject;
+      GLuint texture;
+      unsigned int vertexStride;
+  } GLData;
 
-typedef struct {
-    struct wl_egl_window *native;
-    struct wl_surface *wlSurface;
-    struct wl_shell_surface *wlShellSurface;
-    struct wl_webos_shell_surface *webosShellSurface;
-    EGLSurface eglSurface;
-    unsigned int width;
-    unsigned int height;
-} WaylandEGLSurface;
+  typedef struct {
+      struct wl_egl_window *native;
+      struct wl_surface *wlSurface;
+      struct wl_shell_surface *wlShellSurface;
+      struct wl_webos_shell_surface *webosShellSurface;
+      EGLSurface eglSurface;
+      unsigned int width;
+      unsigned int height;
+  } WaylandEGLSurface;
 
-Wayland::Foreign foreign;
-Wayland::Exporter exporter;
+  Wayland::Foreign foreign;
+  Wayland::Exporter exporter;
+
+  void printHelp() noexcept(true)
+  {
+      std::cout << "Usage: window_exporter [OPTION]..." << std::endl;
+      std::cout << "Options" << std::endl;
+      std::cout << "  -x          x (0)" << std::endl;
+      std::cout << "  -y          y (0)" << std::endl;
+      std::cout << "  -w          export width (1920)" << std::endl;
+      std::cout << "  -h          export height (1080)" << std::endl;
+      std::cout << "  -d          display ID (0)" << std::endl;
+      std::cout << "  -r          remove rectangle" << std::endl;
+      std::cout << "  -o          overlay window" << std::endl;
+  }
+
+  void signal_handler(int s)
+  {
+      printf("\nCaught signal %d\n", s);
+
+      foreign.flush();
+      exporter.finalize();
+      foreign.finalize();
+
+      printf("exit(1)\n");
+      exit(1);
+  }
+
+  void singal_catcher(void (*handler)(int)) noexcept(true)
+  {
+      struct sigaction sa;
+
+      sa.sa_handler = handler;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = 0;
+
+      if (sigaction(SIGINT, &sa, NULL) == -1)
+      {
+          printf("SIGINT sigaction error\n");
+      }
+      if (sigaction(SIGSEGV, &sa, NULL) == -1)
+      {
+          printf("SIGSEGV sigaction error\n");
+      }
+      if (sigaction(SIGTERM, &sa, NULL) == -1)
+      {
+          printf("SIGTERM sigaction error\n");
+      }
+      if (sigaction(SIGHUP, &sa, NULL) == -1)
+      {
+          printf("SIGHUP sigaction error\n");
+      }
+  }
+}
+
+using namespace windowExpoter;
 
 static void handlePing(void *data, struct wl_shell_surface *shellSurface, uint32_t serial)
 {
@@ -256,56 +312,6 @@ bool rendering(GLData *glData, WaylandEGLSurface *surface) noexcept(true)
     return true;
 }
 
-void printHelp() noexcept(true)
-{
-    std::cout << "Usage: window_exporter [OPTION]..." << std::endl;
-    std::cout << "Options" << std::endl;
-    std::cout << "  -x          x (0)" << std::endl;
-    std::cout << "  -y          y (0)" << std::endl;
-    std::cout << "  -w          export width (1920)" << std::endl;
-    std::cout << "  -h          export height (1080)" << std::endl;
-    std::cout << "  -d          display ID (0)" << std::endl;
-    std::cout << "  -r          remove rectangle" << std::endl;
-    std::cout << "  -o          overlay window" << std::endl;
-}
-
-void signal_handler(int s)
-{
-    printf("\nCaught signal %d\n", s);
-
-    foreign.flush();
-    exporter.finalize();
-    foreign.finalize();
-
-    printf("exit(1)\n");
-    exit(1);
-}
-
-void singal_catcher(void (*handler)(int)) noexcept(true)
-{
-    struct sigaction sa;
-
-    sa.sa_handler = handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-
-    if (sigaction(SIGINT, &sa, NULL) == -1)
-    {
-        printf("SIGINT sigaction error\n");
-    }
-    if (sigaction(SIGSEGV, &sa, NULL) == -1)
-    {
-        printf("SIGSEGV sigaction error\n");
-    }
-    if (sigaction(SIGTERM, &sa, NULL) == -1)
-    {
-        printf("SIGTERM sigaction error\n");
-    }
-    if (sigaction(SIGHUP, &sa, NULL) == -1)
-    {
-        printf("SIGHUP sigaction error\n");
-    }
-}
 
 int main(int argc, char *argv[])
 {

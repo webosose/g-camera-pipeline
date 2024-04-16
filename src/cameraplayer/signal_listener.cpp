@@ -28,7 +28,7 @@ void SignalListener::initialize(int signum)
     sigaddset(&option_.set, signum);
     if (sigprocmask(SIG_SETMASK, &option_.set, NULL) < 0)
     {
-        CMP_DEBUG_PRINT("sigprocmask error");
+        CMP_LOG_ERROR("sigprocmask error");
     }
     option_.timeout.tv_sec = DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC;
     option_.timeout.tv_nsec = 0;
@@ -64,11 +64,11 @@ void SignalListener::wait()
     std::unique_lock<std::mutex> mlock(mutex_);
     if (false == cond_.wait_for(mlock, timeout, [&]{ return condition_; }))
     {
-        CMP_DEBUG_PRINT("signal wait timeout reached");
+        CMP_LOG_INFO("signal wait timeout reached");
     }
     else
     {
-        CMP_DEBUG_PRINT("signal received");
+        CMP_LOG_DEBUG("signal received");
     }
     condition_ = false;
 }

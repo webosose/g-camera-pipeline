@@ -40,7 +40,7 @@ class Service {
 
   ~Service();
 
-  void Notify(const gint notification, const gint64 numValue,
+  void Notify(const gint notification, const gint32 numValue,
           const gchar *strValue, void *payload = nullptr);
 
   bool Wait();
@@ -91,7 +91,7 @@ class Service {
   explicit Service(const char *service_name);
   void LoadCommon();
   bool AcquireResources(const base::source_info_t &sourceInfo,
-              const std::string &display_mode = "Default", uint32_t display_path = 0);
+              const std::string &display_mode = "Default", const int32_t display_path = 0);
 
   std::string media_id_;  // connection_id
   std::string app_id_;
