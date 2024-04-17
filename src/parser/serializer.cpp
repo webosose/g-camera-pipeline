@@ -30,9 +30,9 @@ template<>
 pbnjson::JValue to_json(const base::video_info_t & info) {
   return pbnjson::JObject {{"video",
       pbnjson::JObject{{"codec", info.codec},
-                       {"bitrate", (int64_t)info.bit_rate},
-                       {"width", (int32_t)info.width},
-                       {"height", (int32_t)info.height},
+                       {"bitrate", (int64_t)(LONG_MAX>= info.bit_rate ? info.bit_rate : 0)},
+                       {"width", (int32_t)(INT_MAX >= info.width ? info.width : 0)},
+                       {"height", (int32_t)(INT_MAX >= info.height ? info.height : 0)},
                        {"frame_rate", pbnjson::JObject {{"num", info.frame_rate.num},
                                                         {"den", info.frame_rate.den}}}}}};
 }

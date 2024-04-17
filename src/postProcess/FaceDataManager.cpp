@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // clang-format off
+#include <cmath>
 #include <pbnjson.hpp>
 #include "log/log.h"
 #include "SmoothSlidingController.hpp"
@@ -76,8 +77,9 @@ convertToFaceInfo(uint8_t *meta, int32_t metaLen, uint16_t *facexy,
                 facexy[f * NR_FACE_INFO_PARAM]     = confidence;
                 facexy[f * NR_FACE_INFO_PARAM + 1] = l;
                 facexy[f * NR_FACE_INFO_PARAM + 2] = t;
-                facexy[f * NR_FACE_INFO_PARAM + 3] = r - l;
-                facexy[f * NR_FACE_INFO_PARAM + 4] = b - t;
+                facexy[f * NR_FACE_INFO_PARAM + 3] = (r >= l) ? (r - l) : 0;
+                facexy[f * NR_FACE_INFO_PARAM + 4] = (b >= t) ? (b - t) : 0;
+
                 nrFace++;
             }
         }
@@ -113,8 +115,8 @@ static uint16_t mergeFaceRect(uint16_t *data_face, uint16_t faceCount)
     data_face[0] = confidence / faceCount;
     data_face[1] = left;
     data_face[2] = top;
-    data_face[3] = right - left;
-    data_face[4] = bottom - top;
+    data_face[3] = (right >= left) ? (right - left) : 0;
+    data_face[4] = (bottom >= top) ? (bottom - top) : 0;
 
     return !!faceCount;
 }
@@ -130,6 +132,7 @@ int8_t FaceDataManager::findWiderFaceIndex(std::vector<FaceData>& faceList) {
             widerFace = faceArea;
         }
         i++;
+        if (CHAR_MAX == i) break;
     }
     return widerIndex;
 }
@@ -175,7 +178,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
         facexy[4] = 100;
         nrFace    = 1;
 #endif
-        setFaceInfo(facexy, static_cast<uint8_t>(nrFace));
+        setFaceInfo(facexy, static_cast<uint8_t>(NR_MAX_FACE_DETECT >= nrFace ? nrFace : 0));
 
         //Find wider face and apply PTZ on wider face alone
         if ((access(FOCUS_WIDER_FACE_CHECK_FILE, F_OK) == 0) && (nrFace > 1))

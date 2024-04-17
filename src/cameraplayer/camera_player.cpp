@@ -82,12 +82,12 @@ CameraPlayer::CameraPlayer():
     planeId_(-1),
     width_(0),
     height_(0),
-    handle_(0),
     framerate_(0),
-    iomode_(0),
     crtcId_(0),
     connId_(0),
     display_path_idx_(0),
+    handle_(0),
+    iomode_(0),
     num_of_images_to_capture_(0),
     num_of_captured_images_(0),
     uri_(""),
@@ -112,9 +112,6 @@ CameraPlayer::CameraPlayer():
     preview_parser_(NULL),
     preview_encoder_(NULL),
     preview_convert_(NULL),
-    preview_scale_(NULL),
-    preview_queue_(NULL),
-    preview_video_crop_(NULL),
     tee_(NULL),
     capture_queue_(NULL),
     capture_encoder_(NULL),
@@ -124,17 +121,16 @@ CameraPlayer::CameraPlayer():
     record_parse_(NULL),
     record_decoder_(NULL),
     record_mux_(NULL),
-    record_audio_src_(NULL),
     record_sink_(NULL),
+    preview_queue_(NULL),
+    preview_sink_(NULL),
+    record_audio_src_(NULL),
     record_audio_queue_(NULL),
     record_audio_convert_(NULL),
-    record_audio_encoder_(NULL),
-    record_audio_encoder_pad_(NULL),
-    record_video_queue_pad_(NULL),
-    record_audio_mux_pad_(NULL),
-    record_video_mux_pad_(NULL),
     record_video_queue_(NULL),
-    preview_sink_(NULL),
+    record_audio_encoder_(NULL),
+    preview_scale_(NULL),
+    preview_video_crop_(NULL),
     tee_preview_pad_(NULL),
     preview_ghost_sinkpad_(NULL),
     preview_queue_pad_(NULL),
@@ -142,6 +138,10 @@ CameraPlayer::CameraPlayer():
     tee_capture_pad_(NULL),
     record_queue_pad_(NULL),
     tee_record_pad_(NULL),
+    record_audio_encoder_pad_(NULL),
+    record_video_queue_pad_(NULL),
+    record_audio_mux_pad_(NULL),
+    record_video_mux_pad_(NULL),
     context_{NULL,1,0,0,FALSE,NULL},
     source_info_(),
     current_state_(base::playback_state_t::STOPPED),
@@ -168,9 +168,14 @@ CameraPlayer::~CameraPlayer()
     CMP_LOG_INFO(" this[%p]", this);
 
     if (pipeline_ != NULL) {
-        Unload();
+        unloadImpl();
     }
     gst_deinit();
+}
+
+bool CameraPlayer::Unload()
+{
+    return unloadImpl();
 }
 
 bool CameraPlayer::attachSurface(bool allow_no_window) {
@@ -232,7 +237,7 @@ void CameraPlayer::ParseOptionString(const std::string& options)
 
     if (parsed["options"]["option"].hasKey("displayPath")) {
         int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-        display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
+        display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : (display_path > 0 ? display_path : 0));
     }
     if (parsed["options"]["option"].hasKey("windowId")) {
         window_id_ = parsed["options"]["option"]["windowId"].asString();
@@ -506,7 +511,7 @@ bool CameraPlayer::LoadPlayer ()
 
     ACQUIRE_RESOURCE_INFO_T resource_info;
     resource_info.sourceInfo = &source_info_;
-    resource_info.displayMode = const_cast<char*>(display_mode_.c_str());
+    resource_info.displayMode = display_mode_.c_str();
     resource_info.result = true;
 
     if (cbFunction_)
@@ -550,7 +555,7 @@ void CameraPlayer::PauseInternalSync()
     gst_element_set_state(pipeline_, GST_STATE_PAUSED);
 
     GstState state; GstState pending;
-    GstStateChangeReturn status = gst_element_get_state(pipeline_, &state, &pending, -1);
+    GstStateChangeReturn status = gst_element_get_state(pipeline_, &state, &pending, GST_CLOCK_TIME_NONE);
     CMP_LOG_INFO("Status of pipeline state change to pause = %d", status);
 
     if ( (GST_STATE_CHANGE_SUCCESS == status) && (GST_STATE_PAUSED == state) )
@@ -559,7 +564,7 @@ void CameraPlayer::PauseInternalSync()
         CMP_LOG_ERROR("Pipeline state change to PAUSE is filed");
 }
 
-bool CameraPlayer::Unload()
+bool CameraPlayer::unloadImpl()
 {
     CMP_LOG_INFO("unload");
     if (!pipeline_)
@@ -572,7 +577,7 @@ bool CameraPlayer::Unload()
     PauseInternalSync();
 
     if (recordingStarted.load()) {
-        StopRecord();
+        stopRecordImpl();
         /* As record elements are removed from pipeline in a callback finalizeRecord(),
          * need to provide some time to finalize to avoid crash.
          * Without this delay, crash happened when unload done while recording
@@ -727,6 +732,11 @@ bool CameraPlayer::StartRecord(const std::string& location, const std::string& f
 
 bool CameraPlayer::StopRecord()
 {
+    return stopRecordImpl();
+}
+
+bool CameraPlayer::stopRecordImpl()
+{
     // if already stopped, avoid execution
     if (!recordingStarted.load())
         return false;
@@ -834,8 +844,8 @@ gboolean CameraPlayer::HandleBusMessage(
                             "pixel_aspect_ratio[%d/%d]", width, height,
                             fps_n, fps_d, par_n, par_d);
 
-                    video_info.width = width;
-                    video_info.height = height;
+                    video_info.width = (width < 0 ? 0: width);
+                    video_info.height = (height < 0 ? 0: height);
                     video_info.frame_rate.num = fps_n;
                     video_info.frame_rate.den = fps_d;
                     // TODO: we already know this info. but it's not used now.
@@ -879,7 +889,7 @@ void CameraPlayer::SetGstreamerDebug()
     pbnjson::JValue parsed = parser.getDom();
     pbnjson::JValue debug = parsed["gst_debug"];
 
-    int size = debug.arraySize();
+    long size = debug.arraySize();
     for (int i = 0; i < size; i++)
     {
         const char *kDebug = "GST_DEBUG";
@@ -930,9 +940,9 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
         gettimeofday(&tmnow_, NULL);
 
         char image_name[100] = {};
-        (void) snprintf(image_name, sizeof(image_name), "Capture%02d%02d%02d-%02d%02d%02d%02d.jpeg", timePtr_->tm_mday,
+        (void) snprintf(image_name, sizeof(image_name), "Capture%02d%02d%02d-%02d%02d%02d%02ld.jpeg", timePtr_->tm_mday,
                     (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+                    (timePtr_->tm_min), (timePtr_->tm_sec), tmnow_.tv_usec / 10000);
 
         CMP_LOG_INFO("writeImageToFile image_name : %s\n", image_name);
 
@@ -947,10 +957,16 @@ void CameraPlayer::WriteImageToFile(const void *p,int size)
         return;
     }
     CMP_LOG_INFO("File Open Success");
-    size_t bytes_written     = fwrite(p, size, 1, fp);
-    if (bytes_written != size)
+
+    if(size >= 0)
     {
-        CMP_LOG_ERROR("Error writing data to file.\n");
+        size_t bytes_written = fwrite(p, size, 1, fp);
+        if (bytes_written != size)
+        {
+            CMP_LOG_ERROR("Error writing data to file.");
+        }
+    } else {
+        CMP_LOG_ERROR("Invalid size. Size cannot be negative.");
     }
 
     if (fclose(fp) != 0)
@@ -963,8 +979,8 @@ bool CameraPlayer::GetSourceInfo()
 {
     base::video_info_t video_stream_info = {};
 
-    video_stream_info.width = width_;
-    video_stream_info.height = height_;
+    video_stream_info.width = (width_ < 0 ? 0 : width_);
+    video_stream_info.height = (height_ < 0 ? 0:  height_);
     video_stream_info.decode = CMP_VIDEO_CODEC_MJPEG;
     video_stream_info.encode = CMP_VIDEO_CODEC_H264;
     video_stream_info.frame_rate.num = framerate_;
@@ -1008,7 +1024,7 @@ bool CameraPlayer::LoadPipeline()
     }
     else if (memtype_ == kMemtypeShmem)
     {
-        context_.key = atoi(memsrc_.c_str());
+        context_.key = std::stoi(memsrc_);
         if (OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)),
                     context_.key) != 0)
         {
@@ -1497,9 +1513,9 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
            CMP_LOG_ERROR("record_mux_(%p) Failed", record_mux_);
             return false;
         }
-        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.mp4", record_path_.c_str(), timePtr_->tm_mday,
+        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02ld.mp4", record_path_.c_str(), timePtr_->tm_mday,
                     (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+                    (timePtr_->tm_min), (timePtr_->tm_sec), tmnow_.tv_usec / 10000);
     }
     else if (fileFormat == kFileFormatAVI)
     {
@@ -1511,9 +1527,9 @@ bool CameraPlayer::CreateRecordElements(GstPad* tee_record_pad,
            CMP_LOG_ERROR("record_mux_(%p) Failed", record_mux_);
             return false;
         }
-        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02d.avi", record_path_.c_str(), timePtr_->tm_mday,
+        (void) snprintf(recordfilename, sizeof(recordfilename), "%sRecord%02d%02d%02d-%02d%02d%02d%02ld.avi", record_path_.c_str(), timePtr_->tm_mday,
                     (timePtr_->tm_mon) + 1, (timePtr_->tm_year) + 1900, (timePtr_->tm_hour),
-                    (timePtr_->tm_min), (timePtr_->tm_sec), ((int)tmnow_.tv_usec) / 10000);
+                    (timePtr_->tm_min), (timePtr_->tm_sec), tmnow_.tv_usec / 10000);
     }
     else
     {
@@ -2063,17 +2079,20 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
-    int len = 0;
+    int len = -1;
     unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
     if (player->shm_listener_)
     {
         player->shm_listener_->wait();
-        ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        while (len <= 0)
+        {
+            ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
     else
     {
-        while (len == 0)
+        while (len <= 0)
         {
             ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
         }
@@ -2090,7 +2109,15 @@ void CameraPlayer::FeedData (GstElement * appsrc, guint size, gpointer gdata)
     GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
-    timestamp += GST_BUFFER_DURATION (buf);
+    GstClockTime dur = GST_BUFFER_DURATION (buf);
+    if (ULONG_MAX - timestamp > dur)
+    {
+        timestamp += dur;
+    }
+    else
+    {
+        timestamp = 0;
+    }
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 #ifdef PTZ_ENABLED
     //Auto PTZ
@@ -2106,17 +2133,20 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
 {
     CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
     unsigned char *data = 0;
-    int len = 0;
+    int len = -1;
     unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
     if (player->shm_listener_)
     {
         player->shm_listener_->wait();
-        ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        while (len <= 0)
+        {
+            ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
     else
     {
-        while (len == 0)
+        while (len <= 0)
         {
             ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
         }
@@ -2133,7 +2163,15 @@ void CameraPlayer::FeedPosixData (GstElement * appsrc, guint size, gpointer gdat
     GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate);
-    timestamp += GST_BUFFER_DURATION (buf);
+    GstClockTime dur = GST_BUFFER_DURATION (buf);
+    if (ULONG_MAX - timestamp > dur)
+    {
+        timestamp += dur;
+    }
+    else
+    {
+        timestamp = 0;
+    }
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 #ifdef PTZ_ENABLED
     //Auto PTZ

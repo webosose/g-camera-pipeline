@@ -292,12 +292,12 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
         return SHMEM_COMM_FAIL;
     }
 
-    pShmemBuffer->write_index = (int *) (pSharedmem + sizeof(int) * 0);
-    pShmemBuffer->read_index  = (int *) (pSharedmem + sizeof(int) * 1);
-    pShmemBuffer->unit_size   = (int *) (pSharedmem + sizeof(int) * 2);
-    pShmemBuffer->meta_size   = (int *) (pSharedmem + sizeof(int) * 3);
-    pShmemBuffer->unit_num    = (int *) (pSharedmem + sizeof(int) * 4);
-    pShmemBuffer->mark        = (SHMEM_MARK_T *) (pSharedmem + sizeof(int) * 5);
+    pShmemBuffer->write_index = (int *)(pSharedmem + sizeof(int) * 0);
+    pShmemBuffer->read_index  = (int *)(pSharedmem + sizeof(int) * 1);
+    pShmemBuffer->unit_size   = (int *)(pSharedmem + sizeof(int) * 2);
+    pShmemBuffer->meta_size   = (int *)(pSharedmem + sizeof(int) * 3);
+    pShmemBuffer->unit_num    = (int *)(pSharedmem + sizeof(int) * 4);
+    pShmemBuffer->mark        = (SHMEM_MARK_T *)(pSharedmem + sizeof(int) * 5);
 
     if (nOpenMode == MODE_OPEN || (pShmemBuffer->sema_id = semget(shmemKey, 1, shmemMode)) == -1)
     {

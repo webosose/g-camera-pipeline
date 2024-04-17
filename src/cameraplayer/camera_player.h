@@ -59,7 +59,7 @@ typedef struct GstAppSrcContext_
 
 typedef struct ACQUIRE_RESOURCE_INFO {
   cmp::base::source_info_t* sourceInfo;
-  char *displayMode;
+  const char *displayMode;
   gboolean result;
 } ACQUIRE_RESOURCE_INFO_T;
 
@@ -98,18 +98,16 @@ class CameraPlayer : public CameraPipeline {
 
   CameraPlayer();
   ~CameraPlayer();
-  bool Load(const std::string& mediaId,
-            const std::string& options, const std::string& payload);
-  bool Load(const std::string& str);
+  bool Load(const std::string& str) override;
   bool LoadPlayer();
-  bool Unload();
-  void RegisterCbFunction(CALLBACK_T);
-  bool Play();
+  bool Unload() override;
+  void RegisterCbFunction(CALLBACK_T) override;
+  bool Play() override;
   bool subscribeToCameraService();
   bool TakeSnapshot(const std::string& location);
   bool StartRecord(const std::string& location, const std::string& format,
-                     bool audio, const std::string& audioSrc);
-  bool StopRecord();
+                     bool audio, const std::string& audioSrc) override;
+  bool StopRecord() override;
 
   static gboolean HandleBusMessage(GstBus *bus,
                                    GstMessage *message, gpointer user_data);
@@ -133,6 +131,8 @@ class CameraPlayer : public CameraPipeline {
   void WriteImageToFile(const void *p, int size);
   bool GetSourceInfo();
   bool LoadPipeline();
+  bool unloadImpl();
+  bool stopRecordImpl();
   bool SetPlayerState(base::playback_state_t state) {
     current_state_ = state;
     return true;

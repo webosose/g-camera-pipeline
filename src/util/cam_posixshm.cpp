@@ -207,12 +207,12 @@ POSHMEM_STATUS_T openPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize, 
         return POSHMEM_COMM_FAIL;
     }
 
-    pShmemBuffer->write_index = (int *) (pSharedmem);
-    pShmemBuffer->read_index  = (int *) (pSharedmem + sizeof(int));
-    pShmemBuffer->unit_size   = (int *) (pSharedmem + sizeof(int) * 2);
-    pShmemBuffer->meta_size   = (int *) (pSharedmem + sizeof(int) * 3);
-    pShmemBuffer->unit_num    = (int *) (pSharedmem + sizeof(int) * 4);
-    pShmemBuffer->mark        = (POSHMEM_MARK_T *) (pSharedmem + sizeof(int) * 5);
+    pShmemBuffer->write_index = (int *)(pSharedmem);
+    pShmemBuffer->read_index  = (int *)(pSharedmem + sizeof(int));
+    pShmemBuffer->unit_size   = (int *)(pSharedmem + sizeof(int) * 2);
+    pShmemBuffer->meta_size   = (int *)(pSharedmem + sizeof(int) * 3);
+    pShmemBuffer->unit_num    = (int *)(pSharedmem + sizeof(int) * 4);
+    pShmemBuffer->mark        = (POSHMEM_MARK_T *)(pSharedmem + sizeof(int) * 5);
 
     int length_buf_offset  = (int)(sizeof(int) * 6);
     int data_buf_offset    = 0;

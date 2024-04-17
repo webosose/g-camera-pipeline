@@ -41,7 +41,7 @@ ShmemoryPipeline::~ShmemoryPipeline()
 {
     CMP_LOG_INFO("start");
 
-    Unload();
+    unloadImpl();
 
     g_main_loop_quit(loop_);
     if (loopThread_->joinable())
@@ -58,6 +58,11 @@ ShmemoryPipeline::~ShmemoryPipeline()
     g_main_loop_unref(loop_);
 
     CMP_LOG_INFO("end");
+}
+
+bool ShmemoryPipeline::Unload()
+{
+    return unloadImpl();
 }
 
 bool ShmemoryPipeline::Load(const std::string& msg)
@@ -152,7 +157,7 @@ bool ShmemoryPipeline::Load(const std::string& msg)
     return true;
 }
 
-bool ShmemoryPipeline::Unload()
+bool ShmemoryPipeline::unloadImpl()
 {
     CMP_LOG_INFO("start");
 
@@ -342,7 +347,7 @@ bool ShmemoryPipeline::acquireResource()
 {
     ACQUIRE_RESOURCE_INFO_T resource_info;
     resource_info.sourceInfo = &source_info_;
-    resource_info.displayMode = const_cast<char*>(display_mode_.c_str());
+    resource_info.displayMode = display_mode_.c_str();
     resource_info.result = true;
 
     if (cbFunction_)
@@ -361,8 +366,8 @@ bool ShmemoryPipeline::GetSourceInfo()
 {
     base::video_info_t video_stream_info = {};
 
-    video_stream_info.width = width_;
-    video_stream_info.height = height_;
+    video_stream_info.width = (width_ < 0 ? 0: width_);
+    video_stream_info.height = (height_ < 0 ? 0: height_);
     video_stream_info.decode = CMP_VIDEO_CODEC_MJPEG;
     video_stream_info.frame_rate.num = framerate_;
     video_stream_info.frame_rate.den = 1;
@@ -478,8 +483,8 @@ bool ShmemoryPipeline::handleBusMessage(GstBus *bus, GstMessage *msg)
                         "pixel_aspect_ratio[%d/%d]", width, height,
                         fps_n, fps_d, par_n, par_d);
 
-                video_info.width = width;
-                video_info.height = height;
+                video_info.width = (width < 0 ? 0: width) ;
+                video_info.height = (height < 0 ? 0: height) ;
                 video_info.frame_rate.num = fps_n;
                 video_info.frame_rate.den = fps_d;
                 // TODO: we already know this info. but it's not used now.
@@ -570,7 +575,7 @@ drop:
 void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
 {
     unsigned char *data = 0;
-    int len = 0;
+    int len = -1;
     unsigned char *meta; int meta_len;
     static GstClockTime timestamp = 0;
 
@@ -582,7 +587,7 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
         return;
     }
 
-    if (data == nullptr)
+    if (data == nullptr || len <= 0)
     {
         CMP_LOG_ERROR("FeedData is null");
         return;
@@ -591,7 +596,15 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
     GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
     GST_BUFFER_PTS (buf) = timestamp;
     GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate_);
-    timestamp += GST_BUFFER_DURATION (buf);
+    GstClockTime dur = GST_BUFFER_DURATION (buf);
+    if (ULONG_MAX - timestamp > dur)
+    {
+        timestamp += dur;
+    }
+    else
+    {
+        timestamp = 0;
+    }
     gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
 
 #ifdef PTZ_ENABLED
@@ -729,7 +742,7 @@ void ShmemoryPipeline::SetGstreamerDebug()
     }
 
     pbnjson::JValue debug = parsed["gst_debug"];
-    int size = debug.arraySize();
+    long size = debug.arraySize();
     for (int i = 0; i < size; i++)
     {
         const char *kDebug = "GST_DEBUG";
@@ -815,7 +828,14 @@ base::error_t ShmemoryPipeline::HandleErrorMessage(GstMessage *message)
 
 void ShmemoryPipeline::show_frame()
 {
-    ++frame_counter;
+    if (INT_MAX > frame_counter)
+    {
+        ++frame_counter;
+    }
+    else
+    {
+        frame_counter = 0;
+    }
 
     auto currentTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
@@ -836,9 +856,8 @@ int ShmemoryPipeline::openShmemory()
 
     if (memtype_ == kMemtypeShmem)
     {
-        context_.key = atoi(memsrc_.c_str());
+        context_.key = std::stoi(memsrc_);
         return OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), context_.key);
-
     }
     else if (memtype_ == kMemtypePosixShm)
     {
@@ -913,15 +932,11 @@ bool ShmemoryPipeline::createSignalListener()
 
 void ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
 {
-    if (access(socketPath.c_str(), F_OK) == 0)
+    const char *socket_path = socketPath.c_str();
+    if (-1 == unlink(socket_path))
     {
-        if (unlink(socketPath.c_str()) == 0)
-        {
-            CMP_LOG_WARNING("Deleted successfully: %s", socketPath.c_str());
-        }
-        else
-        {
-            CMP_LOG_ERROR("Unable to delete: %s", socketPath.c_str());
-        }
+        CMP_LOG_ERROR("File does not exist or unable to delete: %s", socket_path);
+        return;
     }
+    CMP_LOG_INFO("Deleted successfully: %s", socket_path);
 }

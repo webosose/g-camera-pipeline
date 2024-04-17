@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "drawbox.hpp"
+#include <climits>
 
 #define NV12_VCOLOR(c) (uint16_t)(c << 8)
 #define NV12_UCOLOR(c) (uint16_t)(c)
@@ -98,8 +99,8 @@ void drawBoxInNV12Format(uint8_t *data, const int &maxWidth,
     uint8_t *lumin  = data;
     uint16_t *tuple = reinterpret_cast<uint16_t *>(data + offsetUV);
 
-    uint16_t x1 = face.x, x2 = face.x + face.w;
-    uint16_t y1 = face.y, y2 = face.y + face.h;
+    uint16_t x1 = face.x, x2 = (USHRT_MAX - face.x < face.w ? 0 : face.x + face.w);
+    uint16_t y1 = face.y, y2 = (USHRT_MAX - face.y < face.h ? 0 : face.x + face.w);
 
     x1 = (x1 > maxWidth) ? maxWidth : x1;
     x2 = (x2 > maxWidth) ? maxWidth : x2;
@@ -137,8 +138,8 @@ void drawBoxInNV16Format(uint8_t *data, const int &maxWidth,
     uint8_t *lumin  = data;
     uint16_t *tuple = reinterpret_cast<uint16_t *>(data + offsetUV);
 
-    uint16_t x1 = face.x, x2 = face.x + face.w;
-    uint16_t y1 = face.y, y2 = face.y + face.h;
+    uint16_t x1 = face.x, x2 = (USHRT_MAX - face.x < face.w ? 0 : face.x + face.w);
+    uint16_t y1 = face.y, y2 = (USHRT_MAX - face.y < face.h ? 0 : face.y + face.h);
 
     x1 = (x1 > maxWidth) ? maxWidth : x1;
     x2 = (x2 > maxWidth) ? maxWidth : x2;

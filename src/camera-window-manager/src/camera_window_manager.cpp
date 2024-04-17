@@ -45,9 +45,9 @@ bool CameraWindowManager::registerID(const char *windowID, const char *pipelineI
     //It is reserved variable of wayland.
     uint32_t exportedType = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
 
-    result &= foreign->initialize();
-    result &= surface->initialize(foreign->getCompositor());
-    result &= importer->initialize(foreign->getWebosForeign(), windowID, exportedType);
+    result = result && foreign->initialize();
+    result = result && surface->initialize(foreign->getCompositor());
+    result = result && importer->initialize(foreign->getWebosForeign(), windowID, exportedType);
     foreign->flush();
 
     isRegistered = true;

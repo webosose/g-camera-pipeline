@@ -16,6 +16,7 @@
 
 #ifndef SRC_HAL_UTILS_CAMSHM_H_
 #define SRC_HAL_UTILS_CAMSHM_H_
+
 typedef enum SHMEM_STATUS_T_
 {
     SHMEM_COMM_OK        = 0x0,
@@ -26,7 +27,12 @@ typedef enum SHMEM_STATUS_T_
     SHMEM_COMM_SIZE      = -5,
 } SHMEM_STATUS_T;
 
-typedef void * SHMEM_HANDLE;
+namespace SYSV
+{
+   typedef void * SHMEM_HANDLE;
+}
+
+using namespace SYSV;
 
 extern SHMEM_STATUS_T OpenShmem(SHMEM_HANDLE *phShmem, key_t shmemKey);
 extern SHMEM_STATUS_T ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,

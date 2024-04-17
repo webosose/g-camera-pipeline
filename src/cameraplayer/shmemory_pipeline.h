@@ -35,7 +35,7 @@ class ShmemoryPipeline : public CameraPipeline
 
     typedef struct ACQUIRE_RESOURCE_INFO {
         base::source_info_t* sourceInfo;
-        char *displayMode;
+        const char *displayMode;
         gboolean result;
     } ACQUIRE_RESOURCE_INFO_T;
 
@@ -82,6 +82,7 @@ class ShmemoryPipeline : public CameraPipeline
     GstBusSyncReply handleBusSyncMessage(GstBus *bus, GstMessage *msg);
     bool addBus();
     bool remBus();
+    bool unloadImpl();
 
     int openShmemory();
     int closeShmemory();
@@ -92,9 +93,9 @@ public:
     ShmemoryPipeline();
     virtual ~ShmemoryPipeline();
 
-    bool Load(const std::string& msg);
-    bool Unload();
-    bool Play();
+    bool Load(const std::string& msg) override;
+    bool Unload() override;
+    bool Play() override;
     void RegisterCbFunction(CALLBACK_T cbf);
     virtual bool launch() = 0;
 

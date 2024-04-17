@@ -16,6 +16,7 @@
 
 // clang-format off
 #include <iostream>
+#include <limits.h>
 #include "log.h"
 #include "SmoothSlidingController.hpp"
 // clang-format on
@@ -39,8 +40,8 @@ void SmoothSlidingController::getAvgDataFace(unsigned short *data_face)
     CropRect rect = getAvgRect();
     data_face[1]  = rect.left;
     data_face[2]  = rect.top;
-    data_face[3]  = rect.right - rect.left;
-    data_face[4]  = rect.bottom - rect.top;
+    data_face[3]  = (rect.right >= rect.left) ? (rect.right - rect.left) : 0;
+    data_face[4]  = (rect.bottom >= rect.top) ? (rect.bottom - rect.top) : 0;
 }
 void SmoothSlidingController::pushRect(CropRect &newRect)
 {
@@ -75,7 +76,15 @@ CropRect SmoothSlidingController::getAvgRect()
 bool SmoothSlidingController::needFaceUpdate(int8_t aCurFaceCount)
 {
     fpsCalc_.pushData();
-    if (++fParam_.count_ % fParam_.leap_ == 0) {
+    if (UCHAR_MAX == fParam_.count_)
+    {
+        fParam_.count_ = 0;
+    }
+    else
+    {
+        ++fParam_.count_;
+    }
+    if (fParam_.count_ % fParam_.leap_ == 0) {
         fParam_.count_ = 0;
         auto curFps    = fpsCalc_.getCurrentFps();
         if (curFps > 15.0f)
