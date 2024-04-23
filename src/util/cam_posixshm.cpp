@@ -214,10 +214,6 @@ POSHMEM_STATUS_T openPosixShmem(SHMEM_HANDLE *phShmem, int shmfd, int unitSize, 
     pShmemBuffer->unit_num    = (int *) (pSharedmem + sizeof(int) * 4);
     pShmemBuffer->mark        = (POSHMEM_MARK_T *) (pSharedmem + sizeof(int) * 5);
 
-    *pShmemBuffer->unit_size = unitSize;
-    *pShmemBuffer->meta_size = metaSize;
-    *pShmemBuffer->unit_num  = unitNum;
-
     int length_buf_offset  = (int)(sizeof(int) * 6);
     int data_buf_offset    = 0;
     int length_meta_offset = 0;
