@@ -42,7 +42,7 @@ static guint signal_watch_intr_id;
 static constexpr char const *waylandDisplayHandleContextType =
     "GstWaylandDisplayHandleContextType";
 
-namespace Impoter
+namespace Importer
 {
   typedef struct {
       EGLDisplay eglDisplay;
@@ -70,7 +70,7 @@ namespace Impoter
   } WaylandEGLSurface;
 }
 
-using namespace Impoter;
+using namespace Importer;
 
 bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData)
 {

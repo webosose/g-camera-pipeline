@@ -30,7 +30,7 @@
 
 #define VERTEX_ARRAY (0)
 
-namespace windowExpoter
+namespace windowExporter
 {
   typedef struct {
       EGLDisplay eglDisplay;
@@ -114,7 +114,7 @@ namespace windowExpoter
   }
 }
 
-using namespace windowExpoter;
+using namespace windowExporter;
 
 static void handlePing(void *data, struct wl_shell_surface *shellSurface, uint32_t serial)
 {
