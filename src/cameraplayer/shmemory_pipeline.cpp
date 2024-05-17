@@ -856,7 +856,12 @@ int ShmemoryPipeline::openShmemory()
 
     if (memtype_ == kMemtypeShmem)
     {
-        context_.key = std::stoi(memsrc_);
+        try {
+            context_.key = std::stoi(memsrc_);
+        } catch (...) {
+            CMP_LOG_ERROR("Conversion error: memsrc_ is not a valid number.");
+            return -1;
+        }
         return OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), context_.key);
     }
     else if (memtype_ == kMemtypePosixShm)

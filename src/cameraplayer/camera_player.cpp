@@ -1024,7 +1024,12 @@ bool CameraPlayer::LoadPipeline()
     }
     else if (memtype_ == kMemtypeShmem)
     {
-        context_.key = std::stoi(memsrc_);
+        try {
+            context_.key = std::stoi(memsrc_);
+        } catch (...) {
+            CMP_LOG_ERROR("Conversion error: memsrc_ is not a valid number.");
+            return false;
+        }
         if (OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)),
                     context_.key) != 0)
         {
