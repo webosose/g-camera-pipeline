@@ -249,8 +249,10 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     {
         for (shmemKey = CAMSHKEY; shmemKey < 0xFFFF; shmemKey++)
         {
+            errno = 0;
             pShmemBuffer->shmem_id = shmget((key_t) shmemKey, 0, 0666);
-            if (pShmemBuffer->shmem_id == -1 && errno == ENOENT)
+            int checkErr = errno;
+            if (pShmemBuffer->shmem_id == -1 && checkErr == ENOENT)
                 break;
         }
         *pShmemKey = shmemKey;
@@ -274,10 +276,12 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
 
     CMP_LOG_DEBUG("shmem_key=%d\r", shmemKey);
 
+    errno = 0;
     pShmemBuffer->shmem_id = shmget((key_t) shmemKey, shmemSize, shmemMode);
     if (pShmemBuffer->shmem_id == -1)
     {
-        CMP_LOG_ERROR("Can't open shared memory: %s", strerror(errno));
+        int checkErr = errno;
+        CMP_LOG_ERROR("Can't open shared memory: %s", strerror(checkErr));
         free(pShmemBuffer);
         return SHMEM_COMM_FAIL;
     }
@@ -299,15 +303,21 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     pShmemBuffer->unit_num    = (int *)(pSharedmem + sizeof(int) * 4);
     pShmemBuffer->mark        = (SHMEM_MARK_T *)(pSharedmem + sizeof(int) * 5);
 
+    errno = 0;
     if (nOpenMode == MODE_OPEN || (pShmemBuffer->sema_id = semget(shmemKey, 1, shmemMode)) == -1)
     {
 #ifdef SHMEM_COMM_DEBUG
         if (nOpenMode == MODE_CREATE)
-        CMP_LOG_ERROR("Failed to create semaphore : %s", strerror(errno));
+        {
+          int checkErr = errno;
+          CMP_LOG_ERROR("Failed to create semaphore : %s", strerror(checkErr));
+        }
 #endif
+        errno = 0;
         if ((pShmemBuffer->sema_id = semget((key_t) shmemKey, 1, 0666)) == -1)
         {
-            CMP_LOG_ERROR("Failed to get semaphore : %s", strerror(errno));
+            int checkErr = errno;
+            CMP_LOG_ERROR("Failed to get semaphore : %s", strerror(checkErr));
             free(pShmemBuffer);
             return SHMEM_COMM_FAIL;
         }
