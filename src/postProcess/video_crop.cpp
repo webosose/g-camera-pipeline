@@ -16,6 +16,7 @@
 
 // clang-format off
 #include <unistd.h>
+#include <limits.h>
 #include <string>
 #include <cstdio>
 #include <cmath>
@@ -199,7 +200,11 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
 
         break;
     case PAN_AND_TILT:
-        sl++;
+        if (sl < INT_MAX) {
+            sl++;
+        } else {
+            sl = 0;
+        }
         center_.x = tx + sx * sl / ptzMovingParam_.getPemTiltMovingParam();
         center_.y = ty + sy * sl / ptzMovingParam_.getPemTiltMovingParam();
         CMP_LOG_DEBUG("sl %d %d %d %d %d\n", sl, tx, ty, cx_old_, cy_old_);

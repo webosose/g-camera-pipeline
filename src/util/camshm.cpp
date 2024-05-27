@@ -234,6 +234,7 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     int shmemSize = 0;
     int shmemMode = 0666;
     struct shmid_ds shm_stat;
+    char errtxt[1024];
 
     *phShmem = (SHMEM_HANDLE) calloc(1, sizeof(SHMEM_COMM_T));
     pShmemBuffer = (SHMEM_COMM_T *) *phShmem;
@@ -281,7 +282,8 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     if (pShmemBuffer->shmem_id == -1)
     {
         int checkErr = errno;
-        CMP_LOG_ERROR("Can't open shared memory: %s", strerror(checkErr));
+        strerror_r(checkErr, errtxt, 1024);
+        CMP_LOG_ERROR("Can't open shared memory: %s", errtxt);
         free(pShmemBuffer);
         return SHMEM_COMM_FAIL;
     }
@@ -310,14 +312,16 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
         if (nOpenMode == MODE_CREATE)
         {
           int checkErr = errno;
-          CMP_LOG_ERROR("Failed to create semaphore : %s", strerror(checkErr));
+          strerror_r(checkErr, errtxt, 1024);
+          CMP_LOG_ERROR("Failed to create semaphore : %s", errtxt);
         }
 #endif
         errno = 0;
         if ((pShmemBuffer->sema_id = semget((key_t) shmemKey, 1, 0666)) == -1)
         {
             int checkErr = errno;
-            CMP_LOG_ERROR("Failed to get semaphore : %s", strerror(checkErr));
+            strerror_r(checkErr, errtxt, 1024);
+            CMP_LOG_ERROR("Failed to get semaphore : %s", errtxt);
             free(pShmemBuffer);
             return SHMEM_COMM_FAIL;
         }
