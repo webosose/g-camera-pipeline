@@ -938,10 +938,15 @@ bool ShmemoryPipeline::createSignalListener()
 void ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
 {
     const char *socket_path = socketPath.c_str();
+    errno = 0;
     if (-1 == unlink(socket_path))
     {
-        CMP_LOG_ERROR("File does not exist or unable to delete: %s", socket_path);
+        int checkErr = errno;
+        if (checkErr != ENOENT)
+        {
+            CMP_LOG_ERROR("Unable to delete: %s", socket_path);
+        }
         return;
     }
-    CMP_LOG_INFO("Deleted successfully: %s", socket_path);
+    CMP_LOG_WARNING("Deleted successfully: %s", socket_path);
 }
