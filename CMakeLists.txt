@@ -60,10 +60,10 @@ link_directories(${MEDIA_RESOURE_CALCULATOR_LIBRARIES})
 
 if(USE_EMULATOR)
     add_definitions(-DUSE_EMULATOR)
-else()
-    add_definitions(-DPTZ_ENABLED)
-    set(AUTO_PTZ ON CACHE BOOL "" FORCE)
 endif()
+
+add_definitions(-DPTZ_ENABLED)
+set(AUTO_PTZ ON CACHE BOOL "" FORCE)
 
 add_subdirectory(src)
 if(USE_CAMSRC)
