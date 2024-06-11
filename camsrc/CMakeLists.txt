@@ -62,8 +62,8 @@ include_directories(${CMAKE_SOURCE_DIR}/camsrc/)
 add_library(gstcamsrc SHARED
     gstcamsrc.c
     gstcamsrc.h
-    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera_hal_if_types.h
-    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera_hal_if.h
+    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera/hal/camera_hal_types_common.h
+    $ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera/hal/camera_hal_if.h
     )
 
 target_link_libraries(gstcamsrc

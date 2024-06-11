@@ -73,7 +73,7 @@
 
 #include <linux/videodev2.h>
 
-#include "camera_hal_if_types.h"
+#include "camera/hal/camera_hal_types_common.h"
 #include "gstcamsrc.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_camsrc_debug);
@@ -498,7 +498,12 @@ gst_camsrc_change_state (GstPushSrc * element, GstStateChange transition)
             {
                 if(camsrc->mode == GST_V4L2_IO_DMABUF_EXPORT)
                 {
-                    retval = camera_hal_if_destroy_dmafd(camsrc->p_h_camera);
+                    retval = camera_hal_if_stop_capture(camsrc->p_h_camera);
+                    if(retval != 0)
+                      break;
+                    retval = camera_hal_if_destroy_buffer(camsrc->p_h_camera);
+                    if(retval != 0)
+                      break;
                 }
                 break;
             }

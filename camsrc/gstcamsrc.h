@@ -48,7 +48,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
-#include "camera_hal_if.h"
+#include "camera/hal/camera_hal_if.h"
 
 G_BEGIN_DECLS
 
@@ -76,7 +76,7 @@ GType gst_camsrc_iomode_get_type(void);
 typedef struct _Gstcamsrc      Gstcamsrc;
 typedef struct _GstcamsrcClass GstcamsrcClass;
 static gboolean bStarted = 0;
-const char *subsystem = "libv4l2-camera-plugin.so.1";
+const char *subsystem = "/usr/lib/camera/libhal-v4l2.so.1.0";
 const char *devname = "/dev/video0";
 static stream_format_t streamformat;
 
