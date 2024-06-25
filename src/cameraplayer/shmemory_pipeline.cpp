@@ -828,24 +828,14 @@ base::error_t ShmemoryPipeline::HandleErrorMessage(GstMessage *message)
 
 void ShmemoryPipeline::show_frame()
 {
-    if (INT_MAX > frame_counter)
-    {
-        ++frame_counter;
-    }
-    else
-    {
-        frame_counter = 0;
-    }
+    const int frame_interval = 100;
 
-    auto currentTime = std::chrono::steady_clock::now();
-    auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
-                           currentTime - startTime)
-                           .count();
-
-    if (elapsedTime >= 1)
+    if (++frame_counter >= frame_interval)
     {
-        CMP_LOG_INFO("fps: %d", frame_counter);
-        startTime = currentTime;
+        auto toc = std::chrono::steady_clock::now();
+        auto us  = std::chrono::duration_cast<std::chrono::microseconds>(toc - startTime).count();
+        CMP_LOG_INFO("fps(%3.2f)", frame_interval * 1000000.0 / us);
+        startTime = toc;
         frame_counter = 0;
     }
 }

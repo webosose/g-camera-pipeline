@@ -111,7 +111,7 @@ bool SmoothSlidingController::isFaceInfoValidate(int8_t aCurFaceCount)
         fParam_.prevFaceCount_      = aCurFaceCount;
         fParam_.faceIdenticalCount_ = 0;
     } else {
-        CMP_LOG_INFO("sushant fParam_.faceIdenticalCount_ = %d(%d) faceDecisionThreshold_ = %d\n",
+        CMP_LOG_INFO("fParam_.faceIdenticalCount_ = %d(%d) faceDecisionThreshold_ = %d\n",
                    fParam_.faceIdenticalCount_, aCurFaceCount, fParam_.faceDecisionThreshold_);
         if (++fParam_.faceIdenticalCount_ == fParam_.faceDecisionThreshold_) {
             fParam_.faceIdenticalCount_ = 0;

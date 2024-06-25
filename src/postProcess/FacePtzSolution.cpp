@@ -34,7 +34,7 @@ bool FacePtzSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen)
 }
 bool FacePtzSolution::doPostProcess()
 {
-    CMP_LOG_INFO("doPostProcess");
+    CMP_LOG_DEBUG("doPostProcess");
     if (crop_ == nullptr) {
         CMP_LOG_INFO("crop_ is empty");
         return false;

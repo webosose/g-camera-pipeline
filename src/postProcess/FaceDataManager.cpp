@@ -240,7 +240,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
 
 void FaceDataManager::cropAndRemapFace(GstElement *crop)
 {
-    CMP_LOG_INFO("cropAndRemapFace");
+    CMP_LOG_DEBUG("cropAndRemapFace");
     static CropRect crop_rect_prev{0, 0, 0, 0};
     CropRect crop_rect{0, 0, 0, 0};
     FaceXY mergedFace{0, 0, 0, 0};
@@ -253,7 +253,10 @@ void FaceDataManager::cropAndRemapFace(GstElement *crop)
     bool crop_update = cropAroundFace(mergedFace, crop_rect);
 
     if (crop_update) {
-        CMP_LOG_INFO("[CROP] crop property set");
+        CMP_LOG_INFO("[CROP] top=%d, bottom=%d left=%d right=%d, %dx%d",
+                      crop_rect.top, crop_rect.bottom, crop_rect.left, crop_rect.right,
+                      width_ - (crop_rect.left + crop_rect.right),
+                      height_ - (crop_rect.top + crop_rect.bottom));
         g_object_set(crop, "top", crop_rect.top, "right", crop_rect.right,
                      "left", crop_rect.left, "bottom", crop_rect.bottom, NULL);
         crop_rect_prev = crop_rect;
