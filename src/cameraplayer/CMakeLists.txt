@@ -97,6 +97,7 @@ set(G-CAMERA-PIPELINE_SRC
     ../parser/serializer.cpp
     ../log/log.cpp
     ../cameraservice/camera_service.cpp
+    ../cameraservice/camera_pipeline_service.cpp
     ../resourcefacilitator/requestor.cpp
     ../util/camshm.cpp
     ../util/cam_posixshm.cpp

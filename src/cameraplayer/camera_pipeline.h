@@ -26,6 +26,8 @@ public:
         return true;
     }
     virtual bool StopRecord() { return true; }
+
+    int pid = -1;
 };
 
 #endif // CAMERA_PIPELINE_H_

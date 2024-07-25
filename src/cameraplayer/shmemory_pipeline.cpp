@@ -1,6 +1,5 @@
 #include "shmemory_pipeline.h"
 #include "cam_posixshm.h"
-#include "camera_service_client.h"
 #include "log.h"
 #include "message.h"
 #include "signal_listener.h"
@@ -206,12 +205,6 @@ bool ShmemoryPipeline::unloadImpl()
     {
         CMP_LOG_ERROR("detachSurface() failed");
         return false;
-    }
-
-    if (cs_client_)
-    {
-        cs_client_->stopCamera();
-        cs_client_->close();
     }
 
     CMP_LOG_INFO("end");
@@ -648,134 +641,54 @@ void ShmemoryPipeline::ParseOptionString(const std::string &options)
     }
     pbnjson::JValue parsed = jdparser.getDom();
 
-    if (parsed.hasKey("args") && parsed["args"].isArray())
+    if (parsed.hasKey("displayPath"))
     {
-        if (parsed["args"].arraySize() > 0)
-        {
-            uri_ = parsed["args"][0].asString();
-        }
-        int i = 1;
-        for (ssize_t j = 1; j < parsed["args"].arraySize(); j++)
-        {
-            if (parsed["args"][i].hasKey("option"))
-            {
-                if (parsed["args"][i]["option"].hasKey("displayPath"))
-                {
-                    int32_t display_path =
-                        parsed["args"][i]["option"]["displayPath"].asNumber<int32_t>();
-                    display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
-                }
-                if (parsed["args"][i]["option"].hasKey("windowId"))
-                {
-                    window_id_ = parsed["args"][i]["option"]["windowId"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("handle"))
-                {
-                    handle_ = parsed["args"][i]["option"]["handle"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("videoDisplayMode"))
-                {
-                    display_mode_ = parsed["args"][i]["option"]["videoDisplayMode"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("format"))
-                {
-                    format_ = parsed["args"][i]["option"]["format"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("width"))
-                {
-                    width_ = parsed["args"][i]["option"]["width"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("height"))
-                {
-                    height_ = parsed["args"][i]["option"]["height"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("frameRate"))
-                {
-                    framerate_ = parsed["args"][i]["option"]["frameRate"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("memType"))
-                {
-                    memtype_ = parsed["args"][i]["option"]["memType"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("memSrc"))
-                {
-                    memsrc_ = parsed["args"][i]["option"]["memSrc"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("cameraId"))
-                {
-                    camera_id_ = parsed["args"][i]["option"]["cameraId"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("primary"))
-                {
-                    primary = parsed["args"][i]["option"]["primary"].asBool();
-                }
-                break;
-            }
-            i++;
-        }
+        int32_t display_path = parsed["displayPath"].asNumber<int32_t>();
+        display_path_        = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
     }
-    else
+    if (parsed.hasKey("windowId"))
     {
-        if (parsed.hasKey("uri"))
-        {
-            uri_ = parsed["uri"].asString();
-        }
-        else
-        {
-            CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
-            CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
-            CMPASSERT(0);
-        }
-
-        if (parsed["options"]["option"].hasKey("displayPath"))
-        {
-            int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-            display_path_        = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
-        }
-        if (parsed["options"]["option"].hasKey("windowId"))
-        {
-            window_id_ = parsed["options"]["option"]["windowId"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("handle"))
-        {
-            handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("videoDisplayMode"))
-        {
-            display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("format"))
-        {
-            format_ = parsed["options"]["option"]["format"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("width"))
-        {
-            width_ = parsed["options"]["option"]["width"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("height"))
-        {
-            height_ = parsed["options"]["option"]["height"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("frameRate"))
-        {
-            framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("memType"))
-        {
-            memtype_ = parsed["options"]["option"]["memType"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("memSrc"))
-        {
-            memsrc_ = parsed["options"]["option"]["memSrc"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("cameraId"))
-        {
-            camera_id_ = parsed["options"]["option"]["cameraId"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("primary"))
-        {
-            primary = parsed["options"]["option"]["primary"].asBool();
-        }
+        window_id_ = parsed["windowId"].asString();
+    }
+    if (parsed.hasKey("handle"))
+    {
+        handle_ = parsed["handle"].asNumber<int>();
+    }
+    if (parsed.hasKey("videoDisplayMode"))
+    {
+        display_mode_ = parsed["videoDisplayMode"].asString();
+    }
+    if (parsed.hasKey("format"))
+    {
+        format_ = parsed["format"].asString();
+    }
+    if (parsed.hasKey("width"))
+    {
+        width_ = parsed["width"].asNumber<int>();
+    }
+    if (parsed.hasKey("height"))
+    {
+        height_ = parsed["height"].asNumber<int>();
+    }
+    if (parsed.hasKey("frameRate"))
+    {
+        framerate_ = parsed["frameRate"].asNumber<int>();
+    }
+    if (parsed.hasKey("memType"))
+    {
+        memtype_ = parsed["memType"].asString();
+    }
+    if (parsed.hasKey("memSrc"))
+    {
+        memsrc_ = parsed["memSrc"].asString();
+    }
+    if (parsed.hasKey("cameraId"))
+    {
+        camera_id_ = parsed["cameraId"].asString();
+    }
+    if (parsed.hasKey("primary"))
+    {
+        primary = parsed["primary"].asBool();
     }
 
     CMP_LOG_INFO("uri: %s, display-path: %d, window_id: %s, display_mode: %s", uri_.c_str(),
@@ -961,8 +874,6 @@ int ShmemoryPipeline::readShmemory(SHMEM_HANDLE hShmem, unsigned char **ppData, 
 
 bool ShmemoryPipeline::createSignalListener()
 {
-    int pid       = -1;
-    cs_client_    = std::make_unique<CameraServiceClient>();
     shm_listener_ = std::make_unique<SignalListener>();
 
     if (shm_listener_)
@@ -972,17 +883,6 @@ bool ShmemoryPipeline::createSignalListener()
         pid = shm_listener_->run();
     }
     CMP_LOG_INFO("pid : %d", pid);
-    if (cs_client_->open(camera_id_, pid))
-    {
-        int key = cs_client_->startCamera(memtype_);
-        if (key == atoi(memsrc_.c_str()))
-        {
-            if (memtype_ == kMemtypePosixShm)
-            {
-                posixshm_fd = cs_client_->getFd();
-            }
-        }
-    }
 
     return true;
 }

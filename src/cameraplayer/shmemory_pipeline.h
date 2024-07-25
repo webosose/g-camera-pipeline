@@ -21,7 +21,6 @@ class IPostProcessSolution;
 #endif
 
 class SignalListener;
-class CameraServiceClient;
 class ShmemoryPipeline : public CameraPipeline
 {
     typedef struct GstAppSrcContext_
@@ -66,7 +65,6 @@ class ShmemoryPipeline : public CameraPipeline
 #endif
 
     std::unique_ptr<SignalListener> shm_listener_;
-    std::unique_ptr<CameraServiceClient> cs_client_;
 
     bool Pause();
     bool attachSurface(bool allow_no_window = false);

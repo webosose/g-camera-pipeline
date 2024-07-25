@@ -13,6 +13,10 @@
             "outbound": ["com.webos.media", "com.webos.service.camera2"]
         },
         {
+            "service":"com.webos.pipeline.*",
+            "outbound": []
+        },
+        {
             "service":"com.webos.rm.client*",
             "outbound": ["com.webos.media"]
         },

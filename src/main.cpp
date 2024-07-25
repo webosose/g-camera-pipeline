@@ -15,6 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <cameraplayer/camera_player.h>
+#include <cameraservice/camera_pipeline_service.h>
 #include <cameraservice/camera_service.h>
 #include <log/log.h>
 #include <string.h>
@@ -29,8 +30,9 @@ int main(int argc, char *argv[])
         '\0',
     };
     bool service_name_specified = false;
+    bool unmanaged              = false;
 
-    while ((c = getopt(argc, argv, "c:s:r:d:v:a:")) != -1)
+    while ((c = getopt(argc, argv, "c:s:r:d:v:a:u")) != -1)
     {
         switch (c)
         {
@@ -52,6 +54,9 @@ int main(int argc, char *argv[])
         case 'a':
             // appId = optarg;
             break;
+        case 'u':
+            unmanaged = true;
+            break;
         case '?':
             CMP_LOG_INFO("unknown service name");
             break;
@@ -64,11 +69,20 @@ int main(int argc, char *argv[])
     if (!service_name_specified)
         return 1;
 
-    cmp::service::Service *service = cmp::service::Service::GetInstance(service_name);
+    if (unmanaged)
+    {
+        // CMP_LOG_INFO("start");
+        cmp::service::CameraPipelineService CameraPipelineServiceInstance(service_name);
+        // CMP_LOG_INFO("end");
+    }
+    else
+    {
+        cmp::service::Service *service = cmp::service::Service::GetInstance(service_name);
 
-    service->Wait();
+        service->Wait();
 
-    delete service;
+        delete service;
+    }
 
     return 0;
 }
