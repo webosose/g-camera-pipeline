@@ -41,7 +41,13 @@ int SignalListener::run()
 {
     on_monitor_    = true;
     listen_thread_ = std::thread{[this]() { this->listen(); }};
-    usleep(100); // wait for the thread to catch pid
+
+    CMP_LOG_INFO("wait for the thread to catch pid");
+    std::chrono::seconds timeout(option_.timeout.tv_sec);
+    std::unique_lock<std::mutex> lock(mutex_);
+    cond_.wait_for(lock, timeout, [this]() { return pid_ != -1; });
+
+    CMP_LOG_INFO("pid_=%d", pid_);
     return pid_;
 }
 
@@ -71,7 +77,12 @@ void SignalListener::wait()
 
 void SignalListener::listen()
 {
-    pid_ = syscall(__NR_gettid);
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        pid_ = syscall(__NR_gettid);
+        cond_.notify_one();
+    }
+
     while (on_monitor_)
     {
         if (-1 != sigtimedwait(&option_.set, NULL, &option_.timeout))
