@@ -33,8 +33,8 @@ CameraPipelineService::CameraPipelineService(const char *service_name)
     CMP_LOG_INFO("Start : %s", service_name);
 
     LS_CATEGORY_BEGIN(CameraPipelineService, "/")
-    LS_CATEGORY_METHOD(load)
-    LS_CATEGORY_METHOD(unload)
+    LS_CATEGORY_METHOD(start)
+    LS_CATEGORY_METHOD(stop)
     LS_CATEGORY_END;
 
     // attach to mainloop and run it
@@ -136,7 +136,7 @@ void CameraPipelineService::Notify(const gint notification, const gint32 numValu
     }
 }
 
-bool CameraPipelineService::load(LSMessage &message)
+bool CameraPipelineService::start(LSMessage &message)
 {
     jvalue_ref json_outobj = jobject_create();
     auto *payload          = LSMessageGetPayload(&message);
@@ -183,7 +183,7 @@ bool CameraPipelineService::load(LSMessage &message)
     return true;
 }
 
-bool CameraPipelineService::unload(LSMessage &message)
+bool CameraPipelineService::stop(LSMessage &message)
 {
     bool ret               = false;
     jvalue_ref json_outobj = jobject_create();

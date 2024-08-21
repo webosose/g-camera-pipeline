@@ -65,9 +65,8 @@ public:
     CameraPipelineService &operator=(CameraPipelineService const &) = delete;
     CameraPipelineService &operator=(CameraPipelineService &&)      = delete;
 
-    bool load(LSMessage &message);
-    bool play(LSMessage &message);
-    bool unload(LSMessage &message);
+    bool start(LSMessage &message);
+    bool stop(LSMessage &message);
 
 private:
     void LoadCommon();
