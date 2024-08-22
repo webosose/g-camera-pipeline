@@ -47,6 +47,7 @@ bool ShmemoryJpegPipeline::launch()
             CMP_LOG_INFO("add shmsink %s", socketPath.c_str());
             pipeline_desc += " t. ! queue ! shmsink sync=false socket-path=" + socketPath +
                              " wait-for-connection=false shm_size=10000000";
+            pipeline_desc += " perms=0660";
         }
     }
 
