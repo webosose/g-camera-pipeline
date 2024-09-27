@@ -14,43 +14,46 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
 #ifndef SRC_MediaEncoderClient_MediaEncoderClient_H_
 #define SRC_MediaEncoderClient_MediaEncoderClient_H_
 
-#include <glib.h>
-#include <string>
-#include <memory>
 #include <functional>
+#include <glib.h>
+#include <memory>
+#include <string>
 
-#include "message.h"
 #include "base.h"
+#include "message.h"
 
-namespace cmp {
+namespace cmp
+{
 
-namespace player {
+namespace player
+{
 
-typedef std::function<bool(uint8_t*, ENCODED_BUFFER_T*)> FunctorEncoder;
+typedef std::function<bool(uint8_t *, ENCODED_BUFFER_T *)> FunctorEncoder;
 
 class BufferEncoder;
 
-class MediaEncoderClient {
-  public:
+class MediaEncoderClient
+{
+public:
     MediaEncoderClient();
     ~MediaEncoderClient();
 
     static bool IsCodecSupported(CMP_VIDEO_CODEC videoCodec);
-    bool Init(const ENCODER_INIT_DATA_T* loadData);
+    bool Init(const ENCODER_INIT_DATA_T *loadData);
     bool Deinit();
-    int Encode(const uint8_t* bufferPtr, size_t bufferSize);
-    int Encode(const uint8_t* yPlane, const uint8_t* uPlane,
-               const uint8_t* vPlane, guint32 bufferSize);
+    int Encode(const uint8_t *bufferPtr, size_t bufferSize);
+    int Encode(const uint8_t *yPlane, const uint8_t *uPlane, const uint8_t *vPlane,
+               guint32 bufferSize);
     void RegisterCallback(ENCODER_CALLBACK_T callback, void *uData);
-    bool UpdateEncodingParams(const ENCODING_PARAMS_T* properties);
+    bool UpdateEncodingParams(const ENCODING_PARAMS_T *properties);
 
-  private:
-    bool OnEncodedDataAvailable(uint8_t* buffer, ENCODED_BUFFER_T* encData);
-    void Notify(const gint notification, const gint64 numValue, const gchar *strValue, void *payload);
+private:
+    bool OnEncodedDataAvailable(uint8_t *buffer, ENCODED_BUFFER_T *encData);
+    void Notify(const gint notification, const gint64 numValue, const gchar *strValue,
+                void *payload);
 
     std::string appId_;
     std::string media_id_;
@@ -60,11 +63,10 @@ class MediaEncoderClient {
 
     std::shared_ptr<cmp::player::BufferEncoder> bufferEncoder;
     GMainContext *playerContext_ = nullptr;
-    void *userData_ = nullptr;
-
+    void *userData_              = nullptr;
 };
 
-}  // namespace player
-}  // namespace cmp
+} // namespace player
+} // namespace cmp
 
-#endif  // _MediaEncoderClient_H_
+#endif // _MediaEncoderClient_H_

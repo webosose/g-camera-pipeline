@@ -36,31 +36,33 @@
 namespace cmp
 {
 
-static uint16_t
-convertToFaceInfo(uint8_t *meta, int32_t metaLen, uint16_t *facexy,
-                  int32_t confidenceThreshold = DEFAULT_CONFIDENCE_THRESHOLD)
+static uint16_t convertToFaceInfo(uint8_t *meta, int32_t metaLen, uint16_t *facexy,
+                                  int32_t confidenceThreshold = DEFAULT_CONFIDENCE_THRESHOLD)
 {
     pbnjson::JDomParser parser;
 
     uint16_t nrFace = 0;
-    if (parser.parse((char *)meta)) {
+    if (parser.parse((char *)meta))
+    {
         pbnjson::JValue faces = parser.getDom();
-        if (faces.hasKey("faces")) {
+        if (faces.hasKey("faces"))
+        {
             pbnjson::JValue face = faces["faces"];
-            uint16_t nrF = std::min<uint16_t>(static_cast<uint16_t>(face.arraySize()), NR_MAX_FACE_DETECT);
+            uint16_t nrF =
+                std::min<uint16_t>(static_cast<uint16_t>(face.arraySize()), NR_MAX_FACE_DETECT);
 
-            for (uint16_t f = 0; f < nrF; f++) {
-                if (!face[f].hasKey("confidence") || !face[f].hasKey("x") ||
-                    !face[f].hasKey("y") || !face[f].hasKey("w") ||
-                    !face[f].hasKey("h"))
+            for (uint16_t f = 0; f < nrF; f++)
+            {
+                if (!face[f].hasKey("confidence") || !face[f].hasKey("x") || !face[f].hasKey("y") ||
+                    !face[f].hasKey("w") || !face[f].hasKey("h"))
                     continue;
 
-                uint16_t confidence = static_cast<uint16_t>(
-                    face[f]["confidence"].asNumber<int>());
+                uint16_t confidence = static_cast<uint16_t>(face[f]["confidence"].asNumber<int>());
 
-                if (confidence < confidenceThreshold) {
-                    CMP_LOG_INFO("Low confidence , threshold : %d, cur = %d",
-                               confidenceThreshold, confidence);
+                if (confidence < confidenceThreshold)
+                {
+                    CMP_LOG_INFO("Low confidence , threshold : %d, cur = %d", confidenceThreshold,
+                                 confidence);
                     continue;
                 }
 
@@ -89,7 +91,8 @@ convertToFaceInfo(uint8_t *meta, int32_t metaLen, uint16_t *facexy,
 
 static uint16_t mergeFaceRect(uint16_t *data_face, uint16_t faceCount)
 {
-    if (faceCount < 2) {
+    if (faceCount < 2)
+    {
         return faceCount;
     }
     uint16_t confidence = 0;
@@ -100,7 +103,8 @@ static uint16_t mergeFaceRect(uint16_t *data_face, uint16_t faceCount)
 
     faceCount = std::min<uint16_t>(faceCount, NR_MAX_FACE_DETECT);
 
-    for (int32_t f = 0; f < faceCount; f++) {
+    for (int32_t f = 0; f < faceCount; f++)
+    {
         confidence += data_face[f * NR_FACE_INFO_PARAM + 0];
         uint16_t l = data_face[f * NR_FACE_INFO_PARAM + 1];
         uint16_t r = l + data_face[f * NR_FACE_INFO_PARAM + 3];
@@ -121,18 +125,22 @@ static uint16_t mergeFaceRect(uint16_t *data_face, uint16_t faceCount)
     return !!faceCount;
 }
 
-int8_t FaceDataManager::findWiderFaceIndex(std::vector<FaceData>& faceList) {
-    int8_t   i = 0, widerIndex = -1;
+int8_t FaceDataManager::findWiderFaceIndex(std::vector<FaceData> &faceList)
+{
+    int8_t i = 0, widerIndex = -1;
     uint32_t widerFace = 0;
-    uint32_t faceArea = 0;
-    for(auto &face : faceList) {
+    uint32_t faceArea  = 0;
+    for (auto &face : faceList)
+    {
         faceArea = face.w * face.h;
-        if(faceArea > widerFace) {
+        if (faceArea > widerFace)
+        {
             widerIndex = i;
-            widerFace = faceArea;
+            widerFace  = faceArea;
         }
         i++;
-        if (CHAR_MAX == i) break;
+        if (CHAR_MAX == i)
+            break;
     }
     return widerIndex;
 }
@@ -162,13 +170,14 @@ void FaceDataManager::setHeight(uint32_t aHeight)
 
 void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
 {
-    //CMP_LOG_INFO("(%s)", aMeta);
+    // CMP_LOG_INFO("(%s)", aMeta);
     uint16_t nrFace                                          = 0;
     uint16_t facexy[NR_FACE_INFO_PARAM * NR_MAX_FACE_DETECT] = {
         0,
     };
 
-    if (aMeta) {
+    if (aMeta)
+    {
         nrFace = convertToFaceInfo(aMeta, aMetaLen, facexy);
 #if (DEFAULT_DEBUG_FACE)
         facexy[0] = 100;
@@ -180,13 +189,13 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
 #endif
         setFaceInfo(facexy, static_cast<uint8_t>(NR_MAX_FACE_DETECT >= nrFace ? nrFace : 0));
 
-        //Find wider face and apply PTZ on wider face alone
+        // Find wider face and apply PTZ on wider face alone
         if ((access(FOCUS_WIDER_FACE_CHECK_FILE, F_OK) == 0) && (nrFace > 1))
-				{
+        {
             uint16_t widerface[NR_FACE_INFO_PARAM * 1] = {
                 0,
             };
-            int8_t i = 0;
+            int8_t i  = 0;
             int index = findWiderFaceIndex(faceList_);
 
             for (auto &faceInfo : faceList_)
@@ -194,7 +203,7 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
                 CMP_LOG_DEBUG("Face %d [x : %d, y : %d, w : %d, h : %d]", i, faceInfo.x, faceInfo.y,
                               faceInfo.w, faceInfo.h);
 
-                if(index == i)
+                if (index == i)
                 {
                     widerface[0] = 100;
                     widerface[1] = faceInfo.x;
@@ -218,15 +227,15 @@ void FaceDataManager::updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen)
         for (auto &faceInfo : faceList_)
         {
             CMP_LOG_DEBUG("Wider Face [x : %d, y : %d, w : %d, h : %d]", faceInfo.x, faceInfo.y,
-                           faceInfo.w, faceInfo.h);
-
+                          faceInfo.w, faceInfo.h);
         }
         nrFace = mergeFaceRect(facexy, nrFace);
     }
     if (ssCtrl_->needFaceUpdate(static_cast<int8_t>(faceList_.size())) == false)
         return;
 
-    if (nrFace == 0) {
+    if (nrFace == 0)
+    {
         facexy[0] = 100;
         facexy[1] = 0;
         facexy[3] = static_cast<uint16_t>(width_);
@@ -252,18 +261,20 @@ void FaceDataManager::cropAndRemapFace(GstElement *crop)
 
     bool crop_update = cropAroundFace(mergedFace, crop_rect);
 
-    if (crop_update) {
-        CMP_LOG_INFO("[CROP] top=%d, bottom=%d left=%d right=%d, %dx%d",
-                      crop_rect.top, crop_rect.bottom, crop_rect.left, crop_rect.right,
-                      width_ - (crop_rect.left + crop_rect.right),
-                      height_ - (crop_rect.top + crop_rect.bottom));
-        g_object_set(crop, "top", crop_rect.top, "right", crop_rect.right,
-                     "left", crop_rect.left, "bottom", crop_rect.bottom, NULL);
+    if (crop_update)
+    {
+        CMP_LOG_INFO("[CROP] top=%d, bottom=%d left=%d right=%d, %dx%d", crop_rect.top,
+                     crop_rect.bottom, crop_rect.left, crop_rect.right,
+                     width_ - (crop_rect.left + crop_rect.right),
+                     height_ - (crop_rect.top + crop_rect.bottom));
+        g_object_set(crop, "top", crop_rect.top, "right", crop_rect.right, "left", crop_rect.left,
+                     "bottom", crop_rect.bottom, NULL);
         crop_rect_prev = crop_rect;
     }
     remapFaceList_.clear();
 
-    for (auto &f : faceList_) {
+    for (auto &f : faceList_)
+    {
         FaceXY remapped_facexy;
         FaceXY fxy{0, 0, 0, 0};
         fxy.x = f.x;
@@ -273,9 +284,8 @@ void FaceDataManager::cropAndRemapFace(GstElement *crop)
 
         remapped_facexy = remapFaceCoordinates(crop_rect_prev, fxy);
         if (remapped_facexy.w > 0 && remapped_facexy.h > 0)
-            remapFaceList_.push_back({remapped_facexy.x, remapped_facexy.y,
-                                      remapped_facexy.w, remapped_facexy.h,
-                                      100});
+            remapFaceList_.push_back(
+                {remapped_facexy.x, remapped_facexy.y, remapped_facexy.w, remapped_facexy.h, 100});
     }
 }
 
@@ -292,13 +302,15 @@ CropRect FaceDataManager::getCropAndRemapFace(bool *isRectUpdated)
 
     *isRectUpdated = cropAroundFace(mergedFace, crop_rect);
 
-    if (*isRectUpdated) {
+    if (*isRectUpdated)
+    {
         CMP_LOG_DEBUG("[CROP] crop property set");
         crop_rect_prev = crop_rect;
     }
     remapFaceList_.clear();
 
-    for (auto &f : faceList_) {
+    for (auto &f : faceList_)
+    {
         FaceXY remapped_facexy;
         FaceXY fxy{0, 0, 0, 0};
         fxy.x = f.x;
@@ -308,35 +320,34 @@ CropRect FaceDataManager::getCropAndRemapFace(bool *isRectUpdated)
 
         remapped_facexy = remapFaceCoordinates(crop_rect_prev, fxy);
         if (remapped_facexy.w > 0 && remapped_facexy.h > 0)
-            remapFaceList_.push_back({remapped_facexy.x, remapped_facexy.y,
-                                      remapped_facexy.w, remapped_facexy.h,
-                                      100});
+            remapFaceList_.push_back(
+                {remapped_facexy.x, remapped_facexy.y, remapped_facexy.w, remapped_facexy.h, 100});
     }
     return crop_rect;
 }
 
-void FaceDataManager::drawBox(uint8_t *data, std::string cs, uint32_t aStride,
-                              uint32_t offsetUV)
+void FaceDataManager::drawBox(uint8_t *data, std::string cs, uint32_t aStride, uint32_t offsetUV)
 {
     if (bDrawBox_ == false)
         return;
 
-    std::vector<FaceData> &facelist =
-        (cs == "NV16") ? faceList_ : remapFaceList_;
+    std::vector<FaceData> &facelist = (cs == "NV16") ? faceList_ : remapFaceList_;
 
-    for (auto &faceInfo : facelist) {
+    for (auto &faceInfo : facelist)
+    {
         FaceXY face;
         face.x = faceInfo.x;
         face.y = faceInfo.y;
         face.w = faceInfo.w;
         face.h = faceInfo.h;
 
-        if (cs == "NV12") {
-            drawBoxInNV12Format(data, aStride, height_, face, offsetUV,
-                                DRAW_BOX_GREEN);
-        } else if (cs == "NV16") {
-            drawBoxInNV16Format(data, aStride, height_, face, offsetUV,
-                                DRAW_BOX_RED);
+        if (cs == "NV12")
+        {
+            drawBoxInNV12Format(data, aStride, height_, face, offsetUV, DRAW_BOX_GREEN);
+        }
+        else if (cs == "NV16")
+        {
+            drawBoxInNV16Format(data, aStride, height_, face, offsetUV, DRAW_BOX_RED);
         }
     }
 }
@@ -344,8 +355,7 @@ void FaceDataManager::drawBox(uint8_t *data, std::string cs, uint32_t aStride,
 bool FaceDataManager::cropAroundFace(const FaceXY face, CropRect &crop_rect)
 {
     CMP_LOG_DEBUG("[CROP] crop process");
-    CMP_LOG_DEBUG("[FaceInfo] face x : %d, y : %d, w : %d, h : %d", face.x,
-                face.y, face.w, face.h);
+    CMP_LOG_DEBUG("[FaceInfo] face x : %d, y : %d, w : %d, h : %d", face.x, face.y, face.w, face.h);
 
     // find center coordinate to initite crop processing
     uint32_t cx = face.x + face.w / 2;
@@ -354,24 +364,20 @@ bool FaceDataManager::cropAroundFace(const FaceXY face, CropRect &crop_rect)
     bool crop_update = mVideoCrop.process(crop_rect, cx, cy, face.w, face.h);
 
     CMP_LOG_DEBUG("[FaceInfo] crop update : %d, crop value is crop_rect.top %d, "
-                "crop_rect.right %d,"
-                " crop_rect.left %d, crop_rect.bottom %d",
-                crop_update, crop_rect.top, crop_rect.right, crop_rect.left,
-                crop_rect.bottom);
+                  "crop_rect.right %d,"
+                  " crop_rect.left %d, crop_rect.bottom %d",
+                  crop_update, crop_rect.top, crop_rect.right, crop_rect.left, crop_rect.bottom);
     return crop_update;
 }
 
-FaceXY FaceDataManager::remapFaceCoordinates(const CropRect crop_rect,
-                                             FaceXY face)
+FaceXY FaceDataManager::remapFaceCoordinates(const CropRect crop_rect, FaceXY face)
 {
     FaceXY remapped_face{0, 0, 0, 0};
     if (face.w == 0 || face.h == 0)
         return remapped_face;
 
-    float widthRatio =
-        width_ / (float)(width_ - (crop_rect.left + crop_rect.right));
-    float heightRatio =
-        height_ / (float)(height_ - (crop_rect.top + crop_rect.bottom));
+    float widthRatio  = width_ / (float)(width_ - (crop_rect.left + crop_rect.right));
+    float heightRatio = height_ / (float)(height_ - (crop_rect.top + crop_rect.bottom));
 
     remapped_face.x = (face.x - crop_rect.left) * widthRatio;
     remapped_face.w = face.w * widthRatio;
@@ -390,7 +396,8 @@ void FaceDataManager::setFaceInfo(uint16_t *aFaceXY, const uint8_t aFaceCount)
     if (aFaceXY == nullptr)
         return;
 
-    for (uint8_t i = 0; i < aFaceCount; i++) {
+    for (uint8_t i = 0; i < aFaceCount; i++)
+    {
         FaceData faceData;
         faceData.reserved   = 0;
         faceData.confidence = aFaceXY[i * 5 + 0];
@@ -402,8 +409,7 @@ void FaceDataManager::setFaceInfo(uint16_t *aFaceXY, const uint8_t aFaceCount)
     }
 }
 
-void FaceDataManager::setMergedFaceInfo(uint16_t *aFaceXY,
-                                        const uint8_t aFaceCount)
+void FaceDataManager::setMergedFaceInfo(uint16_t *aFaceXY, const uint8_t aFaceCount)
 {
     if (aFaceXY == nullptr)
         return;
@@ -418,4 +424,4 @@ void FaceDataManager::setMergedFaceInfo(uint16_t *aFaceXY,
     meregedFace_.w          = aFaceXY[3];
     meregedFace_.h          = aFaceXY[4];
 }
-}
+} // namespace cmp

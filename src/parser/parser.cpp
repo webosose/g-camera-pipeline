@@ -14,19 +14,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "parser.h"
 
-namespace cmp { namespace parser {
+namespace cmp
+{
+namespace parser
+{
 
-Parser::Parser(const char * message) {
-  pbnjson::JDomParser parser;
-  if (!parser.parse(message)) {
-    throw parser_error("JSON parsing failure");
-  }
-  _dom = parser.getDom();
+Parser::Parser(const char *message)
+{
+    pbnjson::JDomParser parser;
+    if (!parser.parse(message))
+    {
+        throw parser_error("JSON parsing failure");
+    }
+    _dom = parser.getDom();
 }
 
-}  // namespace parser
-}  // namespace cmp
-
+} // namespace parser
+} // namespace cmp

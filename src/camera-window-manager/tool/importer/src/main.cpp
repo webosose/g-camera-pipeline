@@ -15,23 +15,24 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#include <iostream>
-#include <cstring>
-#include <unistd.h>
-#include <assert.h>
-#include <camera_window_manager.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglplatform.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <assert.h>
+#include <camera_window_manager.h>
+#include <cstring>
+#include <iostream>
+#include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-#include <glib.h>
 #include <glib-unix.h>
+#include <glib.h>
 
-extern "C" {
+extern "C"
+{
 #include <gst/gst.h>
 }
 #include <gst/video/videooverlay.h>
@@ -39,40 +40,43 @@ extern "C" {
 #define VERTEX_ARRAY (0)
 
 static guint signal_watch_intr_id;
-static constexpr char const *waylandDisplayHandleContextType =
-    "GstWaylandDisplayHandleContextType";
+static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
 
 namespace Importer
 {
-  typedef struct {
-      EGLDisplay eglDisplay;
-      EGLContext eglContext;
-      EGLConfig *eglConfig;
-      int configSelect;
-      EGLConfig currentEglConfig;
-  } EGLData;
+typedef struct
+{
+    EGLDisplay eglDisplay;
+    EGLContext eglContext;
+    EGLConfig *eglConfig;
+    int configSelect;
+    EGLConfig currentEglConfig;
+} EGLData;
 
-  typedef struct {
-      GLuint vbo;
-      GLuint fragShader;
-      GLuint vertShader;
-      GLuint programObject;
-      GLuint texture;
-      unsigned int vertexStride;
-  } GLData;
+typedef struct
+{
+    GLuint vbo;
+    GLuint fragShader;
+    GLuint vertShader;
+    GLuint programObject;
+    GLuint texture;
+    unsigned int vertexStride;
+} GLData;
 
-  typedef struct {
-      struct wl_egl_window *native;
-      struct wl_surface *wlSurface;
-      EGLSurface eglSurface;
-      unsigned int width;
-      unsigned int height;
-  } WaylandEGLSurface;
-}
+typedef struct
+{
+    struct wl_egl_window *native;
+    struct wl_surface *wlSurface;
+    EGLSurface eglSurface;
+    unsigned int width;
+    unsigned int height;
+} WaylandEGLSurface;
+} // namespace Importer
 
 using namespace Importer;
 
-bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData)
+bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface,
+                      GLData *glData)
 {
     int configs;
 
@@ -93,12 +97,13 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     {
         const int NUM_ATTRIBS = 21;
         EGLint *attr          = (EGLint *)malloc(NUM_ATTRIBS * sizeof(EGLint));
-        if (attr == NULL) {
+        if (attr == NULL)
+        {
             std::cout << "attr is null" << std::endl;
             return false;
         }
 
-        int i     = 0;
+        int i = 0;
 
         attr[i++] = EGL_RED_SIZE;
         attr[i++] = want_red;
@@ -117,7 +122,7 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
         attr[i++] = EGL_RENDERABLE_TYPE;
         attr[i++] = EGL_OPENGL_ES2_BIT;
 
-        //multi sample
+        // multi sample
         attr[i++] = EGL_SAMPLE_BUFFERS;
         attr[i++] = 1;
         attr[i++] = EGL_SAMPLES;
@@ -127,7 +132,9 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
 
         assert(i <= NUM_ATTRIBS);
 
-        if (!eglChooseConfig(eglData->eglDisplay, attr, eglData->eglConfig, configs, &configs) || (configs == 0)) {
+        if (!eglChooseConfig(eglData->eglDisplay, attr, eglData->eglConfig, configs, &configs) ||
+            (configs == 0))
+        {
             std::cout << "('w')/ eglChooseConfig() failed." << std::endl;
             free(attr);
             return false;
@@ -136,40 +143,51 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
         free(attr);
     }
 
-    for (eglData->configSelect = 0; eglData->configSelect < configs; eglData->configSelect++) {
+    for (eglData->configSelect = 0; eglData->configSelect < configs; eglData->configSelect++)
+    {
         EGLint red_size, green_size, blue_size, alpha_size, depth_size;
 
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_RED_SIZE, &red_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_GREEN_SIZE, &green_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_BLUE_SIZE, &blue_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_ALPHA_SIZE, &alpha_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_DEPTH_SIZE, &depth_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_RED_SIZE, &red_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_GREEN_SIZE, &green_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_BLUE_SIZE, &blue_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_ALPHA_SIZE, &alpha_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_DEPTH_SIZE, &depth_size);
 
-        if ((red_size == want_red) && (green_size == want_green) && (blue_size == want_blue) && (alpha_size == want_alpha)) {
+        if ((red_size == want_red) && (green_size == want_green) && (blue_size == want_blue) &&
+            (alpha_size == want_alpha))
+        {
             break;
         }
     }
 
-    if (eglData->configSelect == configs) {
+    if (eglData->configSelect == configs)
+    {
         std::cout << "No suitable configs found." << std::endl;
         return false;
     }
 
     eglData->currentEglConfig = eglData->eglConfig[eglData->configSelect];
 
-    EGLint ctx_attrib_list[3] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE};
-    ctx_attrib_list[1] = 2; //Client Version.
+    EGLint ctx_attrib_list[3] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    ctx_attrib_list[1]        = 2; // Client Version.
 
-    eglData->eglContext = eglCreateContext(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_NO_CONTEXT, ctx_attrib_list);
+    eglData->eglContext =
+        eglCreateContext(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                         EGL_NO_CONTEXT, ctx_attrib_list);
 
     eglSwapInterval(eglData->eglDisplay, 1);
 
     surface->native     = wl_egl_window_create(surface->wlSurface, surface->width, surface->height);
-    surface->eglSurface = eglCreateWindowSurface(eglData->eglDisplay, eglData->currentEglConfig, (EGLNativeWindowType)surface->native, NULL);
+    surface->eglSurface = eglCreateWindowSurface(eglData->eglDisplay, eglData->currentEglConfig,
+                                                 (EGLNativeWindowType)surface->native, NULL);
 
-    eglMakeCurrent(eglData->eglDisplay, surface->eglSurface, surface->eglSurface, eglData->eglContext);
+    eglMakeCurrent(eglData->eglDisplay, surface->eglSurface, surface->eglSurface,
+                   eglData->eglContext);
 
     const char *pszFragShader = "\
         void main (void)\
@@ -190,7 +208,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glShaderSource(glData->fragShader, 1, (const char **)&pszFragShader, NULL);
     glCompileShader(glData->fragShader);
     glGetShaderiv(glData->fragShader, GL_COMPILE_STATUS, &bShaderCompiled);
-    if (!bShaderCompiled) {
+    if (!bShaderCompiled)
+    {
         std::cout << "Frag Shader error" << std::endl;
         return false;
     }
@@ -199,7 +218,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glShaderSource(glData->vertShader, 1, (const char **)&pszVertShader, NULL);
     glCompileShader(glData->vertShader);
     glGetShaderiv(glData->vertShader, GL_COMPILE_STATUS, &bShaderCompiled);
-    if (!bShaderCompiled) {
+    if (!bShaderCompiled)
+    {
         std::cout << "Vertex Shader error" << std::endl;
         return false;
     }
@@ -216,7 +236,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     GLint bLinked;
     glGetProgramiv(glData->programObject, GL_LINK_STATUS, &bLinked);
 
-    if (!bLinked) {
+    if (!bLinked)
+    {
         printf("('w')/ Program Link error\n");
         return 0;
     }
@@ -224,12 +245,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glUseProgram(glData->programObject);
 
     GLfloat afVertices[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f, 1.0f,  0.0f, -1.0f, 1.0f, 0.0f,
     };
 
     glGenBuffers(1, &glData->vbo);
@@ -242,7 +259,7 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
 
 bool rendering(GLData *glData, WaylandEGLSurface *surface)
 {
-    //Update
+    // Update
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -262,18 +279,21 @@ bool testPunchThrough(LSM::CameraWindowManager &CameraWindowManager)
     bool result = false;
 
     result = CameraWindowManager.attachPunchThrough();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.attachPunchThrough error" << std::endl;
         return false;
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
         std::cout << "Do something" << std::endl;
         sleep(1);
     }
 
     result = CameraWindowManager.detachPunchThrough();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.detachPunchThrough error" << std::endl;
         return false;
     }
@@ -294,19 +314,22 @@ bool testSurface(LSM::CameraWindowManager &CameraWindowManager)
     renderInitialize(CameraWindowManager.getDisplay(), &eglData, &surface, &glData);
 
     result = CameraWindowManager.attachSurface();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.attachSurface error" << std::endl;
         return false;
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
         rendering(&glData, &surface);
         std::cout << "Do rendering" << std::endl;
         sleep(1);
     }
 
     result = CameraWindowManager.detachSurface();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.detachSurface error" << std::endl;
         return false;
     }
@@ -316,121 +339,128 @@ bool testSurface(LSM::CameraWindowManager &CameraWindowManager)
 
 static gboolean intr_handler(gpointer user_data)
 {
-  GMainLoop *loop = static_cast<GMainLoop *>(user_data);
-  g_main_loop_quit(loop);
-  /* remove signal handler */
-  signal_watch_intr_id = 0;
-  return G_SOURCE_REMOVE;
+    GMainLoop *loop = static_cast<GMainLoop *>(user_data);
+    g_main_loop_quit(loop);
+    /* remove signal handler */
+    signal_watch_intr_id = 0;
+    return G_SOURCE_REMOVE;
 }
 
-gboolean handleBusCallback (GstBus * bus,
-                                             GstMessage * msg,
-                                             gpointer data)
+gboolean handleBusCallback(GstBus *bus, GstMessage *msg, gpointer data)
 {
-  GMainLoop *loop = static_cast<GMainLoop*>(data);
+    GMainLoop *loop = static_cast<GMainLoop *>(data);
 
-  switch (GST_MESSAGE_TYPE (msg)) {
-    case GST_MESSAGE_ERROR:{
-      GError *err = nullptr;
-      gchar *dbg_info = nullptr;
+    switch (GST_MESSAGE_TYPE(msg))
+    {
+    case GST_MESSAGE_ERROR:
+    {
+        GError *err     = nullptr;
+        gchar *dbg_info = nullptr;
 
-      gst_message_parse_error(msg, &err, &dbg_info);
-      std::cout << "ERROR from element " << GST_OBJECT_NAME(msg->src) << ", " << err->message << std::endl;
-      std::cout << "Debugging info: " << ((dbg_info) ? dbg_info : "none") << std::endl;
+        gst_message_parse_error(msg, &err, &dbg_info);
+        std::cout << "ERROR from element " << GST_OBJECT_NAME(msg->src) << ", " << err->message
+                  << std::endl;
+        std::cout << "Debugging info: " << ((dbg_info) ? dbg_info : "none") << std::endl;
 
-      g_free(dbg_info);
-      g_error_free(err);
-      g_main_loop_quit(loop);
-      break;
+        g_free(dbg_info);
+        g_error_free(err);
+        g_main_loop_quit(loop);
+        break;
     }
     case GST_MESSAGE_ASYNC_DONE:
-      std::cout << "load Completed" << std::endl;
-      break;
+        std::cout << "load Completed" << std::endl;
+        break;
     case GST_MESSAGE_EOS:
-      std::cout << "EOS" << std::endl;
-      g_main_loop_quit(loop);
-      break;
+        std::cout << "EOS" << std::endl;
+        g_main_loop_quit(loop);
+        break;
     default:
-      break;
-  }
+        break;
+    }
 
-  return TRUE;
+    return TRUE;
 }
 
-GstBusSyncReply handleSyncBusCallback(GstBus * bus,
-                                                       GstMessage * msg,
-                                                       gpointer data)
+GstBusSyncReply handleSyncBusCallback(GstBus *bus, GstMessage *msg, gpointer data)
 {
-  // This handler will be invoked synchronously, don't process any application
-  // message handling here
-  LSM::CameraWindowManager *CameraWindowManager = static_cast<LSM::CameraWindowManager*>(data);
+    // This handler will be invoked synchronously, don't process any application
+    // message handling here
+    LSM::CameraWindowManager *CameraWindowManager = static_cast<LSM::CameraWindowManager *>(data);
 
-  switch (GST_MESSAGE_TYPE (msg)) {
-    case GST_MESSAGE_NEED_CONTEXT:{
-      const gchar *type = nullptr;
-      gst_message_parse_context_type(msg, &type);
-      if (g_strcmp0 (type, waylandDisplayHandleContextType) != 0) {
-        break;
-      }
-	  std::cout << "Set a wayland display handle :" << CameraWindowManager->getDisplay() << std::endl;\
-      GstContext *context = gst_context_new(waylandDisplayHandleContextType, TRUE);
-      gst_structure_set(gst_context_writable_structure (context),
-          "handle", G_TYPE_POINTER, CameraWindowManager->getDisplay(), nullptr);
-      gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(msg)), context);
-      goto drop;
+    switch (GST_MESSAGE_TYPE(msg))
+    {
+    case GST_MESSAGE_NEED_CONTEXT:
+    {
+        const gchar *type = nullptr;
+        gst_message_parse_context_type(msg, &type);
+        if (g_strcmp0(type, waylandDisplayHandleContextType) != 0)
+        {
+            break;
+        }
+        std::cout << "Set a wayland display handle :" << CameraWindowManager->getDisplay()
+                  << std::endl;
+        GstContext *context = gst_context_new(waylandDisplayHandleContextType, TRUE);
+        gst_structure_set(gst_context_writable_structure(context), "handle", G_TYPE_POINTER,
+                          CameraWindowManager->getDisplay(), nullptr);
+        gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(msg)), context);
+        goto drop;
     }
-    case GST_MESSAGE_ELEMENT:{
-      if (!gst_is_video_overlay_prepare_window_handle_message(msg)) {
-	  	break;
-      }
-	  std::cout << "Set a wayland window handle :" << CameraWindowManager->getSurface() << std::endl;
-      gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY (msg->src),
-          (guintptr)(CameraWindowManager->getSurface()));
-      goto drop;
+    case GST_MESSAGE_ELEMENT:
+    {
+        if (!gst_is_video_overlay_prepare_window_handle_message(msg))
+        {
+            break;
+        }
+        std::cout << "Set a wayland window handle :" << CameraWindowManager->getSurface()
+                  << std::endl;
+        gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(msg->src),
+                                            (guintptr)(CameraWindowManager->getSurface()));
+        goto drop;
     }
     default:
-      break;
-  }
+        break;
+    }
 
-  return GST_BUS_PASS;
+    return GST_BUS_PASS;
 
 drop:
-  gst_message_unref(msg);
-  return GST_BUS_DROP;
+    gst_message_unref(msg);
+    return GST_BUS_DROP;
 }
 
-static void pad_added_handler (GstElement *src, GstPad *new_pad, GstElement *sink)
+static void pad_added_handler(GstElement *src, GstPad *new_pad, GstElement *sink)
 {
-    GstPad *sink_pad = gst_element_get_static_pad (sink, "sink"); // video(h264parse) parser
+    GstPad *sink_pad = gst_element_get_static_pad(sink, "sink"); // video(h264parse) parser
 
     GstPadLinkReturn ret;
-    GstCaps *new_pad_caps = NULL;
+    GstCaps *new_pad_caps        = NULL;
     GstStructure *new_pad_struct = NULL;
-    const gchar *new_pad_type = NULL;
-    std::cout << "Received new pad '" << GST_PAD_NAME (new_pad)
-              << "' from '" << GST_ELEMENT_NAME (src) << "'" << std::endl;
+    const gchar *new_pad_type    = NULL;
+    std::cout << "Received new pad '" << GST_PAD_NAME(new_pad) << "' from '"
+              << GST_ELEMENT_NAME(src) << "'" << std::endl;
 
-    new_pad_caps = gst_pad_get_current_caps (new_pad);
-    new_pad_struct = gst_caps_get_structure (new_pad_caps, 0);
-    new_pad_type = gst_structure_get_name (new_pad_struct);
+    new_pad_caps   = gst_pad_get_current_caps(new_pad);
+    new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
+    new_pad_type   = gst_structure_get_name(new_pad_struct);
 
-    if (g_str_has_prefix (new_pad_type, "video/x-h264")) {
-      ret = gst_pad_link (new_pad, sink_pad);
-      if (GST_PAD_LINK_FAILED (ret))
-       std::cout << "pad link failed!" << std::endl;
-      else
-        std::cout << "pad link succeeded!" << std::endl;
+    if (g_str_has_prefix(new_pad_type, "video/x-h264"))
+    {
+        ret = gst_pad_link(new_pad, sink_pad);
+        if (GST_PAD_LINK_FAILED(ret))
+            std::cout << "pad link failed!" << std::endl;
+        else
+            std::cout << "pad link succeeded!" << std::endl;
     }
     else
-      std::cout << "type : '" << new_pad_type << "', is ignored" << std::endl;
+        std::cout << "type : '" << new_pad_type << "', is ignored" << std::endl;
 
 exit:
-    if (new_pad_caps != NULL) {
-      gst_caps_unref (new_pad_caps);
-      gst_object_unref (sink_pad);
+    if (new_pad_caps != NULL)
+    {
+        gst_caps_unref(new_pad_caps);
+        gst_object_unref(sink_pad);
     }
 }
-
 
 bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int display_mode)
 {
@@ -440,14 +470,16 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     bool result = false;
 
     result = CameraWindowManager.attachSurface();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.attachSurface error" << std::endl;
         return false;
     }
 
-        pipeline = gst_element_factory_make("playbin", "playbin");
+    pipeline = gst_element_factory_make("playbin", "playbin");
 
-    if (!pipeline) {
+    if (!pipeline)
+    {
         std::cout << "Cannot create pipeline!" << std::endl;
         return false;
     }
@@ -465,7 +497,8 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     sink = gst_element_factory_make("mfxsink", nullptr);
 #endif
 
-    if (!sink) {
+    if (!sink)
+    {
         std::cout << "failed to create sink element" << std::endl;
         gst_object_unref(GST_OBJECT(pipeline));
         return false;
@@ -477,33 +510,33 @@ bool testSurfaceWithGST(LSM::CameraWindowManager &CameraWindowManager, int displ
     g_object_set(G_OBJECT(sink), "fullscreen", false, nullptr);
 #endif
 
-    g_object_set(G_OBJECT(pipeline), "uri", "http://10.178.84.247/mp4/bunny.mp4",
-                 "video-sink", sink,
-                  NULL);
+    g_object_set(G_OBJECT(pipeline), "uri", "http://10.178.84.247/mp4/bunny.mp4", "video-sink",
+                 sink, NULL);
 
-    if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        std::cout <<  "Unable to set the pipeline to the playing state" << std::endl;
+    if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+    {
+        std::cout << "Unable to set the pipeline to the playing state" << std::endl;
         goto exit;
     }
 
-    loop = g_main_loop_new (NULL, FALSE);
+    loop = g_main_loop_new(NULL, FALSE);
 
-    signal_watch_intr_id =
-        g_unix_signal_add (SIGINT, (GSourceFunc) intr_handler, loop);
+    signal_watch_intr_id = g_unix_signal_add(SIGINT, (GSourceFunc)intr_handler, loop);
 
-    g_main_loop_run (loop);
+    g_main_loop_run(loop);
 
 exit:
     gst_element_set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(GST_OBJECT(pipeline));
 
     if (signal_watch_intr_id > 0)
-        g_source_remove (signal_watch_intr_id);
+        g_source_remove(signal_watch_intr_id);
 
     g_main_loop_unref(loop);
     result = CameraWindowManager.detachSurface();
 
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.detachSurface error" << std::endl;
         return false;
     }
@@ -511,14 +544,20 @@ exit:
     return result;
 }
 
-
-enum DisplayMode { PunchThrough, Surface, SurfaceWAYLAND, SurfaceEGL };
+enum DisplayMode
+{
+    PunchThrough,
+    Surface,
+    SurfaceWAYLAND,
+    SurfaceEGL
+};
 
 int main(int argc, char *argv[])
 {
     DisplayMode mode;
 
-    if (argc != 3) {
+    if (argc != 3)
+    {
         std::cout << "Please input with windowID and command" << std::endl;
         std::cout << "./importer $windowID PunchThrough" << std::endl;
         std::cout << "./importer $windowID Surface" << std::endl;
@@ -528,15 +567,24 @@ int main(int argc, char *argv[])
 
     gst_init(&argc, &argv);
 
-    if (!strcmp(argv[2], "PunchThrough")) {
+    if (!strcmp(argv[2], "PunchThrough"))
+    {
         mode = PunchThrough;
-    } else if (!strcmp(argv[2], "Surface")) {
+    }
+    else if (!strcmp(argv[2], "Surface"))
+    {
         mode = Surface;
-    } else if (!strcmp(argv[2], "SurfaceWAYLAND")) {
+    }
+    else if (!strcmp(argv[2], "SurfaceWAYLAND"))
+    {
         mode = SurfaceWAYLAND;
-    } else if (!strcmp(argv[2], "SurfaceEGL")) {
+    }
+    else if (!strcmp(argv[2], "SurfaceEGL"))
+    {
         mode = SurfaceEGL;
-    } else {
+    }
+    else
+    {
         std::cout << "Command is not supported" << std::endl;
         return -1;
     }
@@ -546,41 +594,49 @@ int main(int argc, char *argv[])
     bool result          = false;
 
     result = CameraWindowManager.registerID(windowID, nullptr);
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.registerID error : " << windowID << std::endl;
         return 0;
-    } else {
+    }
+    else
+    {
         std::cout << "CameraWindowManager.registerID sucess : " << windowID << std::endl;
     }
 
-    switch (mode) {
-        case PunchThrough:
-            std::cout << "testPunchThrough" << std::endl;
-            result = testPunchThrough(CameraWindowManager);
-            break;
-        case Surface:
-            std::cout << "testSurface" << std::endl;
-            result = testSurface(CameraWindowManager);
-            break;
-        case SurfaceWAYLAND:
-            std::cout << "testSurfaceWAYLAND" << std::endl;
-            result = testSurfaceWithGST(CameraWindowManager, 2); // 2:wayland
-            break;
-        case SurfaceEGL:
-            std::cout << "testSurfaceEGL" << std::endl;
-            result = testSurfaceWithGST(CameraWindowManager, 3); // 3:egl
-            break;
+    switch (mode)
+    {
+    case PunchThrough:
+        std::cout << "testPunchThrough" << std::endl;
+        result = testPunchThrough(CameraWindowManager);
+        break;
+    case Surface:
+        std::cout << "testSurface" << std::endl;
+        result = testSurface(CameraWindowManager);
+        break;
+    case SurfaceWAYLAND:
+        std::cout << "testSurfaceWAYLAND" << std::endl;
+        result = testSurfaceWithGST(CameraWindowManager, 2); // 2:wayland
+        break;
+    case SurfaceEGL:
+        std::cout << "testSurfaceEGL" << std::endl;
+        result = testSurfaceWithGST(CameraWindowManager, 3); // 3:egl
+        break;
     }
-    if (!result) {
+    if (!result)
+    {
         std::cout << "error occured..." << std::endl;
         return -1;
     }
 
     result = CameraWindowManager.unregisterID();
-    if (!result) {
+    if (!result)
+    {
         std::cout << "CameraWindowManager.unregisterID error : " << windowID << std::endl;
         return 0;
-    } else {
+    }
+    else
+    {
         std::cout << "CameraWindowManager.unregisterID sucess : " << windowID << std::endl;
     }
 

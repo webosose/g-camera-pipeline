@@ -14,38 +14,39 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "bufferencoder/buffer_encoder.h"
+#include "camshm.h"
+#include "media_encoder_client.h"
+#include "string.h"
+#include <fstream>
 #include <glib.h>
 #include <iostream>
 #include <vector>
-#include <fstream>
-#include "string.h"
-#include "camshm.h"
-#include "media_encoder_client.h"
-#include "bufferencoder/buffer_encoder.h"
 
 class MediaEncoderClient;
 int main(int argc, char const *argv[])
 {
-  ENCODER_INIT_DATA_T loadData;
-  // check if the file to read from exists and if so read the file in chunks
-  ifstream ifile("/var/webrtc_file_1_video.yuv", std::ifstream::binary);
-  const int BUFFER_SIZE = 1024;
-  std::vector<char> buffer (BUFFER_SIZE + 1, 0);
-  printf("%d:%s:%s",__LINE__, __FUNCTION__, __FILE__);
-  cmp::player::MediaEncoderClient *EncoderClient = new cmp::player::MediaEncoderClient();
-  EncoderClient ->Init(&loadData);
-  printf("%d:%s:%s",__LINE__, __FUNCTION__, __FILE__);
-  while(1)
-  {
-    ifile.read(buffer.data(), BUFFER_SIZE);
-    std::streamsize s = ((ifile) ? BUFFER_SIZE : ifile.gcount());
-    buffer[s] = 0;
-    //Since the feed api is changed to accept three arguments,need to modify this
-    //which will be done later since testing can be done now using webRTC
-    //EncoderClient ->Feed((unsigned char*)buffer.data(), BUFFER_SIZE);
-    if(!ifile) break;
-  }
-  delete(EncoderClient);
-  ifile.close();
-  return 0;
+    ENCODER_INIT_DATA_T loadData;
+    // check if the file to read from exists and if so read the file in chunks
+    ifstream ifile("/var/webrtc_file_1_video.yuv", std::ifstream::binary);
+    const int BUFFER_SIZE = 1024;
+    std::vector<char> buffer(BUFFER_SIZE + 1, 0);
+    printf("%d:%s:%s", __LINE__, __FUNCTION__, __FILE__);
+    cmp::player::MediaEncoderClient *EncoderClient = new cmp::player::MediaEncoderClient();
+    EncoderClient->Init(&loadData);
+    printf("%d:%s:%s", __LINE__, __FUNCTION__, __FILE__);
+    while (1)
+    {
+        ifile.read(buffer.data(), BUFFER_SIZE);
+        std::streamsize s = ((ifile) ? BUFFER_SIZE : ifile.gcount());
+        buffer[s]         = 0;
+        // Since the feed api is changed to accept three arguments,need to modify this
+        // which will be done later since testing can be done now using webRTC
+        // EncoderClient ->Feed((unsigned char*)buffer.data(), BUFFER_SIZE);
+        if (!ifile)
+            break;
+    }
+    delete (EncoderClient);
+    ifile.close();
+    return 0;
 }

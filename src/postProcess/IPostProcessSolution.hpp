@@ -19,7 +19,8 @@
 #include <cstdint>
 #include <string>
 
-struct CropRect {
+struct CropRect
+{
     int top{0}, bottom{0}, left{0}, right{0};
 };
 
@@ -29,13 +30,12 @@ class IPostProcessSolution
 {
 public:
     virtual ~IPostProcessSolution() {}
-    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen) = 0;
-    virtual bool doPostProcess() = 0;
-    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride,
-                               uint32_t offsetUV)  = 0;
-    virtual bool doPostProcess(CropRect &cropRect) = 0;
-    virtual bool setParam(const std::string &aParamId, void *aParam) = 0;
-    virtual void *getParam(const std::string &aParam) = 0;
-    virtual bool needImageOverwrite()                        = 0;
+    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen)                      = 0;
+    virtual bool doPostProcess()                                                     = 0;
+    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV) = 0;
+    virtual bool doPostProcess(CropRect &cropRect)                                   = 0;
+    virtual bool setParam(const std::string &aParamId, void *aParam)                 = 0;
+    virtual void *getParam(const std::string &aParam)                                = 0;
+    virtual bool needImageOverwrite()                                                = 0;
 };
-}
+} // namespace cmp

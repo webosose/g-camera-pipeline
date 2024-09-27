@@ -69,4 +69,4 @@ private:
 
 } // namespace Wayland
 
-#endif //WAYLAND_FOREIGN_H_
+#endif // WAYLAND_FOREIGN_H_

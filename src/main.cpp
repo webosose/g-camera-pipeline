@@ -14,55 +14,61 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-#include <log/log.h>
 #include <cameraplayer/camera_player.h>
 #include <cameraservice/camera_service.h>
-#include <unistd.h>
+#include <log/log.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_SERVICE_STRING 120
 
-int main(int argc, char * argv[]) {
-  int c;
-  char service_name[MAX_SERVICE_STRING+1] = {'\0',};
-  bool service_name_specified = false;
+int main(int argc, char *argv[])
+{
+    int c;
+    char service_name[MAX_SERVICE_STRING + 1] = {
+        '\0',
+    };
+    bool service_name_specified = false;
 
-  while ((c = getopt(argc, argv, "c:s:r:d:v:a:")) != -1) {
-    switch (c) {
-      case 's':
-        (void) snprintf(service_name, MAX_SERVICE_STRING, "%s", optarg);
-        service_name_specified = true;
-        break;
-      case 'c':{
-        //snprintf(controllerServiceName, sizeof(controllerServiceName), optarg);
-        //controller_name_specified = 1;
-        break;
-      }
-      case 'r':{
-        //isSubscribed = atoi (optarg);
-        break;
-      }
-      case 'a':
-        //appId = optarg;
-        break;
-      case '?':
-        CMP_LOG_INFO("unknown service name");
-        break;
+    while ((c = getopt(argc, argv, "c:s:r:d:v:a:")) != -1)
+    {
+        switch (c)
+        {
+        case 's':
+            (void)snprintf(service_name, MAX_SERVICE_STRING, "%s", optarg);
+            service_name_specified = true;
+            break;
+        case 'c':
+        {
+            // snprintf(controllerServiceName, sizeof(controllerServiceName), optarg);
+            // controller_name_specified = 1;
+            break;
+        }
+        case 'r':
+        {
+            // isSubscribed = atoi (optarg);
+            break;
+        }
+        case 'a':
+            // appId = optarg;
+            break;
+        case '?':
+            CMP_LOG_INFO("unknown service name");
+            break;
 
-      default:  break;
+        default:
+            break;
+        }
     }
-  }
 
-  if (!service_name_specified)
-    return 1;
+    if (!service_name_specified)
+        return 1;
 
-  cmp::service::Service *service
-                         = cmp::service::Service::GetInstance(service_name);
+    cmp::service::Service *service = cmp::service::Service::GetInstance(service_name);
 
-  service->Wait();
+    service->Wait();
 
-  delete service;
+    delete service;
 
-  return 0;
+    return 0;
 }

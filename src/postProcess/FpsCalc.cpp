@@ -30,10 +30,10 @@ void FpsCalc::pushData()
 
 double FpsCalc::getCurrentFps()
 {
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        timeQueue_.back() - timeQueue_.front())
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(timeQueue_.back() -
+                                                                          timeQueue_.front())
                         .count();
     double fps = timeQueue_.size() * 1000 / (double)duration;
     return fps;
 }
-}
+} // namespace cmp

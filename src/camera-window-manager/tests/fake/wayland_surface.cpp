@@ -15,7 +15,6 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "wayland_surface.h"
 #include "api_call_checker.h"
 
@@ -40,7 +39,8 @@ bool Surface::initialize(struct wl_compositor *compositor)
 
 void Surface::finalize(void)
 {
-    if (surface) {
+    if (surface)
+    {
         wl_surface_destroy(surface);
         surface = nullptr;
     }

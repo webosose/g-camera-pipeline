@@ -28,14 +28,15 @@ FacePtzSolution::FacePtzSolution() {}
 
 bool FacePtzSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen)
 {
-    //CMP_LOG_INFO("%s", aMeta);
+    // CMP_LOG_INFO("%s", aMeta);
     faceDataMgr_.updateFaceInfo(aMeta, aMetaLen);
     return true;
 }
 bool FacePtzSolution::doPostProcess()
 {
     CMP_LOG_DEBUG("doPostProcess");
-    if (crop_ == nullptr) {
+    if (crop_ == nullptr)
+    {
         CMP_LOG_INFO("crop_ is empty");
         return false;
     }
@@ -43,8 +44,7 @@ bool FacePtzSolution::doPostProcess()
     return true;
 }
 
-bool FacePtzSolution::doPostProcess(uint8_t *aData, uint32_t aStrride,
-                                    uint32_t offsetUV)
+bool FacePtzSolution::doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV)
 {
     faceDataMgr_.drawBox(aData, fourccDecBuf_, aStrride, offsetUV);
     return true;
@@ -60,13 +60,17 @@ bool FacePtzSolution::doPostProcess(CropRect &cropRect)
 bool FacePtzSolution::setParam(const std::string &aParamId, void *aParam)
 {
     PostProcessSolution::setParam(aParamId, aParam);
-    if (aParamId == PARAM_ID_CROP_OBJ) {
+    if (aParamId == PARAM_ID_CROP_OBJ)
+    {
         GstElement *pipeline = static_cast<GstElement *>(aParam);
-        crop_ = gst_bin_get_by_name(GST_BIN(pipeline), "preview-video-crop");
-
-    } else if (aParamId == PARAM_ID_WIDTH) {
+        crop_                = gst_bin_get_by_name(GST_BIN(pipeline), "preview-video-crop");
+    }
+    else if (aParamId == PARAM_ID_WIDTH)
+    {
         faceDataMgr_.setWidth(*(static_cast<uint32_t *>(aParam)));
-    } else if (aParamId == PARAM_ID_HEIGHT) {
+    }
+    else if (aParamId == PARAM_ID_HEIGHT)
+    {
         faceDataMgr_.setHeight(*(static_cast<uint32_t *>(aParam)));
     }
     return true;
@@ -82,4 +86,4 @@ bool FacePtzSolution::needImageOverwrite()
         return true;
     return false;
 }
-}
+} // namespace cmp

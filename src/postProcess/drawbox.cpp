@@ -40,7 +40,8 @@
 #define NV12_LUM_GREEN 0x95
 #define NV12_LUM_RED 0x4C
 
-typedef struct {
+typedef struct
+{
     uint8_t reserved;
     uint8_t lumin_val;
     uint16_t color_val;
@@ -49,7 +50,8 @@ typedef struct {
 static NV12ColorScale getColor(const DRAW_BOX_COLOR color)
 {
     NV12ColorScale c{0, 0, 0};
-    switch (color) {
+    switch (color)
+    {
     case DRAW_BOX_WHITE:
         c.lumin_val = NV12_LUM_WHITE;
         c.color_val = NV12_COLOR_WHITE;
@@ -91,9 +93,8 @@ static NV12ColorScale getColor(const DRAW_BOX_COLOR color)
     return c;
 }
 
-void drawBoxInNV12Format(uint8_t *data, const int &maxWidth,
-                         const int &maxHeight, const FaceXY &face,
-                         uint32_t offsetUV, const DRAW_BOX_COLOR color)
+void drawBoxInNV12Format(uint8_t *data, const int &maxWidth, const int &maxHeight,
+                         const FaceXY &face, uint32_t offsetUV, const DRAW_BOX_COLOR color)
 {
     uint32_t clr_pos = 0, lum_pos = 0;
     uint8_t *lumin  = data;
@@ -110,10 +111,12 @@ void drawBoxInNV12Format(uint8_t *data, const int &maxWidth,
     NV12ColorScale clrscale = getColor(color);
 
     // each 2 row of pixels will be in 1 row of UV data
-    for (uint16_t y = y1; y < y2; y += 1) {
+    for (uint16_t y = y1; y < y2; y += 1)
+    {
         lum_pos = y * maxWidth;
         clr_pos = y / 2 * maxWidth / 2;
-        for (uint16_t x = x1; x < x2; x += 1) {
+        for (uint16_t x = x1; x < x2; x += 1)
+        {
             // skip pixels which are inside the box as we need outliner box
             if ((x1 + 2 <= x && x < x2 - 2) && (y1 + 2 <= y && y < y2 - 2))
                 continue;
@@ -130,9 +133,8 @@ void drawBoxInNV12Format(uint8_t *data, const int &maxWidth,
     }
 }
 
-void drawBoxInNV16Format(uint8_t *data, const int &maxWidth,
-                         const int &maxHeight, const FaceXY &face,
-                         uint32_t offsetUV, const DRAW_BOX_COLOR color)
+void drawBoxInNV16Format(uint8_t *data, const int &maxWidth, const int &maxHeight,
+                         const FaceXY &face, uint32_t offsetUV, const DRAW_BOX_COLOR color)
 {
     uint32_t clr_pos = 0, lum_pos = 0;
     uint8_t *lumin  = data;
@@ -149,10 +151,12 @@ void drawBoxInNV16Format(uint8_t *data, const int &maxWidth,
     NV12ColorScale clrscale = getColor(color);
 
     // Rows of UV in NV16 is same as Y
-    for (uint16_t y = y1; y < y2; y += 1) {
+    for (uint16_t y = y1; y < y2; y += 1)
+    {
         lum_pos = y * maxWidth;
         clr_pos = y * maxWidth / 2;
-        for (uint16_t x = x1; x < x2; x += 1) {
+        for (uint16_t x = x1; x < x2; x += 1)
+        {
             // skip pixels which are inside the box as we need outliner box
             if ((x1 + 2 <= x && x < x2 - 2) && (y1 + 2 <= y && y < y2 - 2))
                 continue;

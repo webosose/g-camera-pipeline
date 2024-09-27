@@ -1,7 +1,7 @@
 #include "camera_service_client.h"
+#include <log/log.h>
 #include <luna-service2/lunaservice.hpp>
 #include <pbnjson.hpp>
-#include <log/log.h>
 
 static pbnjson::JValue convertStringToJson(const char *rawData)
 {
@@ -15,23 +15,14 @@ static pbnjson::JValue convertStringToJson(const char *rawData)
     return parser.getDom();
 }
 
-CameraServiceClient::CameraServiceClient() :
-    name_(""),
-    loop_(nullptr),
-    sh_(nullptr),
-    reply_from_server_(""),
-    done_(0),
-    fd_(-1),
-    handle_(-1),
-    pid_(-1)
+CameraServiceClient::CameraServiceClient()
+    : name_(""), loop_(nullptr), sh_(nullptr), reply_from_server_(""), done_(0), fd_(-1),
+      handle_(-1), pid_(-1)
 {
     acquireLSHandle();
 }
 
-CameraServiceClient::~CameraServiceClient()
-{
-    releaseLSHandle();
-}
+CameraServiceClient::~CameraServiceClient() { releaseLSHandle(); }
 
 bool CameraServiceClient::acquireLSHandle()
 {
@@ -97,7 +88,8 @@ bool CameraServiceClient::releaseLSHandle()
     return true;
 }
 
-bool CameraServiceClient::call(const std::string &uri, const std::string &payload, bool (*cb)(LSHandle*, LSMessage*, void*))
+bool CameraServiceClient::call(const std::string &uri, const std::string &payload,
+                               bool (*cb)(LSHandle *, LSMessage *, void *))
 {
     done_ = 0;
 
@@ -127,9 +119,9 @@ bool CameraServiceClient::cbGetReplyMsg(LSHandle *sh, LSMessage *msg, void *ctx)
 {
     CMP_LOG_INFO("CameraServiceClient::cbGetReplyMsg() entered.");
 
-    CameraServiceClient *caller = static_cast<CameraServiceClient*>(ctx);
-    const char *str = LSMessageGetPayload(msg);
-    caller->reply_from_server_ = str ? str : "";
+    CameraServiceClient *caller = static_cast<CameraServiceClient *>(ctx);
+    const char *str             = LSMessageGetPayload(msg);
+    caller->reply_from_server_  = str ? str : "";
 
     CMP_LOG_INFO("reply_from_server: %s", caller->reply_from_server_.c_str());
 
@@ -139,13 +131,13 @@ bool CameraServiceClient::cbGetReplyMsg(LSHandle *sh, LSMessage *msg, void *ctx)
 
 bool CameraServiceClient::cbGetFd(LSHandle *sh, LSMessage *msg, void *ctx)
 {
-    CameraServiceClient *caller = static_cast<CameraServiceClient*>(ctx);
-    const char *str = LSMessageGetPayload(msg);
-    caller->reply_from_server_ = str ? str : "";
-    int fd = -1;
+    CameraServiceClient *caller = static_cast<CameraServiceClient *>(ctx);
+    const char *str             = LSMessageGetPayload(msg);
+    caller->reply_from_server_  = str ? str : "";
+    int fd                      = -1;
     LS::Message ls_message(msg);
     LS::PayloadRef payload_ref = ls_message.accessPayload();
-    fd = payload_ref.getFd();
+    fd                         = payload_ref.getFd();
     if (fd)
     {
         caller->fd_ = dup(fd);
@@ -167,7 +159,7 @@ bool CameraServiceClient::open(std::string cameraId, int pid)
     std::string payload = "{\"id\":\"" + cameraId + "\", \"mode\": \"secondary\"";
     if (pid_ > 0)
     {
-        payload += + ", \"pid\":" + std::to_string(pid_);
+        payload += +", \"pid\":" + std::to_string(pid_);
     }
     payload += "}";
 
@@ -196,8 +188,8 @@ int CameraServiceClient::startCamera(std::string memtype)
         return -1;
     }
 
-    std::string payload = "{\"handle\":" + std::to_string(handle_) +
-        ",\"params\": {\"source\": \"0\", \"type\":";
+    std::string payload =
+        "{\"handle\":" + std::to_string(handle_) + ",\"params\": {\"source\": \"0\", \"type\":";
     if (memtype == "shmem")
     {
         payload += "\"sharedmemory\"}}";
@@ -235,7 +227,7 @@ bool CameraServiceClient::stopCamera()
         return false;
     }
     pbnjson::JValue parsed = convertStringToJson(reply_from_server_.c_str());
-    return  parsed["returnValue"].asBool();
+    return parsed["returnValue"].asBool();
 }
 
 int CameraServiceClient::getFd()
@@ -264,7 +256,7 @@ bool CameraServiceClient::close()
     std::string payload = "{\"handle\":" + std::to_string(handle_);
     if (pid_ > 0)
     {
-        payload += + ", \"pid\":" + std::to_string(pid_);
+        payload += +", \"pid\":" + std::to_string(pid_);
     }
     payload += "}";
     if (!call("luna://com.webos.service.camera2/close", payload, cbGetReplyMsg))
@@ -275,6 +267,6 @@ bool CameraServiceClient::close()
 
     CMP_LOG_INFO("CameraServiceClient::close : handle = %d ", handle_);
 
-    return parsed["returnValue"].asBool();;
+    return parsed["returnValue"].asBool();
+    ;
 }
-

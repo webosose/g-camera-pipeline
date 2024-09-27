@@ -14,106 +14,113 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
 #ifndef SRC_PARSER_PARSER_H_
 #define SRC_PARSER_PARSER_H_
 
-#include <type_traits>
 #include <pbnjson.hpp>
 #include <string>
+#include <type_traits>
 
-namespace cmp { namespace parser {
+namespace cmp
+{
+namespace parser
+{
 
-struct parser_error : std::runtime_error {
-  explicit parser_error(const char * what) : runtime_error(what) {}
+struct parser_error : std::runtime_error
+{
+    explicit parser_error(const char *what) : runtime_error(what) {}
 };
 
-class Parser {
- public:
-  explicit Parser(const char * message);
+class Parser
+{
+public:
+    explicit Parser(const char *message);
 
-  template<typename T, typename std::enable_if<
-          !std::is_arithmetic<T>::value
-          && !std::is_same<T, std::string>::value>::type* = nullptr>
-  T get() {
-    throw parser_error("Unsupported type");
-  }
+    template <typename T,
+              typename std::enable_if<!std::is_arithmetic<T>::value &&
+                                      !std::is_same<T, std::string>::value>::type * = nullptr>
+    T get()
+    {
+        throw parser_error("Unsupported type");
+    }
 
-  template<typename T, typename std::enable_if<
-          std::is_same<T, bool>::value>::type* = nullptr>
-  T get() {
-    T val;
-    auto cr = _dom.asBool(val);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return val;
-  }
+    template <typename T, typename std::enable_if<std::is_same<T, bool>::value>::type * = nullptr>
+    T get()
+    {
+        T val;
+        auto cr = _dom.asBool(val);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return val;
+    }
 
-  template<typename T, typename std::enable_if<
-           std::is_same<T, std::string>::value>::type* = nullptr>
-  T get() {
-    T str;
-    auto cr = _dom.asString(str);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return str;
-  }
+    template <typename T,
+              typename std::enable_if<std::is_same<T, std::string>::value>::type * = nullptr>
+    T get()
+    {
+        T str;
+        auto cr = _dom.asString(str);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return str;
+    }
 
-  template<typename T, typename std::enable_if<
-          std::is_arithmetic<T>::value
-          && !std::is_same<T, bool>::value>::type* = nullptr>
-  T get() {
-    T val;
-    auto cr = _dom.asNumber<T>(val);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return val;
-  }
+    template <typename T, typename std::enable_if<std::is_arithmetic<T>::value &&
+                                                  !std::is_same<T, bool>::value>::type * = nullptr>
+    T get()
+    {
+        T val;
+        auto cr = _dom.asNumber<T>(val);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return val;
+    }
 
-  template<typename T, typename std::enable_if<
-          !std::is_arithmetic<T>::value
-          && !std::is_same<T, std::string>::value>::type* = nullptr>
-  T get(const char *) {
-    throw parser_error("Unsupported type");
-  }
+    template <typename T,
+              typename std::enable_if<!std::is_arithmetic<T>::value &&
+                                      !std::is_same<T, std::string>::value>::type * = nullptr>
+    T get(const char *)
+    {
+        throw parser_error("Unsupported type");
+    }
 
-  template<typename T, typename std::enable_if<
-          std::is_same<T, bool>::value>::type* = nullptr>
-  T get(const char * key) {
-    T val;
-    auto cr = _dom[key].asBool(val);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return val;
-  }
+    template <typename T, typename std::enable_if<std::is_same<T, bool>::value>::type * = nullptr>
+    T get(const char *key)
+    {
+        T val;
+        auto cr = _dom[key].asBool(val);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return val;
+    }
 
-  template<typename T, typename std::enable_if<
-          std::is_same<T, std::string>::value>::type* = nullptr>
-  T get(const char * key) {
-    T str;
-    auto cr = _dom[key].asString(str);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return str;
-  }
+    template <typename T,
+              typename std::enable_if<std::is_same<T, std::string>::value>::type * = nullptr>
+    T get(const char *key)
+    {
+        T str;
+        auto cr = _dom[key].asString(str);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return str;
+    }
 
-  template<typename T, typename std::enable_if<
-          std::is_arithmetic<T>::value
-          && !std::is_same<T, bool>::value>::type* = nullptr>
-  T get(const char * key) {
-    T val;
-    auto cr = _dom[key].asNumber<T>(val);
-    if (cr != CONV_OK)
-      throw parser_error("Type conversion failure");
-    return val;
-  }
+    template <typename T, typename std::enable_if<std::is_arithmetic<T>::value &&
+                                                  !std::is_same<T, bool>::value>::type * = nullptr>
+    T get(const char *key)
+    {
+        T val;
+        auto cr = _dom[key].asNumber<T>(val);
+        if (cr != CONV_OK)
+            throw parser_error("Type conversion failure");
+        return val;
+    }
 
- private:
-  pbnjson::JValue _dom;
+private:
+    pbnjson::JValue _dom;
 };
 
-}  // namespace parser
-}  // namespace cmp
+} // namespace parser
+} // namespace cmp
 
-#endif  // SRC_PARSER_PARSER_H_
-
+#endif // SRC_PARSER_PARSER_H_

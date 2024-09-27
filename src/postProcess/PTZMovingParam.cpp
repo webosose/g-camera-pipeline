@@ -74,4 +74,4 @@ bool PTZMovingParam::updatePenTiltMovingParam()
 }
 
 double PTZMovingParam::getCurrentFps() { return fpsCalc_.getCurrentFps(); }
-}
+} // namespace cmp

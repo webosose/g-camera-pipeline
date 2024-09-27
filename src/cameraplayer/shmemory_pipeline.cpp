@@ -1,11 +1,11 @@
 #include "shmemory_pipeline.h"
+#include "cam_posixshm.h"
+#include "camera_service_client.h"
 #include "log.h"
 #include "message.h"
-#include <system_error>
-#include <pbnjson.hpp>
-#include "camera_service_client.h"
-#include "cam_posixshm.h"
 #include "signal_listener.h"
+#include <pbnjson.hpp>
+#include <system_error>
 
 #ifdef PTZ_ENABLED
 #include "FacePtzSolution.hpp"
@@ -52,7 +52,8 @@ ShmemoryPipeline::~ShmemoryPipeline()
         }
         catch (const std::system_error &e)
         {
-            CMP_LOG_ERROR("Caught a system_error with code %d meaning %s", e.code().value(), e.what());
+            CMP_LOG_ERROR("Caught a system_error with code %d meaning %s", e.code().value(),
+                          e.what());
         }
     }
     g_main_loop_unref(loop_);
@@ -60,15 +61,12 @@ ShmemoryPipeline::~ShmemoryPipeline()
     CMP_LOG_INFO("end");
 }
 
-bool ShmemoryPipeline::Unload()
-{
-    return unloadImpl();
-}
+bool ShmemoryPipeline::Unload() { return unloadImpl(); }
 
-bool ShmemoryPipeline::Load(const std::string& msg)
+bool ShmemoryPipeline::Load(const std::string &msg)
 {
     CMPASSERT(!msg.empty());
-    CMP_LOG_INFO("start: %s",  msg.c_str());
+    CMP_LOG_INFO("start: %s", msg.c_str());
 
     SetGstreamerDebug();
     gst_init(NULL, NULL);
@@ -127,7 +125,7 @@ bool ShmemoryPipeline::Load(const std::string& msg)
 #ifdef PTZ_ENABLED
     postProcessSolution_ = std::make_shared<FacePtzSolution>();
     postProcessSolution_->setParam(PARAM_ID_WIDTH, (void *)&width_);
-    postProcessSolution_->setParam(PARAM_ID_HEIGHT,(void *)&height_);
+    postProcessSolution_->setParam(PARAM_ID_HEIGHT, (void *)&height_);
     postProcessSolution_->setParam(PARAM_ID_CROP_OBJ, (void *)pipeline_);
 #endif
 
@@ -302,56 +300,69 @@ bool ShmemoryPipeline::remBus()
     return true;
 }
 
-bool ShmemoryPipeline::attachSurface(bool allow_no_window) {
+bool ShmemoryPipeline::attachSurface(bool allow_no_window)
+{
     CMP_LOG_INFO("start");
 
-    if (!window_id_.empty()) {
-        if (!lsm_camera_window_manager_.registerID(window_id_.c_str(), NULL)) {
+    if (!window_id_.empty())
+    {
+        if (!lsm_camera_window_manager_.registerID(window_id_.c_str(), NULL))
+        {
             CMP_LOG_ERROR("register id to LSM failed!");
             return false;
         }
-        if (!lsm_camera_window_manager_.attachSurface()) {
+        if (!lsm_camera_window_manager_.attachSurface())
+        {
             CMP_LOG_ERROR("attach surface to LSM failed!");
             return false;
         }
         CMP_LOG_INFO("end");
         return true;
-    } else {
+    }
+    else
+    {
         CMP_LOG_ERROR("window id is empty!");
         bool ret = allow_no_window ? true : false;
         return ret;
     }
 }
 
-bool ShmemoryPipeline::detachSurface() {
+bool ShmemoryPipeline::detachSurface()
+{
     CMP_LOG_INFO("start");
 
-    if (!window_id_.empty()) {
-        if (!lsm_camera_window_manager_.detachSurface()) {
+    if (!window_id_.empty())
+    {
+        if (!lsm_camera_window_manager_.detachSurface())
+        {
             CMP_LOG_ERROR("detach surface to LSM failed!");
             return false;
         }
-        if (!lsm_camera_window_manager_.unregisterID()) {
+        if (!lsm_camera_window_manager_.unregisterID())
+        {
             CMP_LOG_ERROR("unregister id to LSM failed!");
             return false;
         }
-    } else {
+    }
+    else
+    {
         CMP_LOG_ERROR("window id is empty!");
     }
 
-     CMP_LOG_INFO("end");
+    CMP_LOG_INFO("end");
     return true;
 }
 
 bool ShmemoryPipeline::acquireResource()
 {
     ACQUIRE_RESOURCE_INFO_T resource_info;
-    resource_info.sourceInfo = &source_info_;
+    resource_info.sourceInfo  = &source_info_;
     resource_info.displayMode = display_mode_.c_str();
-    resource_info.result = true;
+    resource_info.result      = true;
 
     if (cbFunction_)
-        cbFunction_(CMP_NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr, static_cast<void*>(&resource_info));
+        cbFunction_(CMP_NOTIFY_ACQUIRE_RESOURCE, display_path_, nullptr,
+                    static_cast<void *>(&resource_info));
 
     if (!resource_info.result)
     {
@@ -366,14 +377,14 @@ bool ShmemoryPipeline::GetSourceInfo()
 {
     base::video_info_t video_stream_info = {};
 
-    video_stream_info.width = (width_ < 0 ? 0: width_);
-    video_stream_info.height = (height_ < 0 ? 0: height_);
-    video_stream_info.decode = CMP_VIDEO_CODEC_MJPEG;
+    video_stream_info.width          = (width_ < 0 ? 0 : width_);
+    video_stream_info.height         = (height_ < 0 ? 0 : height_);
+    video_stream_info.decode         = CMP_VIDEO_CODEC_MJPEG;
     video_stream_info.frame_rate.num = framerate_;
     video_stream_info.frame_rate.den = 1;
-    CMP_LOG_INFO("[video info] width: %d, height: %d, frameRate: %d/%d",
-            video_stream_info.width, video_stream_info.height,
-            video_stream_info.frame_rate.num, video_stream_info.frame_rate.den);
+    CMP_LOG_INFO("[video info] width: %d, height: %d, frameRate: %d/%d", video_stream_info.width,
+                 video_stream_info.height, video_stream_info.frame_rate.num,
+                 video_stream_info.frame_rate.den);
 
     base::program_info_t program;
     program.video_stream = 1;
@@ -397,118 +408,117 @@ bool ShmemoryPipeline::handleBusMessage(GstBus *bus, GstMessage *msg)
     if (msgType != GST_MESSAGE_QOS && msgType != GST_MESSAGE_TAG)
     {
         CMP_LOG_INFO("Element[ %s ][ %d ][ %s ]", GST_MESSAGE_SRC_NAME(msg), msgType,
-              gst_message_type_get_name(msgType));
+                     gst_message_type_get_name(msgType));
     }
 
     switch (GST_MESSAGE_TYPE(msg))
     {
-        case GST_MESSAGE_ERROR:
+    case GST_MESSAGE_ERROR:
+    {
+        CMP_LOG_ERROR("Got Error");
+        base::error_t error = HandleErrorMessage(msg);
+        if (cbFunction_)
+            cbFunction_(CMP_NOTIFY_ERROR, 0, nullptr, &error);
+        GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline_), GST_DEBUG_GRAPH_SHOW_VERBOSE, "gcp_error");
+        break;
+    }
+    case GST_MESSAGE_EOS:
+    {
+        CMP_LOG_INFO("Got EOS");
+        if (cbFunction_)
+            cbFunction_(CMP_NOTIFY_END_OF_STREAM, 0, nullptr, nullptr);
+        break;
+    }
+    case GST_MESSAGE_ASYNC_DONE:
+    {
+        CMP_LOG_INFO("Got AsyncDone");
+        break;
+    }
+    case GST_MESSAGE_STATE_CHANGED:
+    {
+        if (GST_MESSAGE_SRC(msg) != GST_OBJECT_CAST(pipeline_))
+            break;
+
+        GstState oldState = GST_STATE_NULL;
+        GstState newState = GST_STATE_NULL;
+        gst_message_parse_state_changed(msg, &oldState, &newState, nullptr);
+        CMP_LOG_INFO("Element[%s] State changed ...%s -> %s", GST_MESSAGE_SRC_NAME(msg),
+                     gst_element_state_get_name(oldState), gst_element_state_get_name(newState));
+
+        if (newState == GST_STATE_PAUSED && oldState < GST_STATE_PAUSED)
         {
-            CMP_LOG_ERROR("Got Error");
-            base::error_t error = HandleErrorMessage(msg);
+            CMP_LOG_INFO("post loadcompleted event");
             if (cbFunction_)
-                cbFunction_(CMP_NOTIFY_ERROR, 0, nullptr, &error);
-            GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline_), GST_DEBUG_GRAPH_SHOW_VERBOSE, "gcp_error");
-            break;
+                cbFunction_(CMP_NOTIFY_LOAD_COMPLETED, 0, nullptr, nullptr);
         }
-        case GST_MESSAGE_EOS:
+        else if (newState == GST_STATE_PLAYING)
         {
-            CMP_LOG_INFO("Got EOS");
+            CMP_LOG_INFO("post playing event");
             if (cbFunction_)
-                cbFunction_(CMP_NOTIFY_END_OF_STREAM, 0, nullptr, nullptr);
-            break;
+                cbFunction_(CMP_NOTIFY_PLAYING, 0, nullptr, nullptr);
+            GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline_), GST_DEBUG_GRAPH_SHOW_VERBOSE, "gcp_play");
         }
-        case GST_MESSAGE_ASYNC_DONE:
+        else if (newState == GST_STATE_PAUSED && oldState == GST_STATE_PLAYING)
         {
-            CMP_LOG_INFO("Got AsyncDone");
-            break;
+            CMP_LOG_INFO("post paused event");
+            if (cbFunction_)
+                cbFunction_(CMP_NOTIFY_PAUSED, 0, nullptr, nullptr);
         }
-        case GST_MESSAGE_STATE_CHANGED:
+        //[TODO] Can not post this becaus UMS kills the process first.
+        else if (newState == GST_STATE_NULL && oldState >= GST_STATE_PAUSED)
         {
-            if (GST_MESSAGE_SRC(msg) != GST_OBJECT_CAST(pipeline_))
-                break;
-
-            GstState oldState = GST_STATE_NULL;
-            GstState newState = GST_STATE_NULL;
-            gst_message_parse_state_changed(msg, &oldState, &newState, nullptr);
-            CMP_LOG_INFO("Element[%s] State changed ...%s -> %s", GST_MESSAGE_SRC_NAME(msg),
-                  gst_element_state_get_name(oldState), gst_element_state_get_name(newState));
-
-            if (newState == GST_STATE_PAUSED && oldState < GST_STATE_PAUSED)
-            {
-                CMP_LOG_INFO("post loadcompleted event");
-                if (cbFunction_)
-                    cbFunction_(CMP_NOTIFY_LOAD_COMPLETED, 0, nullptr, nullptr);
-            }
-            else if (newState == GST_STATE_PLAYING)
-            {
-                CMP_LOG_INFO("post playing event");
-                if (cbFunction_)
-                    cbFunction_(CMP_NOTIFY_PLAYING, 0, nullptr, nullptr);
-                GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline_), GST_DEBUG_GRAPH_SHOW_VERBOSE, "gcp_play");
-            }
-            else if (newState == GST_STATE_PAUSED && oldState == GST_STATE_PLAYING)
-            {
-                CMP_LOG_INFO("post paused event");
-                if (cbFunction_)
-                    cbFunction_(CMP_NOTIFY_PAUSED, 0, nullptr, nullptr);
-            }
-            //[TODO] Can not post this becaus UMS kills the process first.
-            else if (newState == GST_STATE_NULL && oldState >= GST_STATE_PAUSED )
-            {
-                CMP_LOG_INFO("post unloadcompleted event");
-                if (cbFunction_)
-                    cbFunction_(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
-            }
-            break;
+            CMP_LOG_INFO("post unloadcompleted event");
+            if (cbFunction_)
+                cbFunction_(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
         }
-        case GST_MESSAGE_APPLICATION:
+        break;
+    }
+    case GST_MESSAGE_APPLICATION:
+    {
+        const GstStructure *gStruct = gst_message_get_structure(msg);
+
+        /* video-info message comes from sink element */
+        if (gst_structure_has_name(gStruct, "video-info"))
         {
-            const GstStructure *gStruct = gst_message_get_structure(msg);
+            CMP_LOG_INFO("got video-info message");
+            base::video_info_t video_info;
+            memset(&video_info, 0, sizeof(base::video_info_t));
+            gint width, height, fps_n, fps_d, par_n = -1, par_d = -1;
+            gst_structure_get_int(gStruct, "width", &width);
+            gst_structure_get_int(gStruct, "height", &height);
+            gst_structure_get_fraction(gStruct, "framerate", &fps_n, &fps_d);
+            gst_structure_get_int(gStruct, "par_n", &par_n);
+            gst_structure_get_int(gStruct, "par_d", &par_d);
 
-            /* video-info message comes from sink element */
-            if (gst_structure_has_name(gStruct, "video-info"))
-            {
-                CMP_LOG_INFO("got video-info message");
-                base::video_info_t video_info;
-                memset(&video_info, 0, sizeof(base::video_info_t));
-                gint width, height, fps_n, fps_d, par_n = -1, par_d = -1;
-                gst_structure_get_int(gStruct, "width", &width);
-                gst_structure_get_int(gStruct, "height", &height);
-                gst_structure_get_fraction(gStruct, "framerate", &fps_n, &fps_d);
-                gst_structure_get_int(gStruct, "par_n", &par_n);
-                gst_structure_get_int(gStruct, "par_d", &par_d);
+            CMP_LOG_INFO("width[%d], height[%d], framerate[%d/%d],"
+                         "pixel_aspect_ratio[%d/%d]",
+                         width, height, fps_n, fps_d, par_n, par_d);
 
-                CMP_LOG_INFO("width[%d], height[%d], framerate[%d/%d],"
-                        "pixel_aspect_ratio[%d/%d]", width, height,
-                        fps_n, fps_d, par_n, par_d);
+            video_info.width          = (width < 0 ? 0 : width);
+            video_info.height         = (height < 0 ? 0 : height);
+            video_info.frame_rate.num = fps_n;
+            video_info.frame_rate.den = fps_d;
+            // TODO: we already know this info. but it's not used now.
+            video_info.bit_rate = 0;
+            video_info.codec    = 0;
 
-                video_info.width = (width < 0 ? 0: width) ;
-                video_info.height = (height < 0 ? 0: height) ;
-                video_info.frame_rate.num = fps_n;
-                video_info.frame_rate.den = fps_d;
-                // TODO: we already know this info. but it's not used now.
-                video_info.bit_rate = 0;
-                video_info.codec = 0;
-
-                if (cbFunction_)
-                    cbFunction_(CMP_NOTIFY_VIDEO_INFO, 0, nullptr, &video_info);
-            }
-            else if (gst_structure_has_name(gStruct, "request-resource"))
-            {
-                CMP_LOG_INFO("got request-resource message");
-            }
-            break;
+            if (cbFunction_)
+                cbFunction_(CMP_NOTIFY_VIDEO_INFO, 0, nullptr, &video_info);
         }
-        default:
-            break;
+        else if (gst_structure_has_name(gStruct, "request-resource"))
+        {
+            CMP_LOG_INFO("got request-resource message");
+        }
+        break;
+    }
+    default:
+        break;
     }
 
     return true;
 }
 
-GstBusSyncReply ShmemoryPipeline::handleBusSyncMessage(GstBus *bus,
-                                                          GstMessage *msg)
+GstBusSyncReply ShmemoryPipeline::handleBusSyncMessage(GstBus *bus, GstMessage *msg)
 {
     // This handler will be invoked synchronously, don't process any application
     // message handling here
@@ -516,53 +526,58 @@ GstBusSyncReply ShmemoryPipeline::handleBusSyncMessage(GstBus *bus,
     static constexpr char const *waylandDisplayHandleContextType =
         "GstWaylandDisplayHandleContextType";
 
-    switch (GST_MESSAGE_TYPE (msg))
+    switch (GST_MESSAGE_TYPE(msg))
     {
-        case GST_MESSAGE_NEED_CONTEXT:
-            {
-                const gchar *type = nullptr;
-                gst_message_parse_context_type(msg, &type);
-                if (g_strcmp0 (type, waylandDisplayHandleContextType) != 0) {
-                    break;
-                }
-                CMP_LOG_INFO("Set a wayland display handle : %p", lsm_camera_window_manager_.getDisplay());
-                if (lsm_camera_window_manager_.getDisplay()) {
-                    GstContext *context = gst_context_new(waylandDisplayHandleContextType, TRUE);
-                    gst_structure_set(gst_context_writable_structure (context),
-                            "handle", G_TYPE_POINTER, lsm_camera_window_manager_.getDisplay(), nullptr);
-                    gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(msg)), context);
-                }
-                goto drop;
-            }
-        case GST_MESSAGE_ELEMENT:
-            {
-                if (!gst_is_video_overlay_prepare_window_handle_message(msg)) {
-                    break;
-                }
-                CMP_LOG_INFO("Set wayland window handle : %p", lsm_camera_window_manager_.getSurface());
-                if (lsm_camera_window_manager_.getSurface()) {
-                    GstVideoOverlay *videoOverlay = GST_VIDEO_OVERLAY(GST_MESSAGE_SRC(msg));
-                    gst_video_overlay_set_window_handle(videoOverlay,
-                            (guintptr)(lsm_camera_window_manager_.getSurface()));
-
-                    gint video_disp_height = 0;
-                    gint video_disp_width = 0;
-                    lsm_camera_window_manager_.getVideoSize(video_disp_width, video_disp_height);
-                    if (video_disp_width && video_disp_height) {
-                        gint display_x = (1920 - video_disp_width) / 2;
-                        gint display_y = (1080 - video_disp_height) / 2;
-                        CMP_LOG_INFO("Set render rectangle :(%d, %d, %d, %d)",
-                                display_x, display_y, video_disp_width, video_disp_height);
-                        gst_video_overlay_set_render_rectangle(videoOverlay,
-                                display_x, display_y, video_disp_width, video_disp_height);
-
-                        gst_video_overlay_expose(videoOverlay);
-                    }
-                }
-                goto drop;
-            }
-        default:
+    case GST_MESSAGE_NEED_CONTEXT:
+    {
+        const gchar *type = nullptr;
+        gst_message_parse_context_type(msg, &type);
+        if (g_strcmp0(type, waylandDisplayHandleContextType) != 0)
+        {
             break;
+        }
+        CMP_LOG_INFO("Set a wayland display handle : %p", lsm_camera_window_manager_.getDisplay());
+        if (lsm_camera_window_manager_.getDisplay())
+        {
+            GstContext *context = gst_context_new(waylandDisplayHandleContextType, TRUE);
+            gst_structure_set(gst_context_writable_structure(context), "handle", G_TYPE_POINTER,
+                              lsm_camera_window_manager_.getDisplay(), nullptr);
+            gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(msg)), context);
+        }
+        goto drop;
+    }
+    case GST_MESSAGE_ELEMENT:
+    {
+        if (!gst_is_video_overlay_prepare_window_handle_message(msg))
+        {
+            break;
+        }
+        CMP_LOG_INFO("Set wayland window handle : %p", lsm_camera_window_manager_.getSurface());
+        if (lsm_camera_window_manager_.getSurface())
+        {
+            GstVideoOverlay *videoOverlay = GST_VIDEO_OVERLAY(GST_MESSAGE_SRC(msg));
+            gst_video_overlay_set_window_handle(
+                videoOverlay, (guintptr)(lsm_camera_window_manager_.getSurface()));
+
+            gint video_disp_height = 0;
+            gint video_disp_width  = 0;
+            lsm_camera_window_manager_.getVideoSize(video_disp_width, video_disp_height);
+            if (video_disp_width && video_disp_height)
+            {
+                gint display_x = (1920 - video_disp_width) / 2;
+                gint display_y = (1080 - video_disp_height) / 2;
+                CMP_LOG_INFO("Set render rectangle :(%d, %d, %d, %d)", display_x, display_y,
+                             video_disp_width, video_disp_height);
+                gst_video_overlay_set_render_rectangle(videoOverlay, display_x, display_y,
+                                                       video_disp_width, video_disp_height);
+
+                gst_video_overlay_expose(videoOverlay);
+            }
+        }
+        goto drop;
+    }
+    default:
+        break;
     }
 
     return GST_BUS_PASS;
@@ -572,14 +587,16 @@ drop:
     return GST_BUS_DROP;
 }
 
-void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
+void ShmemoryPipeline::FeedData(GstElement *appsrc, guint size)
 {
     unsigned char *data = 0;
-    int len = -1;
-    unsigned char *meta; int meta_len;
+    int len             = -1;
+    unsigned char *meta;
+    int meta_len;
     static GstClockTime timestamp = 0;
 
-    if (shm_listener_) shm_listener_->wait();
+    if (shm_listener_)
+        shm_listener_->wait();
 
     if (readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len) != 0)
     {
@@ -593,10 +610,11 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
         return;
     }
 
-    GstBuffer *buf = gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
-    GST_BUFFER_PTS (buf) = timestamp;
-    GST_BUFFER_DURATION (buf) = gst_util_uint64_scale_int (1, GST_SECOND, framerate_);
-    GstClockTime dur = GST_BUFFER_DURATION (buf);
+    GstBuffer *buf =
+        gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
+    GST_BUFFER_PTS(buf)      = timestamp;
+    GST_BUFFER_DURATION(buf) = gst_util_uint64_scale_int(1, GST_SECOND, framerate_);
+    GstClockTime dur         = GST_BUFFER_DURATION(buf);
     if (ULONG_MAX - timestamp > dur)
     {
         timestamp += dur;
@@ -605,7 +623,7 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
     {
         timestamp = 0;
     }
-    gst_app_src_push_buffer((GstAppSrc*)appsrc, buf);
+    gst_app_src_push_buffer((GstAppSrc *)appsrc, buf);
 
 #ifdef PTZ_ENABLED
     if (postProcessSolution_)
@@ -619,11 +637,12 @@ void ShmemoryPipeline::FeedData (GstElement * appsrc, guint size)
     show_frame();
 }
 
-void ShmemoryPipeline::ParseOptionString(const std::string& options)
+void ShmemoryPipeline::ParseOptionString(const std::string &options)
 {
     CMP_LOG_INFO("option string: %s", options.c_str());
     pbnjson::JDomParser jdparser;
-    if (!jdparser.parse(options, pbnjson::JSchema::AllSchema())) {
+    if (!jdparser.parse(options, pbnjson::JSchema::AllSchema()))
+    {
         CMP_LOG_INFO("ERROR JDomParser.parse. msg: %s ", options.c_str());
         return;
     }
@@ -631,7 +650,8 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
 
     if (parsed.hasKey("args") && parsed["args"].isArray())
     {
-        if (parsed["args"].arraySize() > 0) {
+        if (parsed["args"].arraySize() > 0)
+        {
             uri_ = parsed["args"][0].asString();
         }
         int i = 1;
@@ -639,41 +659,54 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
         {
             if (parsed["args"][i].hasKey("option"))
             {
-                if (parsed["args"][i]["option"].hasKey("displayPath")) {
-                    int32_t display_path = parsed["args"][i]["option"]["displayPath"].asNumber<int32_t>();
+                if (parsed["args"][i]["option"].hasKey("displayPath"))
+                {
+                    int32_t display_path =
+                        parsed["args"][i]["option"]["displayPath"].asNumber<int32_t>();
                     display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
                 }
-                if (parsed["args"][i]["option"].hasKey("windowId")) {
+                if (parsed["args"][i]["option"].hasKey("windowId"))
+                {
                     window_id_ = parsed["args"][i]["option"]["windowId"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("handle")) {
+                if (parsed["args"][i]["option"].hasKey("handle"))
+                {
                     handle_ = parsed["args"][i]["option"]["handle"].asNumber<int>();
                 }
-                if (parsed["args"][i]["option"].hasKey("videoDisplayMode")) {
+                if (parsed["args"][i]["option"].hasKey("videoDisplayMode"))
+                {
                     display_mode_ = parsed["args"][i]["option"]["videoDisplayMode"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("format")) {
+                if (parsed["args"][i]["option"].hasKey("format"))
+                {
                     format_ = parsed["args"][i]["option"]["format"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("width")) {
+                if (parsed["args"][i]["option"].hasKey("width"))
+                {
                     width_ = parsed["args"][i]["option"]["width"].asNumber<int>();
                 }
-                if (parsed["args"][i]["option"].hasKey("height")) {
+                if (parsed["args"][i]["option"].hasKey("height"))
+                {
                     height_ = parsed["args"][i]["option"]["height"].asNumber<int>();
                 }
-                if (parsed["args"][i]["option"].hasKey("frameRate")) {
+                if (parsed["args"][i]["option"].hasKey("frameRate"))
+                {
                     framerate_ = parsed["args"][i]["option"]["frameRate"].asNumber<int>();
                 }
-                if (parsed["args"][i]["option"].hasKey("memType")) {
+                if (parsed["args"][i]["option"].hasKey("memType"))
+                {
                     memtype_ = parsed["args"][i]["option"]["memType"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("memSrc")) {
+                if (parsed["args"][i]["option"].hasKey("memSrc"))
+                {
                     memsrc_ = parsed["args"][i]["option"]["memSrc"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("cameraId")) {
+                if (parsed["args"][i]["option"].hasKey("cameraId"))
+                {
                     camera_id_ = parsed["args"][i]["option"]["cameraId"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("primary")) {
+                if (parsed["args"][i]["option"].hasKey("primary"))
+                {
                     primary = parsed["args"][i]["option"]["primary"].asBool();
                 }
                 break;
@@ -683,71 +716,87 @@ void ShmemoryPipeline::ParseOptionString(const std::string& options)
     }
     else
     {
-        if(parsed.hasKey("uri")) {
+        if (parsed.hasKey("uri"))
+        {
             uri_ = parsed["uri"].asString();
-        } else {
+        }
+        else
+        {
             CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
             CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
             CMPASSERT(0);
         }
 
-        if (parsed["options"]["option"].hasKey("displayPath")) {
+        if (parsed["options"]["option"].hasKey("displayPath"))
+        {
             int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-            display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
+            display_path_        = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
         }
-        if (parsed["options"]["option"].hasKey("windowId")) {
+        if (parsed["options"]["option"].hasKey("windowId"))
+        {
             window_id_ = parsed["options"]["option"]["windowId"].asString();
         }
-        if (parsed["options"]["option"].hasKey("handle")) {
+        if (parsed["options"]["option"].hasKey("handle"))
+        {
             handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
         }
-        if (parsed["options"]["option"].hasKey("videoDisplayMode")) {
+        if (parsed["options"]["option"].hasKey("videoDisplayMode"))
+        {
             display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
         }
-        if (parsed["options"]["option"].hasKey("format")) {
+        if (parsed["options"]["option"].hasKey("format"))
+        {
             format_ = parsed["options"]["option"]["format"].asString();
         }
-        if (parsed["options"]["option"].hasKey("width")) {
+        if (parsed["options"]["option"].hasKey("width"))
+        {
             width_ = parsed["options"]["option"]["width"].asNumber<int>();
         }
-        if (parsed["options"]["option"].hasKey("height")) {
+        if (parsed["options"]["option"].hasKey("height"))
+        {
             height_ = parsed["options"]["option"]["height"].asNumber<int>();
         }
-        if (parsed["options"]["option"].hasKey("frameRate")) {
+        if (parsed["options"]["option"].hasKey("frameRate"))
+        {
             framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
         }
-        if (parsed["options"]["option"].hasKey("memType")) {
+        if (parsed["options"]["option"].hasKey("memType"))
+        {
             memtype_ = parsed["options"]["option"]["memType"].asString();
         }
-        if (parsed["options"]["option"].hasKey("memSrc")) {
+        if (parsed["options"]["option"].hasKey("memSrc"))
+        {
             memsrc_ = parsed["options"]["option"]["memSrc"].asString();
         }
-        if (parsed["options"]["option"].hasKey("cameraId")) {
+        if (parsed["options"]["option"].hasKey("cameraId"))
+        {
             camera_id_ = parsed["options"]["option"]["cameraId"].asString();
         }
-        if (parsed["options"]["option"].hasKey("primary")) {
+        if (parsed["options"]["option"].hasKey("primary"))
+        {
             primary = parsed["options"]["option"]["primary"].asBool();
         }
     }
 
-    CMP_LOG_INFO("uri: %s, display-path: %d, window_id: %s, display_mode: %s",
-            uri_.c_str(), display_path_, window_id_.c_str(), display_mode_.c_str());
+    CMP_LOG_INFO("uri: %s, display-path: %d, window_id: %s, display_mode: %s", uri_.c_str(),
+                 display_path_, window_id_.c_str(), display_mode_.c_str());
 }
 
 void ShmemoryPipeline::SetGstreamerDebug()
 {
     pbnjson::JValue parsed = pbnjson::JDomParser::fromFile("/etc/g-camera-pipeline/gst_debug.conf");
-    if (!parsed.isObject()) {
+    if (!parsed.isObject())
+    {
         CMP_LOG_ERROR("Gst debug file parsing error");
     }
 
     pbnjson::JValue debug = parsed["gst_debug"];
-    long size = debug.arraySize();
+    long size             = debug.arraySize();
     for (int i = 0; i < size; i++)
     {
-        const char *kDebug = "GST_DEBUG";
+        const char *kDebug     = "GST_DEBUG";
         const char *kDebugFile = "GST_DEBUG_FILE";
-        const char *kDebugDot = "GST_DEBUG_DUMP_DOT_DIR";
+        const char *kDebugDot  = "GST_DEBUG_DUMP_DOT_DIR";
         if (debug[i].hasKey(kDebug) && !debug[i][kDebug].asString().empty())
             setenv(kDebug, debug[i][kDebug].asString().c_str(), 1);
         if (debug[i].hasKey(kDebugFile) && !debug[i][kDebugFile].asString().empty())
@@ -761,43 +810,53 @@ int32_t ShmemoryPipeline::ConvertErrorCode(GQuark domain, gint code)
 {
     int32_t converted = MEDIA_MSG_ERR_PLAYING;
 
-    if (GST_CORE_ERROR == domain) {
-        switch (code) {
-            case GST_CORE_ERROR_EVENT:
-                converted = CMP_MSG__GST_CORE_ERROR_EVENT;
-                break;
-            default:
-                break;
+    if (GST_CORE_ERROR == domain)
+    {
+        switch (code)
+        {
+        case GST_CORE_ERROR_EVENT:
+            converted = CMP_MSG__GST_CORE_ERROR_EVENT;
+            break;
+        default:
+            break;
         }
-    } else if (GST_LIBRARY_ERROR == domain) {
+    }
+    else if (GST_LIBRARY_ERROR == domain)
+    {
         // do nothing
-    } else if (GST_RESOURCE_ERROR == domain) {
-        switch (code) {
-            case GST_RESOURCE_ERROR_SETTINGS:
-                converted = CMP_MSG__GST_RESOURCE_ERROR_SETTINGS;
-                break;
-            case GST_RESOURCE_ERROR_NOT_FOUND:
-                converted = CMP_MSG__GST_RESOURCE_ERROR_NOT_FOUND;
-                break;
-            case GST_RESOURCE_ERROR_OPEN_READ:
-                converted = CMP_MSG__GST_RESOURCE_ERROR_OPEN_READ;
-                break;
-            case GST_RESOURCE_ERROR_READ:
-                converted = CMP_MSG__GST_RESOURCE_ERROR_READ;
-                break;
-            default:
-                break;
+    }
+    else if (GST_RESOURCE_ERROR == domain)
+    {
+        switch (code)
+        {
+        case GST_RESOURCE_ERROR_SETTINGS:
+            converted = CMP_MSG__GST_RESOURCE_ERROR_SETTINGS;
+            break;
+        case GST_RESOURCE_ERROR_NOT_FOUND:
+            converted = CMP_MSG__GST_RESOURCE_ERROR_NOT_FOUND;
+            break;
+        case GST_RESOURCE_ERROR_OPEN_READ:
+            converted = CMP_MSG__GST_RESOURCE_ERROR_OPEN_READ;
+            break;
+        case GST_RESOURCE_ERROR_READ:
+            converted = CMP_MSG__GST_RESOURCE_ERROR_READ;
+            break;
+        default:
+            break;
         }
-    } else if (GST_STREAM_ERROR == domain) {
-        switch (code) {
-            case GST_STREAM_ERROR_TYPE_NOT_FOUND:
-                converted = CMP_MSG__GST_STREAM_ERROR_TYPE_NOT_FOUND;
-                break;
-            case GST_STREAM_ERROR_DEMUX:
-                converted = CMP_MSG__GST_STREAM_ERROR_DEMUX;
-                break;
-            default:
-                break;
+    }
+    else if (GST_STREAM_ERROR == domain)
+    {
+        switch (code)
+        {
+        case GST_STREAM_ERROR_TYPE_NOT_FOUND:
+            converted = CMP_MSG__GST_STREAM_ERROR_TYPE_NOT_FOUND;
+            break;
+        case GST_STREAM_ERROR_DEMUX:
+            converted = CMP_MSG__GST_STREAM_ERROR_DEMUX;
+            break;
+        default:
+            break;
         }
     }
     return converted;
@@ -812,12 +871,12 @@ base::error_t ShmemoryPipeline::HandleErrorMessage(GstMessage *message)
 
     base::error_t error;
     error.errorCode = ConvertErrorCode(domain, (gint)err->code);
-    error.errorText = g_strdup(err->message)? g_strdup(err->message) : "";
+    error.errorText = g_strdup(err->message) ? g_strdup(err->message) : "";
 
     CMP_LOG_INFO("[GST_MESSAGE_ERROR][domain:%s][from:%s][code:%d]"
-            "[converted:%d][msg:%s]",g_quark_to_string(domain),
-            (GST_OBJECT_NAME(GST_MESSAGE_SRC(message))), err->code, error.errorCode,
-            err->message);
+                 "[converted:%d][msg:%s]",
+                 g_quark_to_string(domain), (GST_OBJECT_NAME(GST_MESSAGE_SRC(message))), err->code,
+                 error.errorCode, err->message);
     CMP_LOG_INFO("Debug information: %s", debug_info ? debug_info : "none");
 
     g_clear_error(&err);
@@ -835,7 +894,7 @@ void ShmemoryPipeline::show_frame()
         auto toc = std::chrono::steady_clock::now();
         auto us  = std::chrono::duration_cast<std::chrono::microseconds>(toc - startTime).count();
         CMP_LOG_INFO("fps(%3.2f)", frame_interval * 1000000.0 / us);
-        startTime = toc;
+        startTime     = toc;
         frame_counter = 0;
     }
 }
@@ -846,9 +905,12 @@ int ShmemoryPipeline::openShmemory()
 
     if (memtype_ == kMemtypeShmem)
     {
-        try {
+        try
+        {
             context_.key = std::stoi(memsrc_);
-        } catch (...) {
+        }
+        catch (...)
+        {
             CMP_LOG_ERROR("Conversion error: memsrc_ is not a valid number.");
             return -1;
         }
@@ -899,8 +961,8 @@ int ShmemoryPipeline::readShmemory(SHMEM_HANDLE hShmem, unsigned char **ppData, 
 
 bool ShmemoryPipeline::createSignalListener()
 {
-    int pid = -1;
-    cs_client_ = std::make_unique<CameraServiceClient>();
+    int pid       = -1;
+    cs_client_    = std::make_unique<CameraServiceClient>();
     shm_listener_ = std::make_unique<SignalListener>();
 
     if (shm_listener_)
@@ -925,10 +987,10 @@ bool ShmemoryPipeline::createSignalListener()
     return true;
 }
 
-void ShmemoryPipeline::deleteSocketIfExists(const std::string& socketPath)
+void ShmemoryPipeline::deleteSocketIfExists(const std::string &socketPath)
 {
     const char *socket_path = socketPath.c_str();
-    errno = 0;
+    errno                   = 0;
     if (-1 == unlink(socket_path))
     {
         int checkErr = errno;

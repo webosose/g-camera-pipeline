@@ -24,7 +24,8 @@ Importer::Importer(void) : webosImported(nullptr) {}
 
 Importer::~Importer(void) {}
 
-bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID, uint32_t exportedType)
+bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID,
+                          uint32_t exportedType)
 {
     webosImported = wl_webos_foreign_import_element(foreign, windowID, exportedType);
     if (webosImported == nullptr)
@@ -35,7 +36,8 @@ bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID
 
 void Importer::finalize(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_destroy(webosImported);
         webosImported = nullptr;
     }
@@ -45,28 +47,32 @@ struct wl_webos_imported *Importer::getWebosImported(void) { return webosImporte
 
 void Importer::attachPunchThrough(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_attach_punchthrough(webosImported);
     }
 }
 
 void Importer::detachPunchThrough(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_detach_punchthrough(webosImported);
     }
 }
 
 void Importer::attachSurface(struct wl_surface *surface)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_attach_surface(webosImported, surface);
     }
 }
 
 void Importer::detachSurface(struct wl_surface *surface)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_detach_surface(webosImported, surface);
     }
 }

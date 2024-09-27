@@ -18,8 +18,8 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#define DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    ClassName(const ClassName &);           \
+#define DISALLOW_COPY_AND_ASSIGN(ClassName)                                                        \
+    ClassName(const ClassName &);                                                                  \
     void operator=(const ClassName &);
 
-#endif //COMMON_H_
+#endif // COMMON_H_

@@ -19,13 +19,9 @@
 namespace cmp
 {
 
-bool PostProcessSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen)
-{
-    return true;
-}
+bool PostProcessSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen) { return true; }
 bool PostProcessSolution::doPostProcess() { return true; }
-bool PostProcessSolution::doPostProcess(uint8_t *aData, uint32_t aStrride,
-                                        uint32_t offsetUV)
+bool PostProcessSolution::doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV)
 {
     return true;
 }
@@ -35,11 +31,16 @@ bool PostProcessSolution::setParam(const std::string &aParamId, void *aParam)
     if (aParam == nullptr)
         return false;
 
-    if (aParamId == PARAM_ID_VDEC_PORT) {
+    if (aParamId == PARAM_ID_VDEC_PORT)
+    {
         vdecPort_ = *(static_cast<int32_t *>(aParam));
-    } else if (aParamId == PARAM_ID_WIDTH) {
+    }
+    else if (aParamId == PARAM_ID_WIDTH)
+    {
         width_ = *(static_cast<uint32_t *>(aParam));
-    } else if (aParamId == PARAM_ID_HEIGHT) {
+    }
+    else if (aParamId == PARAM_ID_HEIGHT)
+    {
         height_ = *(static_cast<uint32_t *>(aParam));
     }
     return true;
@@ -47,4 +48,4 @@ bool PostProcessSolution::setParam(const std::string &aParamId, void *aParam)
 void *PostProcessSolution::getParam(const std::string &aParam) { return nullptr; }
 
 bool PostProcessSolution::needImageOverwrite() { return false; }
-}
+} // namespace cmp

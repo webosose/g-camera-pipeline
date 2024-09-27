@@ -1,9 +1,9 @@
 #ifndef CAMERA_SERVICE_CLIENT_H_
 #define CAMERA_SERVICE_CLIENT_H_
 
+#include <glib.h>
 #include <luna-service2/lunaservice.h>
 #include <string>
-#include <glib.h>
 
 class CameraServiceClient
 {
@@ -16,11 +16,13 @@ private:
     int fd_;
     int handle_;
     int pid_;
-    static bool cbGetFd(LSHandle*, LSMessage*, void*);
-    static bool cbGetReplyMsg(LSHandle*, LSMessage*, void*);
+    static bool cbGetFd(LSHandle *, LSMessage *, void *);
+    static bool cbGetReplyMsg(LSHandle *, LSMessage *, void *);
     bool acquireLSHandle();
     bool releaseLSHandle();
-    bool call(const std::string &uri, const std::string &payload, bool (*cb)(LSHandle*, LSMessage*, void*));
+    bool call(const std::string &uri, const std::string &payload,
+              bool (*cb)(LSHandle *, LSMessage *, void *));
+
 public:
     CameraServiceClient();
     ~CameraServiceClient();
@@ -30,6 +32,5 @@ public:
     bool stopCamera();
     bool close();
 };
-
 
 #endif /* CAMERA_SERVICE_CLIENT_H_ */

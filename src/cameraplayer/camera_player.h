@@ -14,39 +14,37 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
 #ifndef SRC_CAMERA_PLAYER_H_
 #define SRC_CAMERA_PLAYER_H_
 
-#include <glib.h>
 #include <glib-unix.h>
-extern "C" {
+#include <glib.h>
+extern "C"
+{
 #include <gst/gst.h>
 }
-#include <gst/player/player.h>
-#include <gst/pbutils/pbutils.h>
-#include <gst/app/gstappsrc.h>
-#include <gst/app/gstappsink.h>
-#include <gst/pbutils/pbutils.h>
+#include "base.h"
+#include "cam_posixshm.h"
+#include "camera_pipeline.h"
+#include "camera_service_client.h"
+#include "camera_types.h"
+#include "camshm.h"
+#include "message.h"
+#include "signal_listener.h"
 #include <camera_window_manager.h>
 #include <cameraservice/camera_service.h>
+#include <gst/app/gstappsink.h>
+#include <gst/app/gstappsrc.h>
+#include <gst/pbutils/pbutils.h>
+#include <gst/player/player.h>
 #include <luna-service2/lunaservice.hpp>
-#include "base.h"
-#include "message.h"
-#include "camshm.h"
-#include "cam_posixshm.h"
-#include "camera_types.h"
-#include "camera_service_client.h"
-#include "signal_listener.h"
-#include "camera_pipeline.h"
 
 using namespace std;
 
 static bool getFdCb(LSHandle *, LSMessage *, void *);
-static constexpr char const *waylandDisplayHandleContextType =
-    "GstWaylandDisplayHandleContextType";
-using CALLBACK_T = std::function<void(const gint type, const gint64 numValue,
-        const gchar *strValue, void *udata)>;
+static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
+using CALLBACK_T =
+    std::function<void(const gint type, const gint64 numValue, const gchar *strValue, void *udata)>;
 typedef struct GstAppSrcContext_
 {
     SHMEM_HANDLE shmemHandle;
@@ -55,30 +53,34 @@ typedef struct GstAppSrcContext_
     gint isStreaming;
     gint isFirstCallback;
     GstAppSrc *appsrc;
-}GstAppSrcContext;
+} GstAppSrcContext;
 
-typedef struct ACQUIRE_RESOURCE_INFO {
-  cmp::base::source_info_t* sourceInfo;
-  const char *displayMode;
-  gboolean result;
+typedef struct ACQUIRE_RESOURCE_INFO
+{
+    cmp::base::source_info_t *sourceInfo;
+    const char *displayMode;
+    gboolean result;
 } ACQUIRE_RESOURCE_INFO_T;
 
 #ifdef PTZ_ENABLED
-struct VideoCropRect {
+struct VideoCropRect
+{
     uint16_t x{0};
     uint16_t y{0};
     uint16_t width{0};
     uint16_t height{0};
 };
 #endif
-namespace cmp {
+namespace cmp
+{
 
 #ifdef PTZ_ENABLED
 // Auto PTZ
 class IPostProcessSolution;
 class SmoothSlidingController;
 
-struct FaceInfo {
+struct FaceInfo
+{
     uint16_t x;
     uint16_t y;
     uint16_t w;
@@ -86,124 +88,126 @@ struct FaceInfo {
     uint16_t confidence;
     uint16_t reserved;
 };
-//end
+// end
 #endif
 
-namespace service { class Service; }}
+namespace service
+{
+class Service;
+}
+} // namespace cmp
 
-namespace cmp { namespace player {
+namespace cmp
+{
+namespace player
+{
 
-class CameraPlayer : public CameraPipeline {
- public:
+class CameraPlayer : public CameraPipeline
+{
+public:
+    CameraPlayer();
+    ~CameraPlayer();
+    bool Load(const std::string &str) override;
+    bool LoadPlayer();
+    bool Unload() override;
+    void RegisterCbFunction(CALLBACK_T) override;
+    bool Play() override;
+    bool subscribeToCameraService();
+    bool TakeSnapshot(const std::string &location);
+    bool StartRecord(const std::string &location, const std::string &format, bool audio,
+                     const std::string &audioSrc) override;
+    bool StopRecord() override;
 
-  CameraPlayer();
-  ~CameraPlayer();
-  bool Load(const std::string& str) override;
-  bool LoadPlayer();
-  bool Unload() override;
-  void RegisterCbFunction(CALLBACK_T) override;
-  bool Play() override;
-  bool subscribeToCameraService();
-  bool TakeSnapshot(const std::string& location);
-  bool StartRecord(const std::string& location, const std::string& format,
-                     bool audio, const std::string& audioSrc) override;
-  bool StopRecord() override;
-
-  static gboolean HandleBusMessage(GstBus *bus,
-                                   GstMessage *message, gpointer user_data);
-  static GstBusSyncReply HandleSyncBusMessage(GstBus *bus,
-                                     GstMessage *msg, gpointer data);
-  static guint mCameraServiceCbTimerID;
-  static gboolean CameraServiceCbTimerCallback(void* data);
-  void CameraServiceCbTimerReset();
+    static gboolean HandleBusMessage(GstBus *bus, GstMessage *message, gpointer user_data);
+    static GstBusSyncReply HandleSyncBusMessage(GstBus *bus, GstMessage *msg, gpointer data);
+    static guint mCameraServiceCbTimerID;
+    static gboolean CameraServiceCbTimerCallback(void *data);
+    void CameraServiceCbTimerReset();
 #ifdef PTZ_ENABLED
-  //Auto PTZ
-  std::shared_ptr<IPostProcessSolution> postProcessSolution_;
-  //end
+    // Auto PTZ
+    std::shared_ptr<IPostProcessSolution> postProcessSolution_;
+    // end
 #endif
- private:
-  void PauseInternalSync();
-  void ParseOptionString(const std::string& options);
-  void NotifySourceInfo();
-  void SetGstreamerDebug();
-  bool attachSurface(bool allow_no_window = false);
-  bool detachSurface();
-  void WriteImageToFile(const void *p, int size);
-  bool GetSourceInfo();
-  bool LoadPipeline();
-  bool unloadImpl();
-  bool stopRecordImpl();
-  bool SetPlayerState(base::playback_state_t state) {
-    current_state_ = state;
-    return true;
-  }
+private:
+    void PauseInternalSync();
+    void ParseOptionString(const std::string &options);
+    void NotifySourceInfo();
+    void SetGstreamerDebug();
+    bool attachSurface(bool allow_no_window = false);
+    bool detachSurface();
+    void WriteImageToFile(const void *p, int size);
+    bool GetSourceInfo();
+    bool LoadPipeline();
+    bool unloadImpl();
+    bool stopRecordImpl();
+    bool SetPlayerState(base::playback_state_t state)
+    {
+        current_state_ = state;
+        return true;
+    }
 
-  bool CreatePreviewBin(GstPad * pad);
-  bool CreateCaptureElements(GstPad * pad);
-  bool CreateRecordElements(GstPad * pad, GstPad *, const std::string& fileFormat);
-  bool CreateAudioRecordElements(const std::string&, GstPad * pad);
-  bool LoadYUY2Pipeline();
-  bool LoadJPEGPipeline();
-  int32_t ConvertErrorCode(GQuark domain, gint code);
-  base::error_t HandleErrorMessage(GstMessage *message);
+    bool CreatePreviewBin(GstPad *pad);
+    bool CreateCaptureElements(GstPad *pad);
+    bool CreateRecordElements(GstPad *pad, GstPad *, const std::string &fileFormat);
+    bool CreateAudioRecordElements(const std::string &, GstPad *pad);
+    bool LoadYUY2Pipeline();
+    bool LoadJPEGPipeline();
+    int32_t ConvertErrorCode(GQuark domain, gint code);
+    base::error_t HandleErrorMessage(GstMessage *message);
 
-  void FreeLoadPipelineElements();
-  void FreeCaptureElements();
-  void FreeRecordElements();
-  void FreePreviewBinElements();
+    void FreeLoadPipelineElements();
+    void FreeCaptureElements();
+    void FreeRecordElements();
+    void FreePreviewBinElements();
 
-  static void FeedData(GstElement * appsrc, guint size, gpointer gdata);
-  static void FeedPosixData(GstElement * appsrc, guint size, gpointer gdata);
-  static void finalizeRecord(gpointer gdata);
-  static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
-  static GstPadProbeReturn CaptureRemoveProbe(GstPad * pad,
-                                                GstPadProbeInfo * info,
+    static void FeedData(GstElement *appsrc, guint size, gpointer gdata);
+    static void FeedPosixData(GstElement *appsrc, guint size, gpointer gdata);
+    static void finalizeRecord(gpointer gdata);
+    static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
+    static GstPadProbeReturn CaptureRemoveProbe(GstPad *pad, GstPadProbeInfo *info,
                                                 gpointer user_data);
-  static GstPadProbeReturn RecordRemoveProbe(GstPad * pad,
-                                               GstPadProbeInfo * info,
+    static GstPadProbeReturn RecordRemoveProbe(GstPad *pad, GstPadProbeInfo *info,
                                                gpointer user_data);
-  std::string media_id_;
-  uint32_t display_path_;
-  CALLBACK_T cbFunction_;
+    std::string media_id_;
+    uint32_t display_path_;
+    CALLBACK_T cbFunction_;
 
-  int32_t planeId_, width_, height_, framerate_, crtcId_, connId_,
-            display_path_idx_,handle_, iomode_;
-  int  num_of_images_to_capture_, num_of_captured_images_;
-  std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
-  GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_, *filter_H264_,
-             *filter_I420_, *filter_JPEG_, *filter_RGB_, *vconv_, *record_convert_,
-             *preview_decoder_, *preview_parser_, *preview_encoder_, *preview_convert_,
-             *tee_, *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_,
-             *record_encoder_, *record_parse_, *record_decoder_, *record_mux_, *record_sink_,
-             *preview_queue_, *preview_sink_, *record_audio_src_, *record_audio_queue_,
-             *record_audio_convert_, *record_video_queue_, *record_audio_encoder_, *preview_scale_,
-             *preview_video_crop_;
-  GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_,
-         *capture_queue_pad_, *tee_capture_pad_, *record_queue_pad_,
-         *tee_record_pad_, *record_audio_encoder_pad_, *record_video_queue_pad_,
-         *record_audio_mux_pad_, *record_video_mux_pad_;
-  GstAppSrcContext context_ ;
-  base::source_info_t source_info_;
-  base::playback_state_t current_state_;
-  GstBus *bus_;
-  GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_, *caps_H264_;
-  cmp::service::Service *service_;
-  bool load_complete_;
+    int32_t planeId_, width_, height_, framerate_, crtcId_, connId_, display_path_idx_, handle_,
+        iomode_;
+    int num_of_images_to_capture_, num_of_captured_images_;
+    std::string uri_, memtype_, memsrc_, format_, capture_path_, record_path_;
+    GstElement *pipeline_, *source_, *parser_, *decoder_, *filter_YUY2_, *filter_NV12_,
+        *filter_H264_, *filter_I420_, *filter_JPEG_, *filter_RGB_, *vconv_, *record_convert_,
+        *preview_decoder_, *preview_parser_, *preview_encoder_, *preview_convert_, *tee_,
+        *capture_queue_, *capture_encoder_, *capture_sink_, *record_queue_, *record_encoder_,
+        *record_parse_, *record_decoder_, *record_mux_, *record_sink_, *preview_queue_,
+        *preview_sink_, *record_audio_src_, *record_audio_queue_, *record_audio_convert_,
+        *record_video_queue_, *record_audio_encoder_, *preview_scale_, *preview_video_crop_;
+    GstPad *tee_preview_pad_, *preview_ghost_sinkpad_, *preview_queue_pad_, *capture_queue_pad_,
+        *tee_capture_pad_, *record_queue_pad_, *tee_record_pad_, *record_audio_encoder_pad_,
+        *record_video_queue_pad_, *record_audio_mux_pad_, *record_video_mux_pad_;
+    GstAppSrcContext context_;
+    base::source_info_t source_info_;
+    base::playback_state_t current_state_;
+    GstBus *bus_;
+    GstCaps *caps_YUY2_, *caps_NV12_, *caps_I420_, *caps_JPEG_, *caps_RGB_, *caps_H264_;
+    cmp::service::Service *service_;
+    bool load_complete_;
 
-  /* GAV Features */
-  LSM::CameraWindowManager lsm_camera_window_manager_;
-  std::string display_mode_;
-  std::string window_id_;
+    /* GAV Features */
+    LSM::CameraWindowManager lsm_camera_window_manager_;
+    std::string display_mode_;
+    std::string window_id_;
 
-  /* shmem sync */
-  std::string camera_id_;
-  CameraServiceClient *cs_client_;
-  SignalListener *shm_listener_;
+    /* shmem sync */
+    std::string camera_id_;
+    CameraServiceClient *cs_client_;
+    SignalListener *shm_listener_;
 };
 #ifdef PTZ_ENABLED
 IPostProcessSolution *getPostProcessSolution();
 #endif
 
-}  // namespace player
-}  // namespace cmp
-#endif  // SRC_CAMERA_PLAYER_H_
+} // namespace player
+} // namespace cmp
+#endif // SRC_CAMERA_PLAYER_H_

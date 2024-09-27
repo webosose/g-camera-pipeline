@@ -46,6 +46,6 @@ private:
     struct wl_webos_imported *webosImported;
 };
 
-} //namespace Wayland
+} // namespace Wayland
 
-#endif //WAYLAND_IMPORTER_H_
+#endif // WAYLAND_IMPORTER_H_

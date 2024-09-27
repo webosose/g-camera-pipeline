@@ -16,12 +16,14 @@
 
 #include "log/log.h"
 
-PmLogContext GetPmLogContext() {
-  static PmLogContext cmp_log_context = 0;
+PmLogContext GetPmLogContext()
+{
+    static PmLogContext cmp_log_context = 0;
 
-  if (0 == cmp_log_context) {
-    PmLogGetContext("g-camera-pipeline", &cmp_log_context);
-  }
+    if (0 == cmp_log_context)
+    {
+        PmLogGetContext("g-camera-pipeline", &cmp_log_context);
+    }
 
-  return cmp_log_context;
+    return cmp_log_context;
 }

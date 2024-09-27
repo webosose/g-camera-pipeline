@@ -46,23 +46,18 @@
 #ifndef __GST_CAMSRC_H__
 #define __GST_CAMSRC_H__
 
-#include <gst/gst.h>
-#include <gst/base/gstpushsrc.h>
 #include "camera/hal/camera_hal_if.h"
+#include <gst/base/gstpushsrc.h>
+#include <gst/gst.h>
 
 G_BEGIN_DECLS
 
 /* #defines don't like whitespacey bits */
-#define GST_TYPE_CAMSRC \
-  (gst_camsrc_get_type())
-#define GST_CAMSRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CAMSRC,Gstcamsrc))
-#define GST_CAMSRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CAMSRC,GstcamsrcClass))
-#define GST_IS_CAMSRC(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CAMSRC))
-#define GST_IS_CAMSRC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CAMSRC))
+#define GST_TYPE_CAMSRC (gst_camsrc_get_type())
+#define GST_CAMSRC(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_CAMSRC, Gstcamsrc))
+#define GST_CAMSRC_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_CAMSRC, GstcamsrcClass))
+#define GST_IS_CAMSRC(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_CAMSRC))
+#define GST_IS_CAMSRC_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_CAMSRC))
 #define GST_TYPE_CAMSRC_IOMODE (gst_camsrc_iomode_get_type())
 GType gst_camsrc_iomode_get_type(void);
 
@@ -73,38 +68,38 @@ GType gst_camsrc_iomode_get_type(void);
 #define DEFAULT_PIXEL_FORMAT CAMERA_PIXEL_FORMAT_JPEG
 #define DEFAULT_VIDEO_FPS 30
 
-typedef struct _Gstcamsrc      Gstcamsrc;
+typedef struct _Gstcamsrc Gstcamsrc;
 typedef struct _GstcamsrcClass GstcamsrcClass;
 static gboolean bStarted = 0;
-const char *subsystem = "/usr/lib/camera/libhal-v4l2.so.1.0";
-const char *devname = "/dev/video0";
+const char *subsystem    = "/usr/lib/camera/libhal-v4l2.so.1.0";
+const char *devname      = "/dev/video0";
 static stream_format_t streamformat;
 
-
-typedef enum {
-          GST_V4L2_IO_MMAP          = 0,
-          GST_V4L2_IO_USERPTR       = 1,
-          GST_V4L2_IO_DMABUF_EXPORT = 2
+typedef enum
+{
+    GST_V4L2_IO_MMAP          = 0,
+    GST_V4L2_IO_USERPTR       = 1,
+    GST_V4L2_IO_DMABUF_EXPORT = 2
 } GstV4l2IOMode;
 
 struct _Gstcamsrc
 {
-  GstPushSrc pushsrc;
+    GstPushSrc pushsrc;
 
-  GstPad *srcpad;
-  void *p_h_camera;
+    GstPad *srcpad;
+    void *p_h_camera;
 
-  gchar* device;
-  GstV4l2IOMode mode;
-  GstBufferPool *pool;
+    gchar *device;
+    GstV4l2IOMode mode;
+    GstBufferPool *pool;
 };
 
 struct _GstcamsrcClass
 {
-  GstPushSrcClass parent_class;
+    GstPushSrcClass parent_class;
 };
 
-GType gst_camsrc_get_type (void);
+GType gst_camsrc_get_type(void);
 
 G_END_DECLS
 

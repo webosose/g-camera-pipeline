@@ -15,17 +15,18 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
+#include "api_call_checker.h"
+#include "wayland_surface.h"
 #include <gtest/gtest.h>
 #include <iostream>
-#include "wayland_surface.h"
-#include "api_call_checker.h"
 
 class WaylandSurfaceTest : public ::testing::Test
 {
 protected:
     void SetUp(void)
     {
-        compositor = (struct wl_compositor *)wl_registry_bind(registry, 0, &wl_compositor_interface, 0);
+        compositor =
+            (struct wl_compositor *)wl_registry_bind(registry, 0, &wl_compositor_interface, 0);
     }
 
     Wayland::Surface surface;
@@ -35,34 +36,34 @@ protected:
 
 TEST_F(WaylandSurfaceTest, InitializeAndFinalize)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     bool expected = true;
 
-    //Act
+    // Act
     bool actual = surface.initialize(compositor);
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     surface.finalize();
     actual = isAPICalled("wl_surface_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
 
 TEST_F(WaylandSurfaceTest, GetSurface)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     surface.initialize(compositor);
 
-    //Act
+    // Act
     struct wl_surface *actual = surface.getSurface();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 
     surface.finalize();

@@ -23,11 +23,13 @@
 namespace cmp
 {
 
-struct Point {
+struct Point
+{
     int x, y;
 };
 
-typedef enum {
+typedef enum
+{
     NORMAL,
     ZOOM_IN,
     PAN_AND_TILT,
@@ -62,4 +64,4 @@ private:
     PTZMovingParam ptzMovingParam_;
     std::ofstream dbgSaveHistFile;
 };
-}
+} // namespace cmp

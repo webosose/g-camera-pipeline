@@ -17,8 +17,8 @@
 
 #include "wayland_exporter.h"
 
-void handlerWindowIDAssigned(void *data, struct wl_webos_exported *wlWebosExported, const char *windowID,
-                             uint32_t exportedType)
+void handlerWindowIDAssigned(void *data, struct wl_webos_exported *wlWebosExported,
+                             const char *windowID, uint32_t exportedType)
 {
     auto exporter = (Wayland::Exporter *)data;
     exporter->setWindowID(windowID);
@@ -33,8 +33,8 @@ Exporter::Exporter() : webosExported(nullptr) {}
 
 Exporter::~Exporter() {}
 
-bool Exporter::initialize(struct wl_display *display, struct wl_webos_foreign *foreign, struct wl_surface *surface,
-                          uint32_t exportedType)
+bool Exporter::initialize(struct wl_display *display, struct wl_webos_foreign *foreign,
+                          struct wl_surface *surface, uint32_t exportedType)
 {
     webosExported = wl_webos_foreign_export_element(foreign, surface, exportedType);
     if (webosExported == nullptr)
@@ -49,7 +49,8 @@ bool Exporter::initialize(struct wl_display *display, struct wl_webos_foreign *f
 
 void Exporter::finalize(void)
 {
-    if (webosExported) {
+    if (webosExported)
+    {
         wl_webos_exported_destroy(webosExported);
         webosExported = nullptr;
     }

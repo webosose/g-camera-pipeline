@@ -45,7 +45,8 @@ void SmoothSlidingController::getAvgDataFace(unsigned short *data_face)
 }
 void SmoothSlidingController::pushRect(CropRect &newRect)
 {
-    if (rectList.size() > nrQLimit_) {
+    if (rectList.size() > nrQLimit_)
+    {
         auto tmp = rectList.front();
         rectList.pop();
         rectList.push(newRect);
@@ -54,7 +55,9 @@ void SmoothSlidingController::pushRect(CropRect &newRect)
         rectSum.bottom += newRect.bottom - tmp.bottom;
         rectSum.left += newRect.left - tmp.left;
         rectSum.right += newRect.right - tmp.right;
-    } else {
+    }
+    else
+    {
         rectList.push(newRect);
         rectSum.top += newRect.top;
         rectSum.bottom += newRect.bottom;
@@ -84,7 +87,8 @@ bool SmoothSlidingController::needFaceUpdate(int8_t aCurFaceCount)
     {
         ++fParam_.count_;
     }
-    if (fParam_.count_ % fParam_.leap_ == 0) {
+    if (fParam_.count_ % fParam_.leap_ == 0)
+    {
         fParam_.count_ = 0;
         auto curFps    = fpsCalc_.getCurrentFps();
         if (curFps > 15.0f)
@@ -99,21 +103,26 @@ bool SmoothSlidingController::needFaceUpdate(int8_t aCurFaceCount)
 
 bool SmoothSlidingController::isFaceInfoValidate(int8_t aCurFaceCount)
 {
-    //CMP_LOG_INFO("(%d)", aCurFaceCount);
-    if (fParam_.selectedFaceCount_ == aCurFaceCount) {
+    // CMP_LOG_INFO("(%d)", aCurFaceCount);
+    if (fParam_.selectedFaceCount_ == aCurFaceCount)
+    {
         fParam_.faceIdenticalCount_ = 0;
         return true;
     }
 
     bool result = false;
 
-    if (fParam_.prevFaceCount_ != aCurFaceCount) {
+    if (fParam_.prevFaceCount_ != aCurFaceCount)
+    {
         fParam_.prevFaceCount_      = aCurFaceCount;
         fParam_.faceIdenticalCount_ = 0;
-    } else {
+    }
+    else
+    {
         CMP_LOG_INFO("fParam_.faceIdenticalCount_ = %d(%d) faceDecisionThreshold_ = %d\n",
-                   fParam_.faceIdenticalCount_, aCurFaceCount, fParam_.faceDecisionThreshold_);
-        if (++fParam_.faceIdenticalCount_ == fParam_.faceDecisionThreshold_) {
+                     fParam_.faceIdenticalCount_, aCurFaceCount, fParam_.faceDecisionThreshold_);
+        if (++fParam_.faceIdenticalCount_ == fParam_.faceDecisionThreshold_)
+        {
             fParam_.faceIdenticalCount_ = 0;
             fParam_.selectedFaceCount_  = aCurFaceCount;
             result                      = true;
@@ -121,4 +130,4 @@ bool SmoothSlidingController::isFaceInfoValidate(int8_t aCurFaceCount)
     }
     return result;
 }
-}
+} // namespace cmp

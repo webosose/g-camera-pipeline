@@ -15,7 +15,6 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "wayland_foreign_test.h"
 
 int main(int argc, char **argv)

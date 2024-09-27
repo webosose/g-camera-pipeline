@@ -42,4 +42,4 @@ private:
 
 } // namespace Wayland
 
-#endif //WAYLAND_SURFACE_H_
+#endif // WAYLAND_SURFACE_H_

@@ -1,16 +1,15 @@
 #include "shmemory_jpeg_pipeline.h"
-#include "log.h"
 #include "element_factory.h"
+#include "log.h"
 
 bool ShmemoryJpegPipeline::launch()
 {
     CMP_LOG_INFO("start");
 
     // 1. Build pipeline description and launch.
-    gchar* content = nullptr;
+    gchar *content = nullptr;
     std::string pipeline_desc;
-    if (g_file_get_contents(camera_pipeline_path.c_str(),
-                             &content, nullptr, nullptr))
+    if (g_file_get_contents(camera_pipeline_path.c_str(), &content, nullptr, nullptr))
     {
         pipeline_desc = std::string(content);
         g_free(content);
@@ -32,7 +31,8 @@ bool ShmemoryJpegPipeline::launch()
 #endif
 
         pipeline_desc += " ! video/x-raw, format=RGB16";
-        pipeline_desc += " ! videoscale ! video/x-raw, width=" + std::to_string(width_) + ", height=" + std::to_string(height_);
+        pipeline_desc += " ! videoscale ! video/x-raw, width=" + std::to_string(width_) +
+                         ", height=" + std::to_string(height_);
         pipeline_desc += " ! tee name=t";
 
         element = ElementFactory::GetPreferredElementName(pipelineType, "video-sink");
@@ -45,7 +45,8 @@ bool ShmemoryJpegPipeline::launch()
             deleteSocketIfExists(socketPath);
 
             CMP_LOG_INFO("add shmsink %s", socketPath.c_str());
-            pipeline_desc += " t. ! queue ! shmsink sync=false socket-path=" + socketPath + " wait-for-connection=false shm_size=10000000";
+            pipeline_desc += " t. ! queue ! shmsink sync=false socket-path=" + socketPath +
+                             " wait-for-connection=false shm_size=10000000";
         }
     }
 
@@ -62,28 +63,21 @@ bool ShmemoryJpegPipeline::launch()
     auto src = gst_bin_get_by_name(GST_BIN(pipeline_), "src");
     if (src)
     {
-        auto caps = gst_caps_new_simple(
-            "image/jpeg",
-            "framerate", GST_TYPE_FRACTION, framerate_, 1,
-            "width", G_TYPE_INT, width_,
-            "height", G_TYPE_INT, height_,
-            nullptr);
+        auto caps = gst_caps_new_simple("image/jpeg", "framerate", GST_TYPE_FRACTION, framerate_, 1,
+                                        "width", G_TYPE_INT, width_, "height", G_TYPE_INT, height_,
+                                        nullptr);
 
-        g_object_set(src,
-                     "is-live", true,
-                     "format", GST_FORMAT_TIME,
-                     "do-timestamp", true,
-                     "caps", caps,
-                     nullptr);
+        g_object_set(src, "is-live", true, "format", GST_FORMAT_TIME, "do-timestamp", true, "caps",
+                     caps, nullptr);
 
-        g_signal_connect(
-            src, "need-data",
-            G_CALLBACK(+[](GstElement *src, guint size, gpointer data) {
-                ShmemoryJpegPipeline *p =
-                    reinterpret_cast<ShmemoryJpegPipeline *>(data);
-                    p->FeedData(src, size);
-            }),
-            this);
+        g_signal_connect(src, "need-data",
+                         G_CALLBACK(+[](GstElement *src, guint size, gpointer data)
+                                    {
+                                        ShmemoryJpegPipeline *p =
+                                            reinterpret_cast<ShmemoryJpegPipeline *>(data);
+                                        p->FeedData(src, size);
+                                    }),
+                         this);
     }
 
     // 3. Setup sink

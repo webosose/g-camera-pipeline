@@ -23,14 +23,10 @@
 namespace cmp
 {
 
-bool EmptySolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen)
-{
-    return true;
-}
+bool EmptySolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen) { return true; }
 bool EmptySolution::doPostProcess() { return true; }
 
-bool EmptySolution::doPostProcess(uint8_t *aData, uint32_t aStrride,
-                                  uint32_t offsetUV)
+bool EmptySolution::doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV)
 {
     return true;
 }
@@ -45,4 +41,4 @@ bool EmptySolution::setParam(const std::string &aParamId, void *aParam)
 void *EmptySolution::getParam(const std::string &aParam) { return nullptr; }
 
 bool EmptySolution::needImageOverwrite() { return false; }
-}
+} // namespace cmp

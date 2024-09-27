@@ -1,21 +1,22 @@
 #ifndef SHMEMORY_PIPELINE_H_
 #define SHMEMORY_PIPELINE_H_
 
-#include "camera_pipeline.h"
-#include <memory>
-#include <thread>
-#include <camera_window_manager.h>
 #include "base.h"
+#include "camera_pipeline.h"
 #include "camera_types.h"
 #include "camshm.h"
+#include <camera_window_manager.h>
+#include <memory>
+#include <thread>
 
 static const std::string camera_pipeline_path = "/etc/g-camera-pipeline/camera_pipeline";
 
 using namespace cmp;
 
 #ifdef PTZ_ENABLED
-namespace cmp {
-    class IPostProcessSolution;
+namespace cmp
+{
+class IPostProcessSolution;
 }
 #endif
 
@@ -33,8 +34,9 @@ class ShmemoryPipeline : public CameraPipeline
         GstAppSrc *appsrc;
     } GstAppSrcContext;
 
-    typedef struct ACQUIRE_RESOURCE_INFO {
-        base::source_info_t* sourceInfo;
+    typedef struct ACQUIRE_RESOURCE_INFO
+    {
+        base::source_info_t *sourceInfo;
         const char *displayMode;
         gboolean result;
     } ACQUIRE_RESOURCE_INFO_T;
@@ -49,14 +51,14 @@ class ShmemoryPipeline : public CameraPipeline
     std::string display_mode_;
     std::string window_id_;
 
-    int frame_counter  = 0;
+    int frame_counter                               = 0;
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
-    GstAppSrcContext context_{NULL,1,0,0,FALSE,NULL};
+    GstAppSrcContext context_{NULL, 1, 0, 0, FALSE, NULL};
     base::source_info_t source_info_;
     int posixshm_fd = -1;
 
-    const std::string kMemtypeShmem = "shmem";
+    const std::string kMemtypeShmem    = "shmem";
     const std::string kMemtypePosixShm = "posixshm";
 
 #ifdef PTZ_ENABLED
@@ -72,7 +74,7 @@ class ShmemoryPipeline : public CameraPipeline
     bool acquireResource();
     bool GetSourceInfo();
     void NotifySourceInfo();
-    void ParseOptionString(const std::string& options);
+    void ParseOptionString(const std::string &options);
     void SetGstreamerDebug();
     void show_frame();
     bool createSignalListener();
@@ -93,7 +95,7 @@ public:
     ShmemoryPipeline();
     virtual ~ShmemoryPipeline();
 
-    bool Load(const std::string& msg) override;
+    bool Load(const std::string &msg) override;
     bool Unload() override;
     bool Play() override;
     void RegisterCbFunction(CALLBACK_T cbf);
@@ -104,8 +106,8 @@ protected:
     std::string uri_, memtype_, memsrc_, format_, camera_id_;
     bool primary{false};
 
-    void FeedData(GstElement * appsrc, guint size);
-    void deleteSocketIfExists(const std::string& socketPath);
+    void FeedData(GstElement *appsrc, guint size);
+    void deleteSocketIfExists(const std::string &socketPath);
 
     GstElement *pipeline_{nullptr};
     std::string pipelineType;

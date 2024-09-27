@@ -2,11 +2,12 @@
 #define PIPELINE_FACTORY_H_
 
 #include <memory>
-#include <string>
 #include <pbnjson.hpp>
+#include <string>
 
 class CameraPipeline;
-class PipelineFactory {
+class PipelineFactory
+{
 public:
     static std::shared_ptr<CameraPipeline> CreatePlayer(const pbnjson::JValue &parsed);
 };

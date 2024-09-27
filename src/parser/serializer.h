@@ -18,61 +18,70 @@
 #ifndef SRC_PARSER_SERIALIZER_H_
 #define SRC_PARSER_SERIALIZER_H_
 
+#include <base/base.h>
 #include <pbnjson.hpp>
-#include <type_traits>
 #include <string>
+#include <type_traits>
 
-namespace cmp { namespace parser {
+namespace cmp
+{
+namespace parser
+{
 
-template<typename T>
-pbnjson::JValue to_json(const T & value) {
-  return pbnjson::JValue(value);
+template <typename T>
+pbnjson::JValue to_json(const T &value)
+{
+    return pbnjson::JValue(value);
 }
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::result_t &);
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::source_info_t &);
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::video_info_t &);
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::error_t &);
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::media_info_t &);
 
-template<>
+template <>
 pbnjson::JValue to_json(const base::load_param_t &);
 
-class Composer {
- public:
-  Composer();
+class Composer
+{
+public:
+    Composer();
 
-  template<typename T>
-  void put(const char * key, const T & value) {
-    _dom.put(key, to_json(value));
-  }
+    template <typename T>
+    void put(const char *key, const T &value)
+    {
+        _dom.put(key, to_json(value));
+    }
 
-  template<typename T>
-  void put(const std::string & key, const T & value) {
-    put(key.c_str(), value);
-  }
+    template <typename T>
+    void put(const std::string &key, const T &value)
+    {
+        put(key.c_str(), value);
+    }
 
-  template<typename T>
-  void put(const T & value) {
-    _dom = std::move(to_json(value));
-  }
+    template <typename T>
+    void put(const T &value)
+    {
+        _dom = std::move(to_json(value));
+    }
 
-  std::string result();
+    std::string result();
 
- private:
-  pbnjson::JValue _dom;
+private:
+    pbnjson::JValue _dom;
 };
 
-}  // namespace parser
-}  // namespace Cmp
+} // namespace parser
+} // namespace cmp
 
-#endif  // SRC_PARSER_SERIALIZER_H_
+#endif // SRC_PARSER_SERIALIZER_H_

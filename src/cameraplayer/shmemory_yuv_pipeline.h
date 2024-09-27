@@ -6,10 +6,7 @@
 class ShmemoryYuvPipeline : public ShmemoryPipeline
 {
 public:
-    ShmemoryYuvPipeline()
-    {
-        pipelineType = "YuvPipeline";
-    }
+    ShmemoryYuvPipeline() { pipelineType = "YuvPipeline"; }
 
     bool launch();
 };

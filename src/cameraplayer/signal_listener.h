@@ -1,8 +1,8 @@
 #ifndef SIGNAL_LISTENER_H_
 #define SIGNAL_LISTENER_H_
 
-#include <signal.h>
 #include <condition_variable>
+#include <signal.h>
 #include <thread>
 
 class SignalListener
@@ -15,6 +15,7 @@ public:
     int run();
     void quit();
     void wait();
+
 private:
     struct sig_option_t
     {

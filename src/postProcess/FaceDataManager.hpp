@@ -33,7 +33,8 @@ namespace cmp
 {
 class SmoothSlidingController;
 
-struct FaceData {
+struct FaceData
+{
     uint16_t x{0};
     uint16_t y{0};
     uint16_t w{0};
@@ -51,10 +52,9 @@ public:
     void setHeight(uint32_t aHeight);
     void updateFaceInfo(uint8_t *aMeta, int32_t aMetaLen);
     void cropAndRemapFace(GstElement *crop);
-    void drawBox(uint8_t *data, std::string cs, uint32_t aStrride,
-                 uint32_t offsetUV);
+    void drawBox(uint8_t *data, std::string cs, uint32_t aStrride, uint32_t offsetUV);
     CropRect getCropAndRemapFace(bool *isRectUpdated);
-    static int8_t findWiderFaceIndex(std::vector<FaceData>& faceList);
+    static int8_t findWiderFaceIndex(std::vector<FaceData> &faceList);
 
 private:
     void setFaceInfo(uint16_t *faceData, const uint8_t faceCount);
@@ -77,4 +77,4 @@ private:
 
     bool bDrawBox_{false};
 };
-}
+} // namespace cmp

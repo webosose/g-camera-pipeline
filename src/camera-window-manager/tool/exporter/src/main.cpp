@@ -15,21 +15,22 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#include <iostream>
-#include <unistd.h>
-#include <assert.h>
+#include "wayland_exporter.h"
+#include "wayland_foreign.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglplatform.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
-#include "wayland_foreign.h"
-#include "wayland_exporter.h"
+#include <assert.h>
 #include <csignal>
+#include <iostream>
+#include <unistd.h>
 
 #define VERTEX_ARRAY (0)
 
-typedef struct {
+typedef struct
+{
     EGLDisplay eglDisplay;
     EGLContext eglContext;
     EGLConfig *eglConfig;
@@ -37,7 +38,8 @@ typedef struct {
     EGLConfig currentEglConfig;
 } EGLData;
 
-typedef struct {
+typedef struct
+{
     GLuint vbo;
     GLuint fragShader;
     GLuint vertShader;
@@ -46,7 +48,8 @@ typedef struct {
     unsigned int vertexStride;
 } GLData;
 
-typedef struct {
+typedef struct
+{
     struct wl_egl_window *native;
     struct wl_surface *wlSurface;
     struct wl_shell_surface *wlShellSurface;
@@ -64,20 +67,18 @@ static void handlePing(void *data, struct wl_shell_surface *shellSurface, uint32
     wl_shell_surface_pong(shellSurface, serial);
 }
 
-static void handleConfigure(void *data, struct wl_shell_surface *shellSurface, uint32_t edges, int32_t width, int32_t height)
+static void handleConfigure(void *data, struct wl_shell_surface *shellSurface, uint32_t edges,
+                            int32_t width, int32_t height)
 {
 }
 
-static void handlePopupDone(void *data, struct wl_shell_surface *shellSurface)
-{
-}
+static void handlePopupDone(void *data, struct wl_shell_surface *shellSurface) {}
 
-static const struct wl_shell_surface_listener shellSurfaceListener = {
-    handlePing,
-    handleConfigure,
-    handlePopupDone};
+static const struct wl_shell_surface_listener shellSurfaceListener = {handlePing, handleConfigure,
+                                                                      handlePopupDone};
 
-bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface, GLData *glData) noexcept(true)
+bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSurface *surface,
+                      GLData *glData) noexcept(true)
 {
     int configs;
 
@@ -98,12 +99,13 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     {
         const int NUM_ATTRIBS = 21;
         EGLint *attr          = (EGLint *)malloc(NUM_ATTRIBS * sizeof(EGLint));
-        if (attr == NULL) {
+        if (attr == NULL)
+        {
             std::cout << "attr is null" << std::endl;
             return false;
         }
 
-        int i     = 0;
+        int i = 0;
 
         attr[i++] = EGL_RED_SIZE;
         attr[i++] = want_red;
@@ -125,7 +127,9 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
 
         assert(i <= NUM_ATTRIBS);
 
-        if (!eglChooseConfig(eglData->eglDisplay, attr, eglData->eglConfig, configs, &configs) || (configs == 0)) {
+        if (!eglChooseConfig(eglData->eglDisplay, attr, eglData->eglConfig, configs, &configs) ||
+            (configs == 0))
+        {
             std::cout << "('w')/ eglChooseConfig() failed." << std::endl;
             free(attr);
             return false;
@@ -134,40 +138,51 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
         free(attr);
     }
 
-    for (eglData->configSelect = 0; eglData->configSelect < configs; eglData->configSelect++) {
+    for (eglData->configSelect = 0; eglData->configSelect < configs; eglData->configSelect++)
+    {
         EGLint red_size, green_size, blue_size, alpha_size, depth_size;
 
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_RED_SIZE, &red_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_GREEN_SIZE, &green_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_BLUE_SIZE, &blue_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_ALPHA_SIZE, &alpha_size);
-        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_DEPTH_SIZE, &depth_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_RED_SIZE, &red_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_GREEN_SIZE, &green_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_BLUE_SIZE, &blue_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_ALPHA_SIZE, &alpha_size);
+        eglGetConfigAttrib(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                           EGL_DEPTH_SIZE, &depth_size);
 
-        if ((red_size == want_red) && (green_size == want_green) && (blue_size == want_blue) && (alpha_size == want_alpha)) {
+        if ((red_size == want_red) && (green_size == want_green) && (blue_size == want_blue) &&
+            (alpha_size == want_alpha))
+        {
             break;
         }
     }
 
-    if (eglData->configSelect == configs) {
+    if (eglData->configSelect == configs)
+    {
         std::cout << "No suitable configs found." << std::endl;
         return false;
     }
 
     eglData->currentEglConfig = eglData->eglConfig[eglData->configSelect];
 
-    EGLint ctx_attrib_list[3] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE};
-    ctx_attrib_list[1] = 2; //Client Version.
+    EGLint ctx_attrib_list[3] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    ctx_attrib_list[1]        = 2; // Client Version.
 
-    eglData->eglContext = eglCreateContext(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect], EGL_NO_CONTEXT, ctx_attrib_list);
+    eglData->eglContext =
+        eglCreateContext(eglData->eglDisplay, eglData->eglConfig[eglData->configSelect],
+                         EGL_NO_CONTEXT, ctx_attrib_list);
 
     eglSwapInterval(eglData->eglDisplay, 1);
 
     surface->native     = wl_egl_window_create(surface->wlSurface, surface->width, surface->height);
-    surface->eglSurface = eglCreateWindowSurface(eglData->eglDisplay, eglData->currentEglConfig, (EGLNativeWindowType)(surface->native), NULL);
+    surface->eglSurface = eglCreateWindowSurface(eglData->eglDisplay, eglData->currentEglConfig,
+                                                 (EGLNativeWindowType)(surface->native), NULL);
 
-    eglMakeCurrent(eglData->eglDisplay, surface->eglSurface, surface->eglSurface, eglData->eglContext);
+    eglMakeCurrent(eglData->eglDisplay, surface->eglSurface, surface->eglSurface,
+                   eglData->eglContext);
 
     const char *pszFragShader = "\
         void main (void)\
@@ -188,7 +203,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glShaderSource(glData->fragShader, 1, (const char **)&pszFragShader, NULL);
     glCompileShader(glData->fragShader);
     glGetShaderiv(glData->fragShader, GL_COMPILE_STATUS, &bShaderCompiled);
-    if (!bShaderCompiled) {
+    if (!bShaderCompiled)
+    {
         std::cout << "Frag Shader error" << std::endl;
         return false;
     }
@@ -197,7 +213,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glShaderSource(glData->vertShader, 1, (const char **)&pszVertShader, NULL);
     glCompileShader(glData->vertShader);
     glGetShaderiv(glData->vertShader, GL_COMPILE_STATUS, &bShaderCompiled);
-    if (!bShaderCompiled) {
+    if (!bShaderCompiled)
+    {
         std::cout << "Vertex Shader error" << std::endl;
         return false;
     }
@@ -214,7 +231,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     GLint bLinked;
     glGetProgramiv(glData->programObject, GL_LINK_STATUS, &bLinked);
 
-    if (!bLinked) {
+    if (!bLinked)
+    {
         printf("('w')/ Program Link error\n");
         return 0;
     }
@@ -222,12 +240,8 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
     glUseProgram(glData->programObject);
 
     GLfloat afVertices[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f, 1.0f,  0.0f, -1.0f, 1.0f, 0.0f,
     };
 
     glGenBuffers(1, &glData->vbo);
@@ -240,7 +254,7 @@ bool renderInitialize(struct wl_display *display, EGLData *eglData, WaylandEGLSu
 
 bool rendering(GLData *glData, WaylandEGLSurface *surface) noexcept(true)
 {
-    //Update
+    // Update
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -313,50 +327,51 @@ int main(int argc, char *argv[])
     EGLData eglData;
     GLData glData;
 
-    unsigned int x = 0;
-    unsigned int y = 0;
+    unsigned int x            = 0;
+    unsigned int y            = 0;
     unsigned int exportWidth  = 1920;
     unsigned int exportHeight = 1080;
     uint32_t exported_type    = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
-    std::string displayID = "0";
-    bool draw_render = true;
+    std::string displayID     = "0";
+    bool draw_render          = true;
 
-    for(;;)
+    for (;;)
     {
-        switch(getopt(argc, argv, "x:y:w:h:d:r?"))
+        switch (getopt(argc, argv, "x:y:w:h:d:r?"))
         {
-            case 'x' :
-                x = atoi(optarg);
-                continue;
+        case 'x':
+            x = atoi(optarg);
+            continue;
 
-            case 'y' :
-                y = atoi(optarg);
-                continue;
+        case 'y':
+            y = atoi(optarg);
+            continue;
 
-            case 'w' :
-                exportWidth = atoi(optarg);
-                continue;
+        case 'w':
+            exportWidth = atoi(optarg);
+            continue;
 
-            case 'h' :
-                exportHeight = atoi(optarg);
-                continue;
+        case 'h':
+            exportHeight = atoi(optarg);
+            continue;
 
-            case 'd' :
-                if(optarg) displayID = optarg;
-                continue;
+        case 'd':
+            if (optarg)
+                displayID = optarg;
+            continue;
 
-            case 'r' :
-                std::cout << "remove rectangle" << std::endl;
-                draw_render = false;
-                continue;
+        case 'r':
+            std::cout << "remove rectangle" << std::endl;
+            draw_render = false;
+            continue;
 
-            case '?':
-            default :
-              printHelp();
-              return 0;
+        case '?':
+        default:
+            printHelp();
+            return 0;
 
-            case -1:
-              break;
+        case -1:
+            break;
         }
 
         break;
@@ -371,21 +386,28 @@ int main(int argc, char *argv[])
     surface.wlSurface      = wl_compositor_create_surface(foreign.getCompositor());
     surface.wlShellSurface = wl_shell_get_shell_surface(foreign.getShell(), surface.wlSurface);
     wl_shell_surface_add_listener(surface.wlShellSurface, &shellSurfaceListener, NULL);
-    surface.webosShellSurface = wl_webos_shell_get_shell_surface(foreign.getWebosShell(), surface.wlSurface);
-//    wl_webos_shell_surface_set_property(surface.webosShellSurface, "_WEBOS_WINDOW_TYPE", "_WEBOS_WINDOW_TYPE_OVERLAY");
-    wl_webos_shell_surface_set_property(surface.webosShellSurface, "displayAffinity", displayID.c_str());
+    surface.webosShellSurface =
+        wl_webos_shell_get_shell_surface(foreign.getWebosShell(), surface.wlSurface);
+    //    wl_webos_shell_surface_set_property(surface.webosShellSurface, "_WEBOS_WINDOW_TYPE",
+    //    "_WEBOS_WINDOW_TYPE_OVERLAY");
+    wl_webos_shell_surface_set_property(surface.webosShellSurface, "displayAffinity",
+                                        displayID.c_str());
 
     surface.width  = 1920;
     surface.height = 1080;
 
-    struct wl_region *region_src  = foreign.createRegion(0, 0, 1920, 1080); // don't care
-    struct wl_region *region_dst  = foreign.createRegion(x, y, exportWidth, exportHeight);
+    struct wl_region *region_src = foreign.createRegion(0, 0, 1920, 1080); // don't care
+    struct wl_region *region_dst = foreign.createRegion(x, y, exportWidth, exportHeight);
 
-    bool result = exporter.initialize(foreign.getDisplay(), foreign.getWebosForeign(), surface.wlSurface, exported_type);
-    if (result == false) {
+    bool result = exporter.initialize(foreign.getDisplay(), foreign.getWebosForeign(),
+                                      surface.wlSurface, exported_type);
+    if (result == false)
+    {
         std::cout << "exporter.initialize error" << std::endl;
         return 0;
-    } else {
+    }
+    else
+    {
         std::cout << "exporter.initialize success" << std::endl;
     }
 
@@ -396,8 +418,10 @@ int main(int argc, char *argv[])
 
     renderInitialize(foreign.getDisplay(), &eglData, &surface, &glData);
 
-    while (1) {
-        if(draw_render) rendering(&glData, &surface);
+    while (1)
+    {
+        if (draw_render)
+            rendering(&glData, &surface);
         eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_READ));
         sleep(1);
     }

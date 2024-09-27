@@ -1,17 +1,13 @@
 #include "signal_listener.h"
-#include <sys/types.h>
-#include <sys/syscall.h>
 #include <log/log.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 
-#define DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC  10
+#define DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC 10
 
-SignalListener::SignalListener() :
-    on_monitor_(false),
-    pid_(-1),
-    mutex_{},
-    cond_{},
-    condition_(false)
+SignalListener::SignalListener()
+    : on_monitor_(false), pid_(-1), mutex_{}, cond_{}, condition_(false)
 {
     memset(&option_, 0, sizeof(sig_option_t));
 }
@@ -30,20 +26,20 @@ void SignalListener::initialize(int signum)
     {
         CMP_LOG_ERROR("sigprocmask error");
     }
-    option_.timeout.tv_sec = DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC;
+    option_.timeout.tv_sec  = DEFAULT_SIGNAL_WAIT_TIMEOUT_SEC;
     option_.timeout.tv_nsec = 0;
-    on_monitor_ = false;
+    on_monitor_             = false;
 }
 
 void SignalListener::setTimeout(int seconds, int nano_seconds)
 {
-    option_.timeout.tv_sec = seconds;
+    option_.timeout.tv_sec  = seconds;
     option_.timeout.tv_nsec = nano_seconds;
 }
 
 int SignalListener::run()
 {
-    on_monitor_ = true;
+    on_monitor_    = true;
     listen_thread_ = std::thread{[this]() { this->listen(); }};
     usleep(100); // wait for the thread to catch pid
     return pid_;
@@ -62,7 +58,7 @@ void SignalListener::wait()
 {
     std::chrono::seconds timeout(option_.timeout.tv_sec);
     std::unique_lock<std::mutex> mlock(mutex_);
-    if (false == cond_.wait_for(mlock, timeout, [&]{ return condition_; }))
+    if (false == cond_.wait_for(mlock, timeout, [&] { return condition_; }))
     {
         CMP_LOG_INFO("signal wait timeout reached");
     }

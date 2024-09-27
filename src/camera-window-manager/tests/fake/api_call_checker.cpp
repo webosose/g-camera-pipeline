@@ -15,30 +15,26 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-
+#include "api_call_checker.h"
+#include <cstring>
 #include <map>
 #include <string>
-#include <cstring>
-#include "api_call_checker.h"
 
 std::map<std::string, bool> apiCallMap;
 
-void clearCallLog(void)
-{
-    apiCallMap.clear();
-}
+void clearCallLog(void) { apiCallMap.clear(); }
 
 bool isAPICalled(const char *apiName)
 {
     auto item = apiCallMap.find(apiName);
-    if (item != apiCallMap.end()) {
+    if (item != apiCallMap.end())
+    {
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }
 
-void callAPI(const char *apiName)
-{
-    apiCallMap[apiName] = true;
-}
+void callAPI(const char *apiName) { apiCallMap[apiName] = true; }

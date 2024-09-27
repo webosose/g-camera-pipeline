@@ -15,10 +15,10 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
+#include "api_call_checker.h"
+#include "camera_window_manager.h"
 #include <gtest/gtest.h>
 #include <iostream>
-#include "camera_window_manager.h"
-#include "api_call_checker.h"
 
 class LSMCameraWindowManagerTest1 : public ::testing::Test
 {
@@ -28,21 +28,21 @@ protected:
 
 TEST_F(LSMCameraWindowManagerTest1, RegisterAndUnregister)
 {
-    //Arrange
+    // Arrange
     bool expected          = true;
     const char *windowID   = "TEST_WINDOW_ID";
     const char *pipelineID = "TEST_PIPELINE_ID";
 
-    //Act
+    // Act
     bool actual = CameraWindowManager.registerID(windowID, pipelineID);
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = CameraWindowManager.unregisterID();
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
 
@@ -56,74 +56,71 @@ protected:
         CameraWindowManager.registerID(windowID, pipelineID);
     }
 
-    void TearDown(void)
-    {
-        CameraWindowManager.unregisterID();
-    }
+    void TearDown(void) { CameraWindowManager.unregisterID(); }
 
     LSM::CameraWindowManager CameraWindowManager;
 };
 
 TEST_F(LSMCameraWindowManagerTest2, Punchthrough)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     bool expected = true;
 
-    //Act
+    // Act
     CameraWindowManager.attachPunchThrough();
     bool actual = isAPICalled("Wayland::Importer::attachPunchThrough");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     CameraWindowManager.detachPunchThrough();
     actual = isAPICalled("Wayland::Importer::detachPunchThrough");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
 
 TEST_F(LSMCameraWindowManagerTest2, Surface)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     bool expected = true;
 
-    //Act
+    // Act
     CameraWindowManager.attachSurface();
     bool actual = isAPICalled("Wayland::Importer::attachSurface");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     CameraWindowManager.detachSurface();
     actual = isAPICalled("Wayland::Importer::detachSurface");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
 
 TEST_F(LSMCameraWindowManagerTest2, GetDisplay)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_display *actual = CameraWindowManager.getDisplay();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(LSMCameraWindowManagerTest2, GetSurface)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_surface *actual = CameraWindowManager.getSurface();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }

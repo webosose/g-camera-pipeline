@@ -34,7 +34,8 @@ class SmoothSlidingController
 
     FpsCalc fpsCalc_;
 
-    struct faceUpdateCalcParam {
+    struct faceUpdateCalcParam
+    {
         const int8_t defaultLeap_{6};
         const int8_t defaultLeapHalf_{3};
         int8_t count_{0};
@@ -60,4 +61,4 @@ public:
 private:
     bool isFaceInfoValidate(int8_t aCurFaceCount);
 };
-}
+} // namespace cmp

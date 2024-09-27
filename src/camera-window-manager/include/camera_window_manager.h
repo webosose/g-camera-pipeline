@@ -29,7 +29,7 @@ namespace Wayland
 class Foreign;
 class Importer;
 class Surface;
-}
+} // namespace Wayland
 
 namespace LSM
 {
@@ -56,11 +56,11 @@ public:
     void setVideoSize(gint width, gint height);
 
 private:
-    //Disallow copy and assign
+    // Disallow copy and assign
     CameraWindowManager(const CameraWindowManager &);
     void operator=(const CameraWindowManager &);
 
-    gint video_width = 1920;
+    gint video_width  = 1920;
     gint video_height = 1080;
 
     std::shared_ptr<Wayland::Foreign> foreign;
@@ -70,6 +70,6 @@ private:
     bool isRegistered;
 };
 
-} //namespace LSM
+} // namespace LSM
 
 #endif //_LSM_CameraWindowManager_H_

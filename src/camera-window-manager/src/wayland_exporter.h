@@ -30,8 +30,8 @@ public:
     Exporter(void);
     ~Exporter(void);
 
-    bool initialize(struct wl_display *display, struct wl_webos_foreign *foreign, struct wl_surface *surface,
-                    uint32_t exportedType);
+    bool initialize(struct wl_display *display, struct wl_webos_foreign *foreign,
+                    struct wl_surface *surface, uint32_t exportedType);
     void finalize(void);
 
     void setWindowID(const char *windowID);
@@ -50,4 +50,4 @@ private:
 
 } // namespace Wayland
 
-#endif //WAYLAND_EXPORTER_
+#endif // WAYLAND_EXPORTER_

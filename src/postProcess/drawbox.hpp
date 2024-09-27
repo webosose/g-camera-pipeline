@@ -18,7 +18,8 @@
 
 #include <cstdint>
 
-typedef enum {
+typedef enum
+{
     DRAW_BOX_WHITE,
     DRAW_BOX_BLACK,
     DRAW_BOX_MAGENTA,
@@ -30,18 +31,17 @@ typedef enum {
     DRAW_BOX_RED
 } DRAW_BOX_COLOR;
 
-struct FaceXY {
+struct FaceXY
+{
     uint16_t x{0};
     uint16_t y{0};
     uint16_t w{0};
     uint16_t h{0};
 };
 
-void drawBoxInNV12Format(uint8_t *data, const int &maxWidth,
-                         const int &maxHeight, const FaceXY &face,
-                         uint32_t offsetUV,
+void drawBoxInNV12Format(uint8_t *data, const int &maxWidth, const int &maxHeight,
+                         const FaceXY &face, uint32_t offsetUV,
                          const DRAW_BOX_COLOR color = DRAW_BOX_GREEN);
-void drawBoxInNV16Format(uint8_t *data, const int &maxWidth,
-                         const int &maxHeight, const FaceXY &face,
-                         uint32_t offsetUV,
+void drawBoxInNV16Format(uint8_t *data, const int &maxWidth, const int &maxHeight,
+                         const FaceXY &face, uint32_t offsetUV,
                          const DRAW_BOX_COLOR color = DRAW_BOX_GREEN);

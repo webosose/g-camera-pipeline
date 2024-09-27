@@ -14,9 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "string.h"
 #include <iostream>
 #include <vector>
-#include "string.h"
 
 using namespace std;
 
@@ -25,83 +25,92 @@ int main(int argc, char const *argv[])
     FILE *fp;
     char path[1035];
     int option = 1;
-    std::string str,mediaId, command;
+    std::string str, mediaId, command;
 
-    std::string load = "luna-send -n 1 luna://com.webos.media/load '{\"uri\":\"camera://com.webos.service.camera2/7010\",\"payload\" : { \"width\" : 640,\"height\":480,\"format\":\"JPEG\",\"framerate\":30, \"memtype\":\"device\",\"memsrc\":\"/dev/video0\"} ,\"type\":\"camera\"}'";
-    std::string play = "luna-send -n 1 luna://com.webos.media/play \'{";
-    std::string Unload = "luna-send -n 1 luna://com.webos.media/unload \'{";
+    std::string load         = "luna-send -n 1 luna://com.webos.media/load "
+                               "'{\"uri\":\"camera://com.webos.service.camera2/7010\",\"payload\" : { "
+                               "\"width\" : 640,\"height\":480,\"format\":\"JPEG\",\"framerate\":30, "
+                               "\"memtype\":\"device\",\"memsrc\":\"/dev/video0\"} ,\"type\":\"camera\"}'";
+    std::string play         = "luna-send -n 1 luna://com.webos.media/play \'{";
+    std::string Unload       = "luna-send -n 1 luna://com.webos.media/unload \'{";
     std::string takeSnapshot = "luna-send -n 1 luna://com.webos.media/takeCameraSnapshot \'{";
-    std::string startRecord = "luna-send -n 1 luna://com.webos.media/startCameraRecord \'{";
-    std::string stopRecord = "luna-send -n 1 luna://com.webos.media/stopCameraRecord \'{";
+    std::string startRecord  = "luna-send -n 1 luna://com.webos.media/startCameraRecord \'{";
+    std::string stopRecord   = "luna-send -n 1 luna://com.webos.media/stopCameraRecord \'{";
 
-    while(option !=7)
+    while (option != 7)
     {
         cout << "Enter the option" << endl;
-        cout << "1: Load\n2:Play\n3:UnLoad\n4:StartRecord\n5:StopRecord\n6:CaptureImage\n7:Exit" << endl;
+        cout << "1: Load\n2:Play\n3:UnLoad\n4:StartRecord\n5:StopRecord\n6:CaptureImage\n7:Exit"
+             << endl;
         cin >> option;
-        cout << "Main:"<<__LINE__ << endl;
-        switch(option)
+        cout << "Main:" << __LINE__ << endl;
+        switch (option)
         {
-            case 1:
-                {
-                    /* Open the command for reading. */
-                    fp = popen(load.c_str(), "r");
-                    if (fp == NULL) {
-                        cout << "Failed to run command" << endl;
-                        exit(1);
-                    }
-                    /* Read the output a line at a time - output it. */
-                    while (fgets(path, sizeof(path)-1, fp) != NULL) {
-                        str = str + path;
-                    }
-                    str =  str.substr(str.find_last_of(",") + 1);
-                    str.erase(str.find("}"));
-                    cout<< "str: " << str <<endl;
-                    /* close */
-                    pclose(fp);
-                    break;
-                }
-            case 2:
-                {
-                    command = play + str + "}'";
-                    system(command.c_str());
-                    command.clear();
-                    break;
-                }
-            case 3:
-                {
-                    command = Unload + str + "}'";
-                    system(command.c_str());
-                    str.clear();
-                    command.clear();
-                    break;
-                }
-            case 4:
-                {
-                    command = startRecord + str + ",\"location\":\"/media/internal/\",\"format\":\"h264\"}'";
-                    system(command.c_str());
-                    command.clear();
-                    break;
-                }
-            case 5:
-                {
-                    stopRecord = stopRecord + str + "}'";
-                    cout << "string stop record: " << stopRecord << endl;
-                    system(stopRecord.c_str());
-                    command.clear();
-                    break;
-                }
-            case 6:
-                {
-                    command = takeSnapshot + str + ",\"location\":\"/media/internal/\",\"format\" :\"jpg\", \"width\" : 640,\"height\":480,\"pictureQuality\":30}'";
-                    system(command.c_str());
-                    command.clear();
-                    break;
-                }
-            case 7:
-                {
-                    break;
-                }
+        case 1:
+        {
+            /* Open the command for reading. */
+            fp = popen(load.c_str(), "r");
+            if (fp == NULL)
+            {
+                cout << "Failed to run command" << endl;
+                exit(1);
+            }
+            /* Read the output a line at a time - output it. */
+            while (fgets(path, sizeof(path) - 1, fp) != NULL)
+            {
+                str = str + path;
+            }
+            str = str.substr(str.find_last_of(",") + 1);
+            str.erase(str.find("}"));
+            cout << "str: " << str << endl;
+            /* close */
+            pclose(fp);
+            break;
+        }
+        case 2:
+        {
+            command = play + str + "}'";
+            system(command.c_str());
+            command.clear();
+            break;
+        }
+        case 3:
+        {
+            command = Unload + str + "}'";
+            system(command.c_str());
+            str.clear();
+            command.clear();
+            break;
+        }
+        case 4:
+        {
+            command =
+                startRecord + str + ",\"location\":\"/media/internal/\",\"format\":\"h264\"}'";
+            system(command.c_str());
+            command.clear();
+            break;
+        }
+        case 5:
+        {
+            stopRecord = stopRecord + str + "}'";
+            cout << "string stop record: " << stopRecord << endl;
+            system(stopRecord.c_str());
+            command.clear();
+            break;
+        }
+        case 6:
+        {
+            command = takeSnapshot + str +
+                      ",\"location\":\"/media/internal/\",\"format\" :\"jpg\", \"width\" : "
+                      "640,\"height\":480,\"pictureQuality\":30}'";
+            system(command.c_str());
+            command.clear();
+            break;
+        }
+        case 7:
+        {
+            break;
+        }
         }
     }
 

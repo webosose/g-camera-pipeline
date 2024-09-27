@@ -15,26 +15,35 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "wayland_foreign.h"
 #include "api_call_checker.h"
 #include <cstdio>
 #include <cstring>
 
-static void display_handle_global(void *waylandData, struct wl_registry *registry, uint32_t id, const char *interface,
-                                  uint32_t version)
+static void display_handle_global(void *waylandData, struct wl_registry *registry, uint32_t id,
+                                  const char *interface, uint32_t version)
 {
     auto foreign = (Wayland::Foreign *)waylandData;
 
-    if (strcmp(interface, "wl_compositor") == 0) {
-        foreign->setCompositor((struct wl_compositor *)wl_registry_bind(registry, id, &wl_compositor_interface, 1));
-    } else if (strcmp(interface, "wl_shell") == 0) {
-        foreign->setShell((struct wl_shell *)wl_registry_bind(registry, id, &wl_shell_interface, 1));
-    } else if (strcmp(interface, "wl_webos_shell") == 0) {
-        foreign->setWebosShell((struct wl_webos_shell *)wl_registry_bind(registry, id, &wl_webos_shell_interface, 1));
-    } else if (strcmp(interface, "wl_webos_foreign") == 0) {
-        foreign->setWebosForeign(
-            (struct wl_webos_foreign *)wl_registry_bind(registry, id, &wl_webos_foreign_interface, 1));
+    if (strcmp(interface, "wl_compositor") == 0)
+    {
+        foreign->setCompositor(
+            (struct wl_compositor *)wl_registry_bind(registry, id, &wl_compositor_interface, 1));
+    }
+    else if (strcmp(interface, "wl_shell") == 0)
+    {
+        foreign->setShell(
+            (struct wl_shell *)wl_registry_bind(registry, id, &wl_shell_interface, 1));
+    }
+    else if (strcmp(interface, "wl_webos_shell") == 0)
+    {
+        foreign->setWebosShell(
+            (struct wl_webos_shell *)wl_registry_bind(registry, id, &wl_webos_shell_interface, 1));
+    }
+    else if (strcmp(interface, "wl_webos_foreign") == 0)
+    {
+        foreign->setWebosForeign((struct wl_webos_foreign *)wl_registry_bind(
+            registry, id, &wl_webos_foreign_interface, 1));
     }
 }
 
@@ -56,12 +65,14 @@ bool Foreign::initialize(void)
     display = wl_display_connect(nullptr);
     callAPI("Wayland::Foreign::initialize");
 
-    if (!display) {
+    if (!display)
+    {
         return false;
     }
 
     registry = wl_display_get_registry(display);
-    if (!registry) {
+    if (!registry)
+    {
         return false;
     }
 
@@ -83,7 +94,8 @@ void Foreign::finalize(void)
     if (compositor)
         wl_compositor_destroy(compositor);
 
-    if (display) {
+    if (display)
+    {
         wl_display_flush(display);
         wl_display_disconnect(display);
     }

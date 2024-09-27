@@ -15,7 +15,6 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "wayland_importer.h"
 #include "api_call_checker.h"
 
@@ -26,7 +25,8 @@ Importer::Importer(void) : webosImported(nullptr) {}
 
 Importer::~Importer(void) {}
 
-bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID, uint32_t exportedType)
+bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID,
+                          uint32_t exportedType)
 {
     webosImported = wl_webos_foreign_import_element(foreign, windowID, exportedType);
 
@@ -40,7 +40,8 @@ bool Importer::initialize(struct wl_webos_foreign *foreign, const char *windowID
 
 void Importer::finalize(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_destroy(webosImported);
         webosImported = nullptr;
     }
@@ -52,7 +53,8 @@ struct wl_webos_imported *Importer::getWebosImported(void) { return webosImporte
 
 void Importer::attachPunchThrough(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_attach_punchthrough(webosImported);
     }
     callAPI("Wayland::Importer::attachPunchThrough");
@@ -60,7 +62,8 @@ void Importer::attachPunchThrough(void)
 
 void Importer::detachPunchThrough(void)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_detach_punchthrough(webosImported);
     }
     callAPI("Wayland::Importer::detachPunchThrough");
@@ -68,7 +71,8 @@ void Importer::detachPunchThrough(void)
 
 void Importer::attachSurface(struct wl_surface *surface)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_attach_surface(webosImported, surface);
     }
     callAPI("Wayland::Importer::attachSurface");
@@ -76,7 +80,8 @@ void Importer::attachSurface(struct wl_surface *surface)
 
 void Importer::detachSurface(struct wl_surface *surface)
 {
-    if (webosImported) {
+    if (webosImported)
+    {
         wl_webos_imported_detach_surface(webosImported, surface);
     }
     callAPI("Wayland::Importer::detachSurface");

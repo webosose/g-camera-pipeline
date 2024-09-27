@@ -22,21 +22,20 @@
 
 PmLogContext GetPmLogContext();
 
-#define CMP_LOG_INFO(FORMAT__, ...) \
-    PmLogInfo(GetPmLogContext(), \
-    "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CMP_LOG_INFO(FORMAT__, ...)                                                                \
+    PmLogInfo(GetPmLogContext(), "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__,     \
+              ##__VA_ARGS__)
 
-#define CMP_LOG_DEBUG(FORMAT__, ...) \
-    PmLogDebug(GetPmLogContext(), \
-    "[%s:%d]" FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CMP_LOG_DEBUG(FORMAT__, ...)                                                               \
+    PmLogDebug(GetPmLogContext(), "[%s:%d]" FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#define CMP_LOG_ERROR(FORMAT__, ...) \
-    PmLogError(GetPmLogContext(), \
-    "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CMP_LOG_ERROR(FORMAT__, ...)                                                               \
+    PmLogError(GetPmLogContext(), "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__,    \
+               ##__VA_ARGS__)
 
-#define CMP_LOG_WARNING(FORMAT__, ...) \
-    PmLogWarning(GetPmLogContext(), \
-    "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CMP_LOG_WARNING(FORMAT__, ...)                                                             \
+    PmLogWarning(GetPmLogContext(), "cmp", 0, "[%s:%d] " FORMAT__, __PRETTY_FUNCTION__, __LINE__,  \
+                 ##__VA_ARGS__)
 
 /* Info Print */
 #define CMP_INFO_PRINT CMP_LOG_INFO
@@ -45,12 +44,13 @@ PmLogContext GetPmLogContext();
 #define CMP_DEBUG_PRINT CMP_LOG_DEBUG
 
 /* Assert print */
-#define CMPASSERT(cond) { \
-    if (!(cond)) { \
-        CMP_DEBUG_PRINT("ASSERT FAILED : %s:%d:%s: %s", \
-                __FILE__, __LINE__, __func__, #cond); \
-        assert(0); \
-    } \
-}
+#define CMPASSERT(cond)                                                                            \
+    {                                                                                              \
+        if (!(cond))                                                                               \
+        {                                                                                          \
+            CMP_DEBUG_PRINT("ASSERT FAILED : %s:%d:%s: %s", __FILE__, __LINE__, __func__, #cond);  \
+            assert(0);                                                                             \
+        }                                                                                          \
+    }
 
-#endif  // SRC_LOG_LOG_H_
+#endif // SRC_LOG_LOG_H_

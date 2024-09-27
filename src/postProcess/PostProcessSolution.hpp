@@ -34,8 +34,7 @@ public:
     virtual ~PostProcessSolution() {}
     virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen) override;
     virtual bool doPostProcess() override;
-    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride,
-                               uint32_t offsetUV) override;
+    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV) override;
     virtual bool doPostProcess(CropRect &cropRect) override;
     virtual bool setParam(const std::string &aParamId, void *aParam) override;
     virtual void *getParam(const std::string &aParam) override;
@@ -47,4 +46,4 @@ protected:
     uint32_t height_{0};
     std::string platform_;
 };
-}
+} // namespace cmp

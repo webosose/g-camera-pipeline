@@ -32,4 +32,4 @@ public:
     void pushData();
     double getCurrentFps();
 };
-}
+} // namespace cmp

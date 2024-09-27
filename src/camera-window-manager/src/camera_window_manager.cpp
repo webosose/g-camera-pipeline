@@ -15,25 +15,22 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-#include "wayland_foreign.h"
-#include "wayland_surface.h"
-#include "wayland_importer.h"
 #include "camera_window_manager.h"
+#include "wayland_foreign.h"
+#include "wayland_importer.h"
+#include "wayland_surface.h"
 
 namespace LSM
 {
 
-CameraWindowManager::CameraWindowManager(void)
-    : isRegistered(false)
+CameraWindowManager::CameraWindowManager(void) : isRegistered(false)
 {
     foreign  = std::make_shared<Wayland::Foreign>();
     surface  = std::make_shared<Wayland::Surface>();
     importer = std::make_shared<Wayland::Importer>();
 }
 
-CameraWindowManager::~CameraWindowManager(void)
-{
-}
+CameraWindowManager::~CameraWindowManager(void) {}
 
 bool CameraWindowManager::registerID(const char *windowID, const char *pipelineID)
 {
@@ -41,8 +38,8 @@ bool CameraWindowManager::registerID(const char *windowID, const char *pipelineI
         return false;
 
     bool result = true;
-    //This value doesn't have meaning now.
-    //It is reserved variable of wayland.
+    // This value doesn't have meaning now.
+    // It is reserved variable of wayland.
     uint32_t exportedType = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
 
     result = result && foreign->initialize();
@@ -131,14 +128,16 @@ struct wl_surface *CameraWindowManager::getSurface(void)
     return surface->getSurface();
 }
 
-void CameraWindowManager::getVideoSize(gint &width, gint &height) {
-  width = video_width;
-  height = video_height;
+void CameraWindowManager::getVideoSize(gint &width, gint &height)
+{
+    width  = video_width;
+    height = video_height;
 }
 
-void CameraWindowManager::setVideoSize(gint width, gint height) {
-  video_width = width;
-  video_height = height;
+void CameraWindowManager::setVideoSize(gint width, gint height)
+{
+    video_width  = width;
+    video_height = height;
 }
 
 } // namespace LSM

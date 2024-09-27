@@ -33,8 +33,7 @@ public:
     virtual ~FacePtzSolution() {}
     virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen) override;
     virtual bool doPostProcess() override;
-    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride,
-                               uint32_t offsetUV) override;
+    virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV) override;
     virtual bool doPostProcess(CropRect &cropRect) override;
     virtual bool setParam(const std::string &aParamId, void *aParam) override;
     virtual void *getParam(const std::string &aParam) override;
@@ -45,4 +44,4 @@ private:
     FaceDataManager faceDataMgr_;
     std::string fourccDecBuf_;
 };
-}
+} // namespace cmp

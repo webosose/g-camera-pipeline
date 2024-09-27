@@ -14,20 +14,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <climits>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
 #include "camshm.h"
 #include "log.h"
+#include <climits>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
 
 //#define SHMEM_COMM_DEBUG
 
@@ -162,10 +161,10 @@ typedef struct SHMEM_COMM_T_
 //         EXTRA_SZ(sizeof(int)) + EXTRA_BUF(extra_size * unit_num))
 
 SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, int metaSize,
-                          int unitNum, int extraSize, int nOpenMode);
+                         int unitNum, int extraSize, int nOpenMode);
 SHMEM_STATUS_T readShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                          unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
-                          int *pExtraSize, int readMode);
+                         unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
+                         int *pExtraSize, int readMode);
 
 // Internal Functions
 
@@ -181,7 +180,7 @@ static int lockShmem(SHMEM_COMM_T *shmem_buffer)
     }
 
     sema_buffer.sem_num = 0;
-    sema_buffer.sem_op = -1;
+    sema_buffer.sem_op  = -1;
     sema_buffer.sem_flg = 0;
 
     return semop(shmem_buffer->sema_id, &sema_buffer, 1);
@@ -198,7 +197,7 @@ static int unlockShmem(SHMEM_COMM_T *shmem_buffer)
     }
 
     sema_buffer.sem_num = 0;
-    sema_buffer.sem_op = 1;
+    sema_buffer.sem_op  = 1;
     sema_buffer.sem_flg = 0;
 
     return semop(shmem_buffer->sema_id, &sema_buffer, 1);
@@ -226,7 +225,7 @@ extern SHMEM_STATUS_T OpenShmem(SHMEM_HANDLE *phShmem, key_t shmemKey)
 }
 
 SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, int metaSize,
-                          int unitNum, int extraSize, int nOpenMode)
+                         int unitNum, int extraSize, int nOpenMode)
 {
     SHMEM_COMM_T *pShmemBuffer;
     unsigned char *pSharedmem;
@@ -236,23 +235,24 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     struct shmid_ds shm_stat;
     char errtxt[1024];
 
-    *phShmem = (SHMEM_HANDLE) calloc(1, sizeof(SHMEM_COMM_T));
-    pShmemBuffer = (SHMEM_COMM_T *) *phShmem;
-    if (pShmemBuffer == NULL) {
+    *phShmem     = (SHMEM_HANDLE)calloc(1, sizeof(SHMEM_COMM_T));
+    pShmemBuffer = (SHMEM_COMM_T *)*phShmem;
+    if (pShmemBuffer == NULL)
+    {
         CMP_LOG_INFO("pShmemBuffer is null");
         return SHMEM_COMM_FAIL;
     }
 
-    CMP_LOG_DEBUG("hShmem = %p, pKey = %p, nOpenMode=%d, unitSize=%d, unitNum=%d",
-            *phShmem, pShmemKey, nOpenMode, unitSize, unitNum);
+    CMP_LOG_DEBUG("hShmem = %p, pKey = %p, nOpenMode=%d, unitSize=%d, unitNum=%d", *phShmem,
+                  pShmemKey, nOpenMode, unitSize, unitNum);
 
     if (nOpenMode == MODE_CREATE)
     {
         for (shmemKey = CAMSHKEY; shmemKey < 0xFFFF; shmemKey++)
         {
-            errno = 0;
-            pShmemBuffer->shmem_id = shmget((key_t) shmemKey, 0, 0666);
-            int checkErr = errno;
+            errno                  = 0;
+            pShmemBuffer->shmem_id = shmget((key_t)shmemKey, 0, 0666);
+            int checkErr           = errno;
             if (pShmemBuffer->shmem_id == -1 && checkErr == ENOENT)
                 break;
         }
@@ -277,8 +277,8 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
 
     CMP_LOG_DEBUG("shmem_key=%d\r", shmemKey);
 
-    errno = 0;
-    pShmemBuffer->shmem_id = shmget((key_t) shmemKey, shmemSize, shmemMode);
+    errno                  = 0;
+    pShmemBuffer->shmem_id = shmget((key_t)shmemKey, shmemSize, shmemMode);
     if (pShmemBuffer->shmem_id == -1)
     {
         int checkErr = errno;
@@ -290,7 +290,7 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
 
     CMP_LOG_INFO("shared memory created/opened successfully!");
 
-    pSharedmem                = (unsigned char *) shmat(pShmemBuffer->shmem_id, NULL, 0);
+    pSharedmem = (unsigned char *)shmat(pShmemBuffer->shmem_id, NULL, 0);
     if (pSharedmem == NULL)
     {
         CMP_LOG_ERROR("pSharedmem is NULL\n");
@@ -311,13 +311,13 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
 #ifdef SHMEM_COMM_DEBUG
         if (nOpenMode == MODE_CREATE)
         {
-          int checkErr = errno;
-          strerror_r(checkErr, errtxt, 1024);
-          CMP_LOG_ERROR("Failed to create semaphore : %s", errtxt);
+            int checkErr = errno;
+            strerror_r(checkErr, errtxt, 1024);
+            CMP_LOG_ERROR("Failed to create semaphore : %s", errtxt);
         }
 #endif
         errno = 0;
-        if ((pShmemBuffer->sema_id = semget((key_t) shmemKey, 1, 0666)) == -1)
+        if ((pShmemBuffer->sema_id = semget((key_t)shmemKey, 1, 0666)) == -1)
         {
             int checkErr = errno;
             strerror_r(checkErr, errtxt, 1024);
@@ -370,7 +370,7 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     {
         CMP_LOG_ERROR("range out\n");
         free(pShmemBuffer);
-         return SHMEM_COMM_FAIL;
+        return SHMEM_COMM_FAIL;
     }
 
     pShmemBuffer->length_buf = (unsigned int *)(pSharedmem + length_buf_offset);
@@ -408,18 +408,18 @@ SHMEM_STATUS_T openShmem(SHMEM_HANDLE *phShmem, key_t *pShmemKey, int unitSize, 
     }
 
     *pShmemBuffer->mark = SHMEM_COMM_MARK_NORMAL;
-    //Until the writter starts to write both write index and read index are
-    //set to -1 . So the reader can get to know that the writter has not
-    //started to write yet
+    // Until the writter starts to write both write index and read index are
+    // set to -1 . So the reader can get to know that the writter has not
+    // started to write yet
     *pShmemBuffer->write_index = -1;
     *pShmemBuffer->read_index  = -1;
 
     resetShmem(pShmemBuffer);
 
     CMP_LOG_INFO("unitSize = %d, SHMEM_LENGTH_SIZE = %d, unit_num = %d", *pShmemBuffer->unit_size,
-                SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
+                 SHMEM_LENGTH_SIZE, *pShmemBuffer->unit_num);
     CMP_LOG_INFO("shared memory opened successfully! : shmem_id=%d, sema_id=%d",
-            pShmemBuffer->shmem_id, pShmemBuffer->sema_id);
+                 pShmemBuffer->shmem_id, pShmemBuffer->sema_id);
     return SHMEM_COMM_OK;
 }
 
@@ -430,10 +430,10 @@ SHMEM_STATUS_T ReadShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize
 }
 
 SHMEM_STATUS_T readShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                          unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
-                          int *pExtraSize, int readMode)
+                         unsigned char **ppMeta, int *pMetaSize, unsigned char **ppExtraData,
+                         int *pExtraSize, int readMode)
 {
-    SHMEM_COMM_T *shmem_buffer = (SHMEM_COMM_T *) hShmem;
+    SHMEM_COMM_T *shmem_buffer = (SHMEM_COMM_T *)hShmem;
     int lread_index;
     unsigned char *read_addr;
     int size;
@@ -475,7 +475,7 @@ SHMEM_STATUS_T readShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize
             {
                 lread_index = *shmem_buffer->write_index - 1;
             }
-            size = *(int*) (shmem_buffer->length_buf + lread_index);
+            size = *(int *)(shmem_buffer->length_buf + lread_index);
 
             if ((size == 0) || (size > *shmem_buffer->unit_size))
             {
@@ -488,11 +488,12 @@ SHMEM_STATUS_T readShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize
                   (*shmem_buffer->unit_size) <= SHMEM_UNIT_SIZE_MAX &&
                   (*shmem_buffer->extra_size) >= 0 &&
                   (*shmem_buffer->extra_size) <= SHMEM_EXTRA_SIZE_MAX &&
-                  (*shmem_buffer->meta_size) >=0 &&
+                  (*shmem_buffer->meta_size) >= 0 &&
                   (*shmem_buffer->meta_size) <= SHMEM_META_SIZE_MAX))
             {
-                CMP_LOG_ERROR("size error(%d) lread_index(%d), unit_size(%d), extra_size(%d) !\n", size,
-                      lread_index, *shmem_buffer->unit_size, *shmem_buffer->extra_size);
+                CMP_LOG_ERROR("size error(%d) lread_index(%d), unit_size(%d), extra_size(%d) !\n",
+                              size, lread_index, *shmem_buffer->unit_size,
+                              *shmem_buffer->extra_size);
                 return SHMEM_COMM_SIZE;
             }
 
@@ -507,8 +508,8 @@ SHMEM_STATUS_T readShmem(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize
 
             if (NULL != ppExtraData && NULL != pExtraSize)
             {
-                *ppExtraData = shmem_buffer->extra_buf
-                        + (lread_index) * (*shmem_buffer->extra_size);
+                *ppExtraData =
+                    shmem_buffer->extra_buf + (lread_index) * (*shmem_buffer->extra_size);
                 *pExtraSize = *shmem_buffer->extra_size;
             }
         }
@@ -526,7 +527,7 @@ SHMEM_STATUS_T CloseShmem(SHMEM_HANDLE *phShmem)
     SHMEM_COMM_T *shmem_buffer;
     CMP_LOG_INFO("start");
 
-    shmem_buffer = (SHMEM_COMM_T *) *phShmem;
+    shmem_buffer = (SHMEM_COMM_T *)*phShmem;
 
     if (!shmem_buffer)
     {

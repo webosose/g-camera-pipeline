@@ -37,18 +37,19 @@ namespace cmp
 {
 
 VideoCrop::VideoCrop()
-    : width_(0), height_(0), center_{0}, zoomLevel_(0), zoomState_(NORMAL),
-      cx_pre_(0), cy_pre_(0), cx_old_(0), cy_old_(0), c_cnt_(0),
-      isUpdate_(false)
+    : width_(0), height_(0), center_{0}, zoomLevel_(0), zoomState_(NORMAL), cx_pre_(0), cy_pre_(0),
+      cx_old_(0), cy_old_(0), c_cnt_(0), isUpdate_(false)
 {
-    if (access(PTZ_HIST_REF_PATH, F_OK) == 0) {
+    if (access(PTZ_HIST_REF_PATH, F_OK) == 0)
+    {
         dbgSaveHistFile.open(PTZ_HIST_PATH, std::ios_base::trunc);
     }
 }
 
 VideoCrop::~VideoCrop()
 {
-    if (dbgSaveHistFile.is_open()) {
+    if (dbgSaveHistFile.is_open())
+    {
         dbgSaveHistFile.close();
     }
 }
@@ -65,9 +66,9 @@ void VideoCrop::init(int w, int h)
     ptSensitivity_.y = height_ / PAN_TILT_SENSITIVITY_COEF;
 
     CMP_LOG_INFO("width = %d, height = %d, zoomStepSizeX_ = %f, zoomStepSizeY_ = "
-               "%f, ptSensitivity_.x = %d, ptSensitivity_.y = %d",
-               width_, height_, zoomStepSizeX_, zoomStepSizeY_,
-               ptSensitivity_.x, ptSensitivity_.y);
+                 "%f, ptSensitivity_.x = %d, ptSensitivity_.y = %d",
+                 width_, height_, zoomStepSizeX_, zoomStepSizeY_, ptSensitivity_.x,
+                 ptSensitivity_.y);
 }
 
 void VideoCrop::readFaceInfo(int facex, int facey, int width, int height)
@@ -78,43 +79,53 @@ void VideoCrop::readFaceInfo(int facex, int facey, int width, int height)
     cx = facex;
     cy = facey;
 
-    if (cx < 0 || cy < 0 || cx >= width_ || cy >= height_) {
+    if (cx < 0 || cy < 0 || cx >= width_ || cy >= height_)
+    {
         cx = 0;
         cy = 0;
     }
 
-    if (cx > 0) {
+    if (cx > 0)
+    {
         if (cx < width_ / 4)
             cx = width_ / 4;
         else if (cx > width_ - width_ / 4)
             cx = width_ - width_ / 4;
     }
 
-    if (cy > 0) {
+    if (cy > 0)
+    {
         if (cy < height_ / 4)
             cy = height_ / 4;
         else if (cy > height_ - height_ / 4)
             cy = height_ - height_ / 4;
     }
 
-    if (cx == cx_pre_ && cy == cy_pre_) {
+    if (cx == cx_pre_ && cy == cy_pre_)
+    {
         c_cnt_++;
-    } else
+    }
+    else
         c_cnt_ = 0;
 
     cx_pre_ = cx;
     cy_pre_ = cy;
 
-    if (c_cnt_ == 3) {
+    if (c_cnt_ == 3)
+    {
         c_cnt_ = 0;
-        if (width > width_ / 2 || height > height_ / 2) {
+        if (width > width_ / 2 || height > height_ / 2)
+        {
             cx_old_ = 0;
             cy_old_ = 0;
-        } else {
+        }
+        else
+        {
             int difX = std::abs(cx - cx_old_);
             int difY = std::abs(cy - cy_old_);
 
-            if (difX > ptSensitivity_.x || difY > ptSensitivity_.y) {
+            if (difX > ptSensitivity_.x || difY > ptSensitivity_.y)
+            {
                 cx_old_ = cx;
                 cy_old_ = cy;
             }
@@ -124,8 +135,7 @@ void VideoCrop::readFaceInfo(int facex, int facey, int width, int height)
     CMP_LOG_DEBUG("%dx%d, state %d\n", cx_old_, cy_old_, zoomState_);
 }
 
-bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
-                        int height)
+bool VideoCrop::process(CropRect &crop, int facex, int facey, int width, int height)
 {
     CMP_LOG_DEBUG("%s\n", __func__);
 
@@ -144,34 +154,44 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
 
     zoomCurve = ptzMovingParam_.getZoomMovingParam(zoomMovingParam);
 
-    switch (zoomState_) {
+    switch (zoomState_)
+    {
     case NORMAL:
-        if (cx_old_ == 0 && cy_old_ == 0) {
+        if (cx_old_ == 0 && cy_old_ == 0)
+        {
             break;
         }
 
         center_.x = cx_old_;
         center_.y = cy_old_;
 
-        if (zoomLevel_ < zoomMovingParam) {
+        if (zoomLevel_ < zoomMovingParam)
+        {
             zoomLevel_++;
             cropVideo(zoomLevel_, crop, zoomCurve);
-        } else {
+        }
+        else
+        {
             zoomState_ = ZOOM_IN;
             CMP_LOG_INFO("GoTo Zoom In!!!(%d)", zoomLevel_);
-            if (dbgSaveHistFile.is_open()) {
+            if (dbgSaveHistFile.is_open())
+            {
                 dbgSaveHistFile << "ZoomIn" << std::endl;
             }
         }
         break;
     case ZOOM_IN:
-        if (cx_old_ == 0 && cy_old_ == 0) {
+        if (cx_old_ == 0 && cy_old_ == 0)
+        {
             CMP_LOG_INFO("GoTo Zoom Out!!!(%d)", zoomLevel_);
-            if (dbgSaveHistFile.is_open()) {
+            if (dbgSaveHistFile.is_open())
+            {
                 dbgSaveHistFile << "ZoomOut" << std::endl;
             }
             zoomState_ = ZOOM_OUT;
-        } else {
+        }
+        else
+        {
             if (cx_old_ == center_.x && cy_old_ == center_.y)
                 break;
 
@@ -192,7 +212,8 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
             if (sy < -PTZ_LIMIT)
                 sy = -PTZ_LIMIT;
             CMP_LOG_INFO("PAN and Tilt!!!!");
-            if (dbgSaveHistFile.is_open()) {
+            if (dbgSaveHistFile.is_open())
+            {
                 dbgSaveHistFile << "PanTilt" << std::endl;
             }
             zoomState_ = PAN_AND_TILT;
@@ -200,9 +221,12 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
 
         break;
     case PAN_AND_TILT:
-        if (sl < INT_MAX) {
+        if (sl < INT_MAX)
+        {
             sl++;
-        } else {
+        }
+        else
+        {
             sl = 0;
         }
         center_.x = tx + sx * sl / ptzMovingParam_.getPemTiltMovingParam();
@@ -213,10 +237,13 @@ bool VideoCrop::process(CropRect &crop, int facex, int facey, int width,
             zoomState_ = ZOOM_IN;
         break;
     case ZOOM_OUT:
-        if (zoomLevel_ > 0) {
+        if (zoomLevel_ > 0)
+        {
             zoomLevel_--;
             cropVideo(zoomLevel_, crop, zoomCurve);
-        } else {
+        }
+        else
+        {
             CMP_LOG_INFO("GoTo Normal!!!");
             zoomState_ = NORMAL;
             ptzMovingParam_.updateZoomMovingParam();
@@ -251,8 +278,7 @@ void VideoCrop::cropVideo(int level, CropRect &crop, float *zoomCurve)
     x1 = std::min(std::max(x1, 0), originWidth - CropWidth);
     y1 = std::min(std::max(y1, 0), originHeight - CropHeight);
 
-    CMP_LOG_DEBUG("CropWidth = %d, level = %d, x1 = %d, y1 = %d", CropWidth,
-                level, x1, y1);
+    CMP_LOG_DEBUG("CropWidth = %d, level = %d, x1 = %d, y1 = %d", CropWidth, level, x1, y1);
 
     x2 = x1 + CropWidth;
     y2 = y1 + CropHeight;
@@ -262,9 +288,8 @@ void VideoCrop::cropVideo(int level, CropRect &crop, float *zoomCurve)
     int cLeft   = x1;
     int cRight  = originWidth - x2;
 
-    CMP_LOG_DEBUG("cropVideo : top=%d, bottom=%d left=%d right=%d, %dx%d\n", cTop,
-                cBottom, cLeft, cRight, width_ - (cLeft + cRight),
-                height_ - (cTop + cBottom));
+    CMP_LOG_DEBUG("cropVideo : top=%d, bottom=%d left=%d right=%d, %dx%d\n", cTop, cBottom, cLeft,
+                  cRight, width_ - (cLeft + cRight), height_ - (cTop + cBottom));
     crop.top    = cTop;
     crop.bottom = cBottom;
     crop.left   = cLeft;
@@ -272,4 +297,4 @@ void VideoCrop::cropVideo(int level, CropRect &crop, float *zoomCurve)
 
     isUpdate_ = true;
 }
-}
+} // namespace cmp

@@ -1,6 +1,6 @@
 #include "pipeline_factory.h"
-#include "log.h"
 #include "camera_player.h"
+#include "log.h"
 #include "shmemory_jpeg_pipeline.h"
 #include "shmemory_yuv_pipeline.h"
 
@@ -16,10 +16,12 @@ std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JVa
         {
             if (parsed["args"][i].hasKey("option"))
             {
-                if (parsed["args"][i]["option"].hasKey("cameraId")) {
+                if (parsed["args"][i]["option"].hasKey("cameraId"))
+                {
                     camera_id = parsed["args"][i]["option"]["cameraId"].asString();
                 }
-                if (parsed["args"][i]["option"].hasKey("format")) {
+                if (parsed["args"][i]["option"].hasKey("format"))
+                {
                     format = parsed["args"][i]["option"]["format"].asString();
                 }
                 break;
@@ -29,10 +31,12 @@ std::shared_ptr<CameraPipeline> PipelineFactory::CreatePlayer(const pbnjson::JVa
     }
     else
     {
-        if (parsed["options"]["option"].hasKey("cameraId")) {
+        if (parsed["options"]["option"].hasKey("cameraId"))
+        {
             camera_id = parsed["options"]["option"]["cameraId"].asString();
         }
-        if (parsed["options"]["option"].hasKey("format")) {
+        if (parsed["options"]["option"].hasKey("format"))
+        {
             format = parsed["options"]["option"]["format"].asString();
         }
     }

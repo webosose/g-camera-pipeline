@@ -15,10 +15,10 @@
 // limitations under the License.
 
 // SPDX-License-Identifier: Apache-2.0
+#include "api_call_checker.h"
+#include "wayland_foreign.h"
 #include <gtest/gtest.h>
 #include <iostream>
-#include "wayland_foreign.h"
-#include "api_call_checker.h"
 
 class WaylandForeignTest1 : public ::testing::Test
 {
@@ -28,128 +28,122 @@ protected:
 
 TEST_F(WaylandForeignTest1, InitializeAndFinalize)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     bool expected = true;
 
-    //Act
+    // Act
     bool actual = foreign.initialize();
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     foreign.finalize();
     actual = isAPICalled("wl_webos_foreign_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = isAPICalled("wl_webos_shell_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = isAPICalled("wl_shell_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = isAPICalled("wl_compositor_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = isAPICalled("wl_display_flush");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 
-    //Act
+    // Act
     actual = isAPICalled("wl_display_disconnect");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
 
 class WaylandForeignTest2 : public ::testing::Test
 {
 protected:
-    void SetUp(void)
-    {
-        foreign.initialize();
-    }
+    void SetUp(void) { foreign.initialize(); }
 
-    void TearDown(void)
-    {
-        foreign.finalize();
-    }
+    void TearDown(void) { foreign.finalize(); }
 
     Wayland::Foreign foreign;
 };
 
 TEST_F(WaylandForeignTest2, GetDisplay)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_display *actual = foreign.getDisplay();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(WaylandForeignTest2, GetCompositor)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_compositor *actual = foreign.getCompositor();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(WaylandForeignTest2, GetShell)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_shell *actual = foreign.getShell();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(WaylandForeignTest2, GetWebosShell)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_webos_shell *actual = foreign.getWebosShell();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(WaylandForeignTest2, GetWebosForeign)
 {
-    //Arrange
+    // Arrange
 
-    //Act
+    // Act
     struct wl_webos_foreign *actual = foreign.getWebosForeign();
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 }
 
 TEST_F(WaylandForeignTest2, Region)
 {
-    //Arrange
+    // Arrange
     clearCallLog();
     int32_t x         = 0;
     int32_t y         = 0;
@@ -157,28 +151,28 @@ TEST_F(WaylandForeignTest2, Region)
     int32_t height    = 512;
     bool expectedCall = true;
 
-    //Act
+    // Act
     struct wl_region *actual = foreign.createRegion(x, y, width, height);
 
-    //Assert
+    // Assert
     EXPECT_TRUE(nullptr != actual);
 
-    //Act
+    // Act
     foreign.destroyRegion(actual);
     bool actualCall = isAPICalled("wl_region_destroy");
 
-    //Assert
+    // Assert
     EXPECT_EQ(expectedCall, actualCall);
 }
 
 TEST_F(WaylandForeignTest2, Flush)
 {
-    //Arrange
+    // Arrange
     bool expected = true;
 
-    //Act
+    // Act
     bool actual = foreign.flush();
 
-    //Assert
+    // Assert
     EXPECT_EQ(expected, actual);
 }
