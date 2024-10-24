@@ -403,8 +403,7 @@ static GstFlowReturn gst_camsrc_create(GstPushSrc *src, GstBuffer **buf)
                 if (retval != 0)
                     return GST_FLOW_ERROR;
 
-                if (frame_buffer.index >= 0)
-                    gst_memory_ref(dma_memory[frame_buffer.index]);
+                gst_memory_ref(dma_memory[frame_buffer.index]);
                 retval = camera_hal_if_release_buffer(camsrc->p_h_camera, &frame_buffer);
                 if (retval != 0)
                 {
