@@ -133,7 +133,7 @@ static void gst_camsrc_set_property(GObject *object, guint prop_id, const GValue
                                     GParamSpec *pspec);
 static void gst_camsrc_get_property(GObject *object, guint prop_id, GValue *value,
                                     GParamSpec *pspec);
-static GstStateChangeReturn gst_camsrc_change_state(GstPushSrc *element, GstStateChange transition);
+static GstStateChangeReturn gst_camsrc_change_state(GstElement *element, GstStateChange transition);
 
 static gboolean gst_camsrc_sink_event(GstPad *pad, GstObject *parent, GstEvent *event);
 static GstFlowReturn gst_camsrc_chain(GstPad *pad, GstObject *parent, GstBuffer *buf);
@@ -381,7 +381,7 @@ static GstFlowReturn gst_camsrc_create(GstPushSrc *src, GstBuffer **buf)
 
             bStarted            = 1;
             frame_buffer.length = streamformat.buffer_size;
-            retval              = camera_hal_if_get_buffer_fd(camsrc->p_h_camera, &dma_fd, &count);
+            retval              = camera_hal_if_get_buffer_fd(camsrc->p_h_camera, dma_fd, &count);
             if (retval != 0)
                 return GST_FLOW_ERROR;
 
@@ -476,7 +476,7 @@ static GstFlowReturn gst_camsrc_create(GstPushSrc *src, GstBuffer **buf)
     return GST_FLOW_OK;
 }
 
-static GstStateChangeReturn gst_camsrc_change_state(GstPushSrc *element, GstStateChange transition)
+static GstStateChangeReturn gst_camsrc_change_state(GstElement *element, GstStateChange transition)
 {
     GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
     Gstcamsrc *camsrc        = GST_CAMSRC(element);
