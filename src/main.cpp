@@ -71,9 +71,17 @@ int main(int argc, char *argv[])
 
     if (unmanaged)
     {
-        // CMP_LOG_INFO("start");
-        cmp::service::CameraPipelineService CameraPipelineServiceInstance(service_name);
-        // CMP_LOG_INFO("end");
+        try
+        {
+            // CMP_LOG_INFO("start");
+            cmp::service::CameraPipelineService CameraPipelineServiceInstance(service_name);
+            // CMP_LOG_INFO("end");
+        }
+        catch (...)
+        {
+            CMP_LOG_ERROR("An exception occurred.");
+            return 1;
+        }
     }
     else
     {
