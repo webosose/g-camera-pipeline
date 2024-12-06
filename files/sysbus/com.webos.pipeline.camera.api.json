@@ -1,0 +1,23 @@
+{
+    "camerapipeline.resourcemanagement": [
+        "com.webos.rm.client._*/acquireComplete",
+        "com.webos.rm.client._*/policyAction"
+   ],
+    "camerapipeline.operation": [
+        "com.webos.pipeline.camera.*/load",
+        "com.webos.pipeline.camera.*/attach",
+        "com.webos.pipeline.camera.*/unload",
+        "com.webos.pipeline.camera.*/play",
+        "com.webos.pipeline.camera.*/pause",
+        "com.webos.pipeline.camera.*/stateChange",
+        "com.webos.pipeline.camera.*/unsubscribe",
+        "com.webos.pipeline.camera.*/setUri",
+        "com.webos.pipeline.camera.*/setPlane",
+        "com.webos.pipeline.camera.*/takeCameraSnapshot",
+        "com.webos.pipeline.camera.*/startCameraRecord",
+        "com.webos.pipeline.camera.*/stopCameraRecord",
+        "com.webos.pipeline.camera.*/start",
+        "com.webos.pipeline.camera.*/stop"
+    ]
+}
+
