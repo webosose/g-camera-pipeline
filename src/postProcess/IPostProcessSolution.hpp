@@ -30,7 +30,8 @@ class IPostProcessSolution
 {
 public:
     virtual ~IPostProcessSolution() {}
-    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen)                      = 0;
+    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen, uint8_t *asolution,
+                              int32_t asolutionLen)                                  = 0;
     virtual bool doPostProcess()                                                     = 0;
     virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV) = 0;
     virtual bool doPostProcess(CropRect &cropRect)                                   = 0;

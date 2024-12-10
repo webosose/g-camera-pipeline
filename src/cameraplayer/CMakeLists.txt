@@ -67,8 +67,6 @@ set(G-CAMERA-PIPELINE_HEADERS
     ../log/log.h
     ../cameraservice/camera_service.h
     ../resourcefacilitator/requestor.h
-    ../util/camshm.h
-    ../util/cam_posixshm.h
    )
 
 if (AUTO_PTZ)
@@ -99,10 +97,7 @@ set(G-CAMERA-PIPELINE_SRC
     ../cameraservice/camera_service.cpp
     ../cameraservice/camera_pipeline_service.cpp
     ../resourcefacilitator/requestor.cpp
-    ../util/camshm.cpp
-    ../util/cam_posixshm.cpp
     camera_service_client.cpp
-    signal_listener.cpp
     )
 
 if (AUTO_PTZ)
@@ -145,6 +140,7 @@ target_link_libraries(${G-CAMERA-PIPELINE_LIB}
     resource_mgr_client
     resource_mgr_client_c
     camera-window-manager
+    camera_shared_memory
     )
 
 if(USE_RPI)
