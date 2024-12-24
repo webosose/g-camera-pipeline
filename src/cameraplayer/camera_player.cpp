@@ -925,7 +925,7 @@ void CameraPlayer::WriteImageToFile(const void *p, int size)
 
     if (size >= 0)
     {
-        size_t bytes_written = fwrite(p, size, 1, fp);
+        size_t bytes_written = fwrite(p, 1, size, fp);
         if (bytes_written != size)
         {
             CMP_LOG_ERROR("Error writing data to file.");
