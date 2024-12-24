@@ -3,7 +3,7 @@
     "type": "regular",
     "trustLevel" : "oem",
     "allowedNames": [
-        "com.webos.pipeline.*",
+        "com.webos.pipeline*",
         "com.webos.pipeline.camera.*",
         "com.webos.rm.client*",
         "com.webos.pipeline.ipc*"
