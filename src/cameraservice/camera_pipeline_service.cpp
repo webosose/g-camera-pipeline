@@ -172,7 +172,6 @@ bool CameraPipelineService::start(LSMessage &message)
     player_->Play();
 
     jobject_put(json_outobj, J_CSTR_TO_JVAL("returnValue"), jboolean_create(true));
-    jobject_put(json_outobj, J_CSTR_TO_JVAL("pid"), jnumber_create_i32(player_->pid));
 
     LS::Message request(&message);
     request.respond(jvalue_stringify(json_outobj));
