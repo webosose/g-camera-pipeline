@@ -97,7 +97,6 @@ set(G-CAMERA-PIPELINE_SRC
     ../cameraservice/camera_service.cpp
     ../cameraservice/camera_pipeline_service.cpp
     ../resourcefacilitator/requestor.cpp
-    camera_service_client.cpp
     )
 
 if (AUTO_PTZ)
@@ -141,6 +140,7 @@ target_link_libraries(${G-CAMERA-PIPELINE_LIB}
     resource_mgr_client_c
     camera-window-manager
     camera_shared_memory
+    luna_client
     )
 
 if(USE_RPI)
