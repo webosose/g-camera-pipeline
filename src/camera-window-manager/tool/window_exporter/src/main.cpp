@@ -24,6 +24,7 @@
 #include <GLES2/gl2ext.h>
 #include <assert.h>
 #include <csignal>
+#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <unistd.h>
@@ -74,6 +75,7 @@ void printHelp() noexcept(true)
     std::cout << "  -w          export width (1920)" << std::endl;
     std::cout << "  -h          export height (1080)" << std::endl;
     std::cout << "  -d          display ID (0)" << std::endl;
+    std::cout << "  -e          output log file" << std::endl;
     std::cout << "  -r          remove rectangle" << std::endl;
     std::cout << "  -o          overlay window" << std::endl;
 }
@@ -338,14 +340,14 @@ int main(int argc, char *argv[])
     unsigned int y            = 0;
     unsigned int exportWidth  = 1920;
     unsigned int exportHeight = 1080;
-    uint32_t exported_type    = WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT;
     std::string displayID     = "0";
+    std::string outputLogFile = "";
     bool draw_render          = true;
     bool overlay              = false;
 
     for (;;)
     {
-        switch (getopt(argc, argv, "x:y:w:h:d:ro?"))
+        switch (getopt(argc, argv, "x:y:w:h:d:e:ro?"))
         {
         case 'x':
             x = atoi(optarg);
@@ -368,13 +370,15 @@ int main(int argc, char *argv[])
                 displayID = optarg;
             continue;
 
+        case 'e':
+            outputLogFile = optarg;
+            continue;
+
         case 'r':
-            std::cout << "remove rectangle" << std::endl;
             draw_render = false;
             continue;
 
         case 'o':
-            std::cout << "overlay window" << std::endl;
             overlay = true;
             continue;
 
@@ -412,8 +416,9 @@ int main(int argc, char *argv[])
     struct wl_region *region_src = foreign.createRegion(0, 0, 1920, 1080); // don't care
     struct wl_region *region_dst = foreign.createRegion(x, y, exportWidth, exportHeight);
 
-    bool result = exporter.initialize(foreign.getDisplay(), foreign.getWebosForeign(),
-                                      surface.wlSurface, exported_type);
+    bool result =
+        exporter.initialize(foreign.getDisplay(), foreign.getWebosForeign(), surface.wlSurface,
+                            WL_WEBOS_FOREIGN_WEBOS_EXPORTED_TYPE_VIDEO_OBJECT);
     if (result == false)
     {
         std::cout << "exporter.initialize error" << std::endl;
@@ -443,6 +448,20 @@ int main(int argc, char *argv[])
     foreign.flush();
 
     renderInitialize(foreign.getDisplay(), &eglData, &surface, &glData);
+
+    if (!outputLogFile.empty())
+    {
+        std::cout << "Output log file: " << outputLogFile << std::endl;
+
+        std::ofstream output_file_stream(outputLogFile);
+        if (output_file_stream.is_open())
+        {
+            std::streambuf *original_cout_buffer = std::cout.rdbuf(output_file_stream.rdbuf());
+            std::cout << exporterOutput.dump(4) << std::endl;
+            std::cout.rdbuf(original_cout_buffer);
+            output_file_stream.close();
+        }
+    }
 
     while (1)
     {
