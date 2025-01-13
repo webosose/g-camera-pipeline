@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023 LG Electronics, Inc.
+# Copyright (c) 2019-2025 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,6 +44,10 @@ endif()
 
 if(PRO_UMS)
   add_definitions(-DPRO_UMS)
+endif()
+
+if(USE_COMPOSITER_VER4)
+  add_definitions(-DUSE_COMPOSITER_VER4)
 endif()
 
 include_directories(./cameraplayer)

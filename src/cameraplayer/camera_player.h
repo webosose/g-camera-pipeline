@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2023 LG Electronics, Inc.
+// Copyright (c) 2019-2025 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,15 @@ extern "C"
 using namespace std;
 
 static bool getFdCb(LSHandle *, LSMessage *, void *);
-static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
+
+#ifdef USE_COMPOSITER_VER4
+    static constexpr char const *waylandDisplayHandleContextType =
+        "GstWlDisplayHandleContextType";
+#else
+    static constexpr char const *waylandDisplayHandleContextType =
+        "GstWaylandDisplayHandleContextType";
+#endif
+
 using CALLBACK_T =
     std::function<void(const gint type, const gint64 numValue, const gchar *strValue, void *udata)>;
 typedef struct GstAppSrcContext_

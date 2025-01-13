@@ -1,4 +1,4 @@
-// Copyright (c) 2020 LG Electronics, Inc.
+// Copyright (c) 2020-2025 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,13 @@ extern "C"
 #define VERTEX_ARRAY (0)
 
 static guint signal_watch_intr_id;
-static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
+#ifdef USE_COMPOSITER_VER4
+    static constexpr char const *waylandDisplayHandleContextType =
+        "GstWlDisplayHandleContextType";
+#else
+    static constexpr char const *waylandDisplayHandleContextType =
+        "GstWaylandDisplayHandleContextType";
+#endif
 
 namespace Importer
 {

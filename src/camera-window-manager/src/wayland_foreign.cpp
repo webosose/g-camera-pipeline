@@ -1,4 +1,4 @@
-// Copyright (c) 2020 LG Electronics, Inc.
+// Copyright (c) 2020-2025 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,8 +26,13 @@ static void display_handle_global(void *waylandData, struct wl_registry *registr
 
     if (strcmp(interface, "wl_compositor") == 0)
     {
+#ifdef USE_COMPOSITER_VER4
         foreign->setCompositor(
-            (struct wl_compositor *)wl_registry_bind(registry, id, &wl_compositor_interface, 1));
+            (struct wl_compositor *)wl_registry_bind(registry, id, &wl_compositor_interface, 4));
+#else
+        foreign->setCompositor(
+            (struct wl_compositor *)wl_registry_bind(registry, id, &wl_compositor_interface, 3));
+#endif
     }
     else if (strcmp(interface, "wl_shell") == 0)
     {
