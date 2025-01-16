@@ -26,11 +26,10 @@ namespace cmp
 
 FacePtzSolution::FacePtzSolution() {}
 
-bool FacePtzSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen, uint8_t *asolution,
-                                   int32_t asolutionLen)
+bool FacePtzSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen)
 {
     // CMP_LOG_INFO("%s", aMeta);
-    faceDataMgr_.updateFaceInfo(asolution, asolutionLen);
+    faceDataMgr_.updateFaceInfo(aMeta, aMetaLen);
     return true;
 }
 bool FacePtzSolution::doPostProcess()

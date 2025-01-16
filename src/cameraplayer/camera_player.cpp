@@ -15,6 +15,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "camera_player.h"
+#include "cam_posixshm.h"
+#include "camshm.h"
 #include "parser/parser.h"
 #include <atomic>
 #include <errno.h>
@@ -93,11 +95,11 @@ CameraPlayer::CameraPlayer()
       preview_ghost_sinkpad_(NULL), preview_queue_pad_(NULL), capture_queue_pad_(NULL),
       tee_capture_pad_(NULL), record_queue_pad_(NULL), tee_record_pad_(NULL),
       record_audio_encoder_pad_(NULL), record_video_queue_pad_(NULL), record_audio_mux_pad_(NULL),
-      record_video_mux_pad_(NULL), context_{1, 0, 0, FALSE, NULL}, source_info_(),
+      record_video_mux_pad_(NULL), context_{NULL, 1, 0, 0, FALSE, NULL}, source_info_(),
       current_state_(base::playback_state_t::STOPPED), bus_(NULL), caps_YUY2_(NULL),
       caps_NV12_(NULL), caps_I420_(NULL), caps_JPEG_(NULL), caps_RGB_(NULL), caps_H264_(NULL),
       service_(NULL), load_complete_(false), display_mode_("Default"), window_id_(""),
-      camera_id_("")
+      camera_id_(""), cs_client_(nullptr), shm_listener_(nullptr)
 {
     CMP_LOG_INFO(" this[%p]", this);
 }
@@ -117,8 +119,6 @@ bool CameraPlayer::Unload() { return unloadImpl(); }
 
 bool CameraPlayer::attachSurface(bool allow_no_window)
 {
-    CMP_LOG_INFO("start");
-
     if (!window_id_.empty())
     {
         if (!lsm_camera_window_manager_.registerID(window_id_.c_str(), NULL))
@@ -179,126 +179,66 @@ void CameraPlayer::ParseOptionString(const std::string &options)
     }
     pbnjson::JValue parsed = jdparser.getDom();
 
-    if (parsed.hasKey("args") && parsed["args"].isArray())
+    if (parsed.hasKey("uri"))
     {
-        if (parsed["args"].arraySize() > 0)
-        {
-            uri_ = parsed["args"][0].asString();
-        }
-        int i = 1;
-        for (ssize_t j = 1; j < parsed["args"].arraySize(); j++)
-        {
-            if (parsed["args"][i].hasKey("option"))
-            {
-                if (parsed["args"][i]["option"].hasKey("displayPath"))
-                {
-                    int32_t display_path =
-                        parsed["args"][i]["option"]["displayPath"].asNumber<int32_t>();
-                    display_path_ = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
-                }
-                if (parsed["args"][i]["option"].hasKey("windowId"))
-                {
-                    window_id_ = parsed["args"][i]["option"]["windowId"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("handle"))
-                {
-                    handle_ = parsed["args"][i]["option"]["handle"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("videoDisplayMode"))
-                {
-                    display_mode_ = parsed["args"][i]["option"]["videoDisplayMode"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("format"))
-                {
-                    format_ = parsed["args"][i]["option"]["format"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("width"))
-                {
-                    width_ = parsed["args"][i]["option"]["width"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("height"))
-                {
-                    height_ = parsed["args"][i]["option"]["height"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("frameRate"))
-                {
-                    framerate_ = parsed["args"][i]["option"]["frameRate"].asNumber<int>();
-                }
-                if (parsed["args"][i]["option"].hasKey("memType"))
-                {
-                    memtype_ = parsed["args"][i]["option"]["memType"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("memSrc"))
-                {
-                    memsrc_ = parsed["args"][i]["option"]["memSrc"].asString();
-                }
-                if (parsed["args"][i]["option"].hasKey("cameraId"))
-                {
-                    camera_id_ = parsed["args"][i]["option"]["cameraId"].asString();
-                }
-                break;
-            }
-            i++;
-        }
+        uri_ = parsed["uri"].asString();
     }
     else
     {
-        if (parsed.hasKey("uri"))
-        {
-            uri_ = parsed["uri"].asString();
-        }
-        else
-        {
-            CMP_LOG_ERROR("UMS_INTERNAL_API_VERSION is not version 2.");
-            CMP_LOG_ERROR("Please check the UMS_INTERNAL_API_VERSION in ums.");
-            CMPASSERT(0);
-        }
+        CMP_LOG_INFO("UMS_INTERNAL_API_VERSION is not version 2.");
+        CMP_LOG_INFO("Please check the UMS_INTERNAL_API_VERSION in ums.");
+        CMPASSERT(0);
+    }
 
-        if (parsed["options"]["option"].hasKey("displayPath"))
-        {
-            int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
-            display_path_        = (display_path > CMP_SECONDARY_DISPLAY ? 0 : display_path);
-        }
-        if (parsed["options"]["option"].hasKey("windowId"))
-        {
-            window_id_ = parsed["options"]["option"]["windowId"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("handle"))
-        {
-            handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("videoDisplayMode"))
-        {
-            display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("format"))
-        {
-            format_ = parsed["options"]["option"]["format"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("width"))
-        {
-            width_ = parsed["options"]["option"]["width"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("height"))
-        {
-            height_ = parsed["options"]["option"]["height"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("frameRate"))
-        {
-            framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
-        }
-        if (parsed["options"]["option"].hasKey("memType"))
-        {
-            memtype_ = parsed["options"]["option"]["memType"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("memSrc"))
-        {
-            memsrc_ = parsed["options"]["option"]["memSrc"].asString();
-        }
-        if (parsed["options"]["option"].hasKey("cameraId"))
-        {
-            camera_id_ = parsed["options"]["option"]["cameraId"].asString();
-        }
+    if (parsed["options"]["option"].hasKey("displayPath"))
+    {
+        int32_t display_path = parsed["options"]["option"]["displayPath"].asNumber<int32_t>();
+        display_path_ =
+            (display_path > CMP_SECONDARY_DISPLAY ? 0 : (display_path > 0 ? display_path : 0));
+    }
+    if (parsed["options"]["option"].hasKey("windowId"))
+    {
+        window_id_ = parsed["options"]["option"]["windowId"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("handle"))
+    {
+        handle_ = parsed["options"]["option"]["handle"].asNumber<int>();
+    }
+    if (parsed["options"]["option"].hasKey("videoDisplayMode"))
+    {
+        display_mode_ = parsed["options"]["option"]["videoDisplayMode"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("format"))
+    {
+        format_ = parsed["options"]["option"]["format"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("width"))
+    {
+        width_ = parsed["options"]["option"]["width"].asNumber<int>();
+    }
+    if (parsed["options"]["option"].hasKey("height"))
+    {
+        height_ = parsed["options"]["option"]["height"].asNumber<int>();
+    }
+    if (parsed["options"]["option"].hasKey("frameRate"))
+    {
+        framerate_ = parsed["options"]["option"]["frameRate"].asNumber<int>();
+    }
+    if (parsed["options"]["option"].hasKey("memType"))
+    {
+        memtype_ = parsed["options"]["option"]["memType"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("iomode"))
+    {
+        iomode_ = parsed["options"]["option"]["iomode"].asNumber<int>();
+    }
+    if (parsed["options"]["option"].hasKey("memSrc"))
+    {
+        memsrc_ = parsed["options"]["option"]["memSrc"].asString();
+    }
+    if (parsed["options"]["option"].hasKey("cameraId"))
+    {
+        camera_id_ = parsed["options"]["option"]["cameraId"].asString();
     }
 
     CMP_LOG_INFO("uri: %s, display-path: %d, window_id: %s, display_mode: %s", uri_.c_str(),
@@ -436,7 +376,6 @@ bool CameraPlayer::Load(const std::string &str)
     CMP_LOG_INFO("memsrc_ : %s", memsrc_.c_str());
     CMP_LOG_INFO("posixshm_fd : %d", posixshm_fd);
     CMP_LOG_INFO("camera_id_ : %s", camera_id_.c_str());
-    CMP_LOG_INFO("handle : %d", handle_);
 
     if (memtype_ == kMemtypeShmem && framerate_ == 0)
         framerate_ = DEFAULT_FRAMERATE;
@@ -450,7 +389,76 @@ bool CameraPlayer::Load(const std::string &str)
     // end
 #endif
 
-    return LoadPlayer();
+    if (!camera_id_.empty())
+    {
+        if (memtype_ == kMemtypeShmem || memtype_ == kMemtypePosixShm)
+        {
+            cs_client_ = new CameraServiceClient();
+            CMP_LOG_INFO("cs_client_ : %p", cs_client_);
+            if (cs_client_)
+            {
+                CMP_LOG_INFO("cs_client_ creation OK");
+                int pid       = -1;
+                shm_listener_ = new SignalListener();
+                CMP_LOG_INFO("shm_listener_ : %p", shm_listener_);
+                if (shm_listener_)
+                {
+                    CMP_LOG_INFO("shm_listener_ creation OK");
+                    shm_listener_->initialize(SIGUSR1);
+                    pid = shm_listener_->run();
+                }
+                CMP_LOG_INFO("pid : %d", pid);
+                if (cs_client_->open(camera_id_, pid))
+                {
+                    int key = cs_client_->startCamera(memtype_);
+                    if (key == atoi(memsrc_.c_str()))
+                    {
+                        if (memtype_ == kMemtypePosixShm)
+                        {
+                            posixshm_fd = cs_client_->getFd();
+                        }
+                        return LoadPlayer();
+                    }
+                    else
+                    {
+                        CMP_LOG_ERROR("Wrong cameraId");
+                        cs_client_->stopCamera();
+                        cs_client_->close();
+                        delete cs_client_;
+                        cs_client_ = nullptr;
+                        if (shm_listener_)
+                        {
+                            shm_listener_->setTimeout(0, 100000);
+                            shm_listener_->quit();
+                            delete shm_listener_;
+                            shm_listener_ = nullptr;
+                        }
+                    }
+                }
+                else
+                {
+                    CMP_LOG_ERROR("Invalid cameraId");
+                    delete cs_client_;
+                    cs_client_ = nullptr;
+                    if (shm_listener_)
+                    {
+                        shm_listener_->setTimeout(0, 100000);
+                        shm_listener_->quit();
+                        delete shm_listener_;
+                        shm_listener_ = nullptr;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        if (kMemtypePosixShm == memtype_)
+            subscribeToCameraService();
+        else
+            return LoadPlayer();
+    }
+    return true;
 }
 
 bool CameraPlayer::LoadPlayer()
@@ -485,12 +493,6 @@ bool CameraPlayer::LoadPlayer()
     if (!attachSurface(true))
     {
         CMP_LOG_ERROR("attachSurface() failed");
-        return false;
-    }
-
-    if (!getFd())
-    {
-        CMP_LOG_ERROR("getFd() failed");
         return false;
     }
 
@@ -564,7 +566,23 @@ bool CameraPlayer::unloadImpl()
 
     SetPlayerState(base::playback_state_t::STOPPED);
 
-    closeShmemory();
+    if (memtype_ == kMemtypeShmem)
+    {
+        if (CloseShmem((SHMEM_HANDLE *)(&(context_.shmemHandle))) != SHMEM_COMM_OK)
+        {
+            CMP_LOG_ERROR("CloseShmem failed");
+            return false;
+        }
+    }
+    else if (memtype_ == kMemtypePosixShm)
+    {
+        if (ClosePosixShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), "", posixshm_fd) !=
+            POSHMEM_COMM_OK)
+        {
+            CMP_LOG_ERROR("CloseShmem failed");
+            return false;
+        }
+    }
 
     if (!detachSurface())
     {
@@ -574,6 +592,22 @@ bool CameraPlayer::unloadImpl()
 
     if (cbFunction_)
         cbFunction_(CMP_NOTIFY_UNLOAD_COMPLETED, 0, nullptr, nullptr);
+
+    if (cs_client_)
+    {
+        cs_client_->stopCamera();
+        cs_client_->close();
+        delete cs_client_;
+        cs_client_ = nullptr;
+    }
+
+    if (shm_listener_)
+    {
+        shm_listener_->setTimeout(0, 100000);
+        shm_listener_->quit();
+        delete shm_listener_;
+        shm_listener_ = nullptr;
+    }
 
     return true;
 }
@@ -680,78 +714,6 @@ bool CameraPlayer::stopRecordImpl()
     gst_pad_add_probe(tee_record_pad_, GST_PAD_PROBE_TYPE_IDLE,
                       (GstPadProbeCallback)RecordRemoveProbe, this, NULL);
     return true;
-}
-
-bool CameraPlayer::getFd()
-{
-    CMP_LOG_INFO("start");
-
-    cs_client_ = std::make_unique<CameraServiceClient>();
-
-    bufferFd = cs_client_->getFd(handle_, "buffer");
-    if (bufferFd < 0)
-    {
-        CMP_LOG_ERROR("get bufferFd fail!");
-        return false;
-    }
-    CMP_LOG_INFO("get bufferFd success (%d)", bufferFd);
-
-    signalFd = cs_client_->getFd(handle_, "signal");
-    if (signalFd < 0)
-    {
-        CMP_LOG_ERROR("get signalFd fail!");
-        return false;
-    }
-    CMP_LOG_INFO("get bufferFd success (%d)", signalFd);
-    return true;
-}
-
-bool CameraPlayer::openShmemory()
-{
-    CMP_LOG_INFO("start");
-
-    camShmem_ = std::make_unique<CameraSharedMemory>();
-
-    return camShmem_->open(bufferFd, signalFd);
-}
-
-void CameraPlayer::closeShmemory()
-{
-    CMP_LOG_INFO("start");
-
-    camShmem_->close();
-}
-
-bool CameraPlayer::readShmemory(unsigned char **data, size_t *len, unsigned char **meta,
-                                size_t *meta_len, unsigned char **extra, size_t *extra_len,
-                                unsigned char **solution, size_t *solution_len)
-{
-    CMP_LOG_DEBUG("start! key(%d)", handle_);
-
-    size_t dataLen     = 0;
-    size_t metaLen     = 0;
-    size_t extraLen    = 0;
-    size_t solutionLen = 0;
-
-    bool ret =
-        camShmem_->read(data, &dataLen, meta, &metaLen, extra, &extraLen, solution, &solutionLen);
-
-    if (ret)
-    {
-        if (len)
-            *len = static_cast<size_t>(dataLen);
-        if (meta_len)
-            *meta_len = static_cast<size_t>(metaLen);
-        if (extra_len)
-            *extra_len = static_cast<size_t>(extraLen);
-        if (solution_len)
-            *solution_len = static_cast<size_t>(solutionLen);
-
-        CMP_LOG_DEBUG("end! data(%p) length(%zu)", *data, dataLen);
-        return true;
-    }
-
-    return false;
 }
 
 gboolean CameraPlayer::HandleBusMessage(GstBus *bus_, GstMessage *message, gpointer user_data)
@@ -1027,11 +989,20 @@ bool CameraPlayer::LoadPipeline()
         g_object_set(source_, "do-timestamp", true, NULL);
         g_object_set(source_, "iomode", iomode_, NULL);
     }
-    else if (memtype_ == kMemtypeShmem || memtype_ == kMemtypePosixShm)
+    else if (memtype_ == kMemtypeShmem)
     {
-        if (!openShmemory())
+        try
         {
-            CMP_LOG_ERROR("open camera shared memory failed");
+            context_.key = std::stoi(memsrc_);
+        }
+        catch (...)
+        {
+            CMP_LOG_ERROR("Conversion error: memsrc_ is not a valid number.");
+            return false;
+        }
+        if (OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), context_.key) != 0)
+        {
+            CMP_LOG_ERROR("openShmem failed");
             return false;
         }
         source_ = gst_element_factory_make("appsrc", "app-source");
@@ -1043,6 +1014,23 @@ bool CameraPlayer::LoadPipeline()
         g_object_set(source_, "format", GST_FORMAT_TIME, NULL);
         g_object_set(source_, "do-timestamp", true, NULL);
         g_signal_connect(source_, "need-data", G_CALLBACK(FeedData), this);
+    }
+    else if (memtype_ == kMemtypePosixShm)
+    {
+        if (OpenPosixShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), posixshm_fd) != 0)
+        {
+            CMP_LOG_ERROR("openPosixShmem failed");
+            return false;
+        }
+        source_ = gst_element_factory_make("appsrc", "app-source");
+        if (!source_)
+        {
+            CMP_LOG_ERROR("source_ element creation failed.");
+            return false;
+        }
+        g_object_set(source_, "format", GST_FORMAT_TIME, NULL);
+        g_object_set(source_, "do-timestamp", true, NULL);
+        g_signal_connect(source_, "need-data", G_CALLBACK(FeedPosixData), this);
     }
     else
     {
@@ -1119,17 +1107,32 @@ bool CameraPlayer::CreatePreviewBin(GstPad *pad)
         CMP_LOG_ERROR("preview_sink_ element creation failed.");
         return false;
     }
-
     if (format_ == kFormatJPEG)
     {
-        g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        if (memtype_ == kMemtypeDevice)
+            g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        else
+        {
+            if (shm_listener_)
+                g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+            else
+                g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+        }
     }
     else
     {
-        if (memtype_ == kMemtypeShmem)
-            g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
-        else
+        if (shm_listener_)
+        {
+            // apply to both system V and POSIX shmem
             g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        }
+        else
+        {
+            if (memtype_ == kMemtypeShmem)
+                g_object_set(G_OBJECT(preview_sink_), "sync", true, NULL);
+            else
+                g_object_set(G_OBJECT(preview_sink_), "sync", false, NULL);
+        }
     }
 #ifndef USE_EMULATOR
     g_object_set(G_OBJECT(preview_sink_), "use-drmbuf", false, NULL);
@@ -2065,36 +2068,89 @@ base::error_t CameraPlayer::HandleErrorMessage(GstMessage *message)
 
 void CameraPlayer::FeedData(GstElement *appsrc, guint size, gpointer gdata)
 {
-    CameraPlayer *player          = reinterpret_cast<CameraPlayer *>(gdata);
-    unsigned char *data           = 0;
-    size_t len                    = -1;
-    unsigned char *meta           = 0;
-    size_t meta_len               = 0;
-    unsigned char *extra          = 0;
-    size_t extra_len              = 0;
-    unsigned char *solution       = 0;
-    size_t solution_len           = 0;
+    CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
+    unsigned char *data  = 0;
+    int len              = -1;
+    unsigned char *meta;
+    int meta_len;
     static GstClockTime timestamp = 0;
-
-    if (!player->readShmemory(&data, &len, &meta, &meta_len, &extra, &extra_len, &solution,
-                              &solution_len))
+    if (player->shm_listener_)
     {
-        CMP_LOG_ERROR("shared memory read fail");
-        return;
+        player->shm_listener_->wait();
+        while (len <= 0)
+        {
+            ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
-
-    if (data == nullptr || len <= 0)
+    else
     {
-        CMP_LOG_ERROR("FeedData is null");
-        return;
+        while (len <= 0)
+        {
+            ReadShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
     }
-
 #ifdef PTZ_ENABLED
     // Auto PTZ
     if (player->postProcessSolution_)
     {
-        CMP_LOG_DEBUG("meta len = %zu, meta = %u", meta_len, *meta);
-        player->postProcessSolution_->pushMetaData(meta, meta_len, solution, solution_len);
+        CMP_LOG_INFO("meta len = %d, meta = %u", meta_len, *meta);
+        player->postProcessSolution_->pushMetaData(meta, meta_len);
+    }
+    // end
+#endif
+    GstBuffer *buf =
+        gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
+    GST_BUFFER_PTS(buf)      = timestamp;
+    GST_BUFFER_DURATION(buf) = gst_util_uint64_scale_int(1, GST_SECOND, framerate);
+    GstClockTime dur         = GST_BUFFER_DURATION(buf);
+    if (ULONG_MAX - timestamp > dur)
+    {
+        timestamp += dur;
+    }
+    else
+    {
+        timestamp = 0;
+    }
+    gst_app_src_push_buffer((GstAppSrc *)appsrc, buf);
+#ifdef PTZ_ENABLED
+    // Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        player->postProcessSolution_->doPostProcess();
+    }
+    // end
+#endif
+}
+
+void CameraPlayer::FeedPosixData(GstElement *appsrc, guint size, gpointer gdata)
+{
+    CameraPlayer *player = reinterpret_cast<CameraPlayer *>(gdata);
+    unsigned char *data  = 0;
+    int len              = -1;
+    unsigned char *meta;
+    int meta_len;
+    static GstClockTime timestamp = 0;
+    if (player->shm_listener_)
+    {
+        player->shm_listener_->wait();
+        while (len <= 0)
+        {
+            ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
+    }
+    else
+    {
+        while (len <= 0)
+        {
+            ReadPosixShmem(player->context_.shmemHandle, &data, &len, &meta, &meta_len);
+        }
+    }
+#ifdef PTZ_ENABLED
+    // Auto PTZ
+    if (player->postProcessSolution_)
+    {
+        CMP_LOG_INFO("meta len = %d, meta = %u", meta_len, *meta);
+        player->postProcessSolution_->pushMetaData(meta, meta_len);
     }
     // end
 #endif
@@ -2471,6 +2527,5 @@ IPostProcessSolution *getPostProcessSolution()
     return p;
 }
 #endif
-
 } // namespace player
 } // namespace cmp

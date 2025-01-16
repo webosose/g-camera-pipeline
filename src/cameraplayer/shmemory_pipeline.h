@@ -3,10 +3,9 @@
 
 #include "base.h"
 #include "camera_pipeline.h"
-#include "camera_service_client.h"
 #include "camera_types.h"
+#include "camshm.h"
 #include <camera_window_manager.h>
-#include <map>
 #include <memory>
 #include <thread>
 
@@ -21,11 +20,12 @@ class IPostProcessSolution;
 }
 #endif
 
-class CameraSharedMemory;
+class SignalListener;
 class ShmemoryPipeline : public CameraPipeline
 {
     typedef struct GstAppSrcContext_
     {
+        SHMEM_HANDLE shmemHandle;
         gint streamingAllowState;
         int key;
         gint isStreaming;
@@ -53,17 +53,18 @@ class ShmemoryPipeline : public CameraPipeline
     int frame_counter                               = 0;
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
 
-    GstAppSrcContext context_{1, 0, 0, FALSE, NULL};
+    GstAppSrcContext context_{NULL, 1, 0, 0, FALSE, NULL};
     base::source_info_t source_info_;
+    int posixshm_fd = -1;
+
+    const std::string kMemtypeShmem    = "shmem";
+    const std::string kMemtypePosixShm = "posixshm";
 
 #ifdef PTZ_ENABLED
     std::shared_ptr<IPostProcessSolution> postProcessSolution_;
 #endif
 
-    int bufferFd = -1;
-    int signalFd = -1;
-    std::unique_ptr<CameraServiceClient> cs_client_;
-    std::unique_ptr<CameraSharedMemory> camShmem_{nullptr};
+    std::unique_ptr<SignalListener> shm_listener_;
 
     bool Pause();
     bool attachSurface(bool allow_no_window = false);
@@ -83,13 +84,10 @@ class ShmemoryPipeline : public CameraPipeline
     bool remBus();
     bool unloadImpl();
 
-    bool getFd();
-    bool openShmemory();
-    void closeShmemory();
-    bool readShmemory(unsigned char **data, size_t *len, unsigned char **meta = nullptr,
-                      size_t *meta_len = nullptr, unsigned char **extra = nullptr,
-                      size_t *extra_len = nullptr, unsigned char **solution = nullptr,
-                      size_t *solution_len = nullptr);
+    int openShmemory();
+    int closeShmemory();
+    int readShmemory(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
+                     unsigned char **ppMeta, int *pMetaSize);
 
 public:
     ShmemoryPipeline();
@@ -103,7 +101,7 @@ public:
 
 protected:
     int32_t width_{0}, height_{0}, framerate_{0}, display_path_{CMP_DEFAULT_DISPLAY}, handle_{0};
-    std::string uri_, format_, camera_id_;
+    std::string uri_, memtype_, memsrc_, format_, camera_id_;
     bool primary{false};
 
     void FeedData(GstElement *appsrc, guint size);

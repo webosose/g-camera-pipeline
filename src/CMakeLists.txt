@@ -31,6 +31,8 @@ include_directories(./cameraservice)
 
 include_directories(./log)
 
+include_directories(./util)
+
 if(AUTO_PTZ)
 include_directories(./postProcess)
 endif()
@@ -53,8 +55,6 @@ include_directories(./pipelinefactory)
 #include_directories(./bufferencoder)
 
 include_directories(./camera-window-manager/include)
-
-include_directories($ENV{PKG_CONFIG_SYSROOT_DIR}/usr/include/camera)
 
 #add_subdirectory(bufferencoder)
 #add_subdirectory(mediaencoderclient)

@@ -31,8 +31,7 @@ class FacePtzSolution : public PostProcessSolution
 public:
     FacePtzSolution();
     virtual ~FacePtzSolution() {}
-    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen, uint8_t *asolution,
-                              int32_t asolutionLen) override;
+    virtual bool pushMetaData(uint8_t *aMeta, int32_t aMetaLen) override;
     virtual bool doPostProcess() override;
     virtual bool doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV) override;
     virtual bool doPostProcess(CropRect &cropRect) override;

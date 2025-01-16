@@ -24,11 +24,13 @@ extern "C"
 #include <gst/gst.h>
 }
 #include "base.h"
+#include "cam_posixshm.h"
 #include "camera_pipeline.h"
 #include "camera_service_client.h"
 #include "camera_types.h"
+#include "camshm.h"
 #include "message.h"
-#include <camera_shared_memory.h>
+#include "signal_listener.h"
 #include <camera_window_manager.h>
 #include <cameraservice/camera_service.h>
 #include <gst/app/gstappsink.h>
@@ -36,7 +38,6 @@ extern "C"
 #include <gst/pbutils/pbutils.h>
 #include <gst/player/player.h>
 #include <luna-service2/lunaservice.hpp>
-#include <map>
 
 using namespace std;
 
@@ -46,6 +47,7 @@ using CALLBACK_T =
     std::function<void(const gint type, const gint64 numValue, const gchar *strValue, void *udata)>;
 typedef struct GstAppSrcContext_
 {
+    SHMEM_HANDLE shmemHandle;
     gint streamingAllowState;
     int key;
     gint isStreaming;
@@ -158,15 +160,8 @@ private:
     void FreeRecordElements();
     void FreePreviewBinElements();
 
-    bool getFd();
-    bool openShmemory();
-    void closeShmemory();
-    bool readShmemory(unsigned char **data, size_t *len, unsigned char **meta = nullptr,
-                      size_t *meta_len = nullptr, unsigned char **extra = nullptr,
-                      size_t *extra_len = nullptr, unsigned char **solution = nullptr,
-                      size_t *solution_len = nullptr);
-
     static void FeedData(GstElement *appsrc, guint size, gpointer gdata);
+    static void FeedPosixData(GstElement *appsrc, guint size, gpointer gdata);
     static void finalizeRecord(gpointer gdata);
     static GstFlowReturn GetSample(GstAppSink *elt, gpointer data);
     static GstPadProbeReturn CaptureRemoveProbe(GstPad *pad, GstPadProbeInfo *info,
@@ -206,10 +201,8 @@ private:
 
     /* shmem sync */
     std::string camera_id_;
-    std::unique_ptr<CameraServiceClient> cs_client_;
-    std::unique_ptr<CameraSharedMemory> camShmem_{nullptr};
-    int bufferFd = -1;
-    int signalFd = -1;
+    CameraServiceClient *cs_client_;
+    SignalListener *shm_listener_;
 };
 #ifdef PTZ_ENABLED
 IPostProcessSolution *getPostProcessSolution();
