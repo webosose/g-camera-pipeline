@@ -49,7 +49,10 @@
 #define HEIGHT_720 720
 #define DEFAULT_FRAMERATE 30
 
-LSHandle *handle = nullptr;
+static int posixshm_fd = -1;
+LSHandle *handle       = nullptr;
+bool getFdReq          = false;
+bool getFdReceived     = false;
 std::atomic<bool> recordingStarted(false);
 int bCallback                       = 1;
 GMainLoop *mainLoop                 = g_main_loop_new(nullptr, false);
@@ -73,6 +76,7 @@ namespace cmp
 {
 namespace player
 {
+guint CameraPlayer::mCameraServiceCbTimerID = TIMER_ID_NULL;
 
 CameraPlayer::CameraPlayer()
     : media_id_(""), display_path_(CMP_DEFAULT_DISPLAY), cbFunction_(nullptr), planeId_(-1),
@@ -307,6 +311,122 @@ void CameraPlayer::ParseOptionString(const std::string &options)
                  display_path_, window_id_.c_str(), display_mode_.c_str());
 }
 
+static bool getFdCb(LSHandle *lsHandle, LSMessage *message, void *user_data)
+{
+    struct stat sb;
+    jerror *error = NULL;
+    LSError lserror;
+    const char *payload = LSMessageGetPayload(message);
+    jvalue_ref jin_obj =
+        jdom_create(j_cstr_to_buffer(payload ? payload : ""), jschema_all(), &error);
+
+    getFdReceived = true;
+    int fd        = 0;
+
+    LS::Message ls_message(message);
+    LS::PayloadRef payload_ref = ls_message.accessPayload();
+    fd                         = payload_ref.getFd();
+    if (fd)
+        posixshm_fd = dup(fd);
+
+    bCallback = 0;
+    CMP_LOG_INFO("fd received in callback is : %d", posixshm_fd);
+    if (!LSUnregister(handle, &lserror))
+    {
+        CMP_LOG_ERROR("LS LSUnRegister failed ");
+        LSErrorPrint(&lserror, stderr);
+        return false;
+    }
+    return true;
+}
+
+gboolean CameraPlayer::CameraServiceCbTimerCallback(void *data)
+{
+    CMP_LOG_INFO("inside timeout : CameraServiceCbTimerCallback ");
+    CameraPlayer *player = reinterpret_cast<CameraPlayer *>(data);
+    // check whether camera service call is requested or not.
+    if (!getFdReq)
+        return FALSE;
+
+    // requested camera service for Fd. Wait till the callback is received.
+    if (getFdReq)
+    {
+        // start timer again to wait for callback
+        if (!getFdReceived)
+            player->CameraServiceCbTimerReset();
+        else
+        {
+            if (mCameraServiceCbTimerID)
+            {
+                CMP_LOG_INFO("Timer will be removed in timeout");
+                g_source_remove(mCameraServiceCbTimerID);
+                mCameraServiceCbTimerID = TIMER_ID_NULL;
+            }
+            return player->LoadPlayer();
+        }
+    }
+
+    return FALSE;
+}
+
+void CameraPlayer::CameraServiceCbTimerReset()
+{
+    if (!getFdReq)
+        return;
+
+    if (TIMER_ID_NULL == mCameraServiceCbTimerID)
+    {
+        mCameraServiceCbTimerID = g_timeout_add(DELAY_5SEC, CameraServiceCbTimerCallback, this);
+    }
+    else
+    {
+        if (g_source_remove(mCameraServiceCbTimerID))
+        {
+            mCameraServiceCbTimerID = g_timeout_add(DELAY_5SEC, CameraServiceCbTimerCallback, this);
+        }
+    }
+}
+
+bool CameraPlayer::subscribeToCameraService()
+{
+    int retval = 0;
+    char buffer[50];
+    const std::string cstr_payload = "handle";
+    int ret                        = 0;
+    std::string result;
+
+    LSError lserror;
+    LSErrorInit(&lserror);
+
+    if (!LSRegister("com.webos.pipeline", &handle, &lserror))
+    {
+        CMP_LOG_ERROR("LS Register failed ");
+        LSErrorPrint(&lserror, stderr);
+        return false;
+    }
+
+    if (!LSGmainAttach(handle, mainLoop, &lserror))
+    {
+        LSErrorPrint(&lserror, stderr);
+        return false;
+    }
+
+    if (sprintf(buffer, "{\"handle\":%d}", handle_) < 0)
+    {
+        CMP_LOG_ERROR("sprintf Failed.\n");
+    }
+
+    CMP_LOG_INFO("result is %s", buffer);
+
+    retval = LSCall(handle, "luna://com.webos.service.camera2/getFd", buffer, getFdCb, NULL, NULL,
+                    &lserror);
+    if (retval)
+        getFdReq = true;
+    CMP_LOG_INFO("Req sent to camera service for getFd = %d", getFdReq);
+    CameraServiceCbTimerReset();
+    return true;
+}
+
 bool CameraPlayer::Load(const std::string &str)
 {
     CMPASSERT(!str.empty());
@@ -320,6 +440,7 @@ bool CameraPlayer::Load(const std::string &str)
     CMP_LOG_INFO("memtype_ : %s", memtype_.c_str());
     CMP_LOG_INFO("iomode_ : %d", iomode_);
     CMP_LOG_INFO("memsrc_ : %s", memsrc_.c_str());
+    CMP_LOG_INFO("posixshm_fd : %d", posixshm_fd);
     CMP_LOG_INFO("camera_id_ : %s", camera_id_.c_str());
     CMP_LOG_INFO("handle : %d", handle_);
 

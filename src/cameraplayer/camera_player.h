@@ -111,6 +111,7 @@ public:
     bool Unload() override;
     void RegisterCbFunction(CALLBACK_T) override;
     bool Play() override;
+    bool subscribeToCameraService();
     bool TakeSnapshot(const std::string &location);
     bool StartRecord(const std::string &location, const std::string &format, bool audio,
                      const std::string &audioSrc) override;
@@ -118,6 +119,9 @@ public:
 
     static gboolean HandleBusMessage(GstBus *bus, GstMessage *message, gpointer user_data);
     static GstBusSyncReply HandleSyncBusMessage(GstBus *bus, GstMessage *msg, gpointer data);
+    static guint mCameraServiceCbTimerID;
+    static gboolean CameraServiceCbTimerCallback(void *data);
+    void CameraServiceCbTimerReset();
 #ifdef PTZ_ENABLED
     // Auto PTZ
     std::shared_ptr<IPostProcessSolution> postProcessSolution_;
