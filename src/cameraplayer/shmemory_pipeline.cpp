@@ -1,8 +1,7 @@
 #include "shmemory_pipeline.h"
-#include "cam_posixshm.h"
+#include "camera_shared_memory.h"
 #include "log.h"
 #include "message.h"
-#include "signal_listener.h"
 #include <pbnjson.hpp>
 #include <system_error>
 
@@ -75,9 +74,8 @@ bool ShmemoryPipeline::Load(const std::string &msg)
     CMP_LOG_INFO("width_ : %d", width_);
     CMP_LOG_INFO("height_ : %d", height_);
     CMP_LOG_INFO("framerate_: %d", framerate_);
-    CMP_LOG_INFO("memtype_ : %s", memtype_.c_str());
-    CMP_LOG_INFO("memsrc_ : %s", memsrc_.c_str());
     CMP_LOG_INFO("camera_id_ : %s", camera_id_.c_str());
+    CMP_LOG_INFO("handle_ : %d", handle_);
 
     if (!GetSourceInfo())
     {
@@ -99,9 +97,13 @@ bool ShmemoryPipeline::Load(const std::string &msg)
         return false;
     }
 
-    createSignalListener();
+    if (!getFd())
+    {
+        CMP_LOG_ERROR("getFd() failed");
+        return false;
+    }
 
-    if (openShmemory())
+    if (!openShmemory())
     {
         CMP_LOG_ERROR("openShmemory() failed");
         return false;
@@ -195,11 +197,7 @@ bool ShmemoryPipeline::unloadImpl()
     gst_object_unref(pipeline_);
     pipeline_ = nullptr;
 
-    if (closeShmemory())
-    {
-        CMP_LOG_ERROR("closeShmemory() failed");
-        return false;
-    }
+    closeShmemory();
 
     if (!detachSurface())
     {
@@ -586,16 +584,17 @@ drop:
 
 void ShmemoryPipeline::FeedData(GstElement *appsrc, guint size)
 {
-    unsigned char *data = 0;
-    int len             = -1;
-    unsigned char *meta;
-    int meta_len;
+    unsigned char *data           = 0;
+    size_t len                    = 0;
+    unsigned char *meta           = 0;
+    size_t meta_len               = 0;
+    unsigned char *extra          = 0;
+    size_t extra_len              = 0;
+    unsigned char *solution       = 0;
+    size_t solution_len           = 0;
     static GstClockTime timestamp = 0;
 
-    if (shm_listener_)
-        shm_listener_->wait();
-
-    if (readShmemory(context_.shmemHandle, &data, &len, &meta, &meta_len) != 0)
+    if (!readShmemory(&data, &len, &meta, &meta_len, &extra, &extra_len, &solution, &solution_len))
     {
         CMP_LOG_ERROR("shared memory read fail");
         return;
@@ -625,8 +624,8 @@ void ShmemoryPipeline::FeedData(GstElement *appsrc, guint size)
 #ifdef PTZ_ENABLED
     if (postProcessSolution_)
     {
-        CMP_LOG_DEBUG("meta len = %d bytes", meta_len);
-        postProcessSolution_->pushMetaData(meta, meta_len);
+        CMP_LOG_DEBUG("meta len = %zu bytes", meta_len);
+        postProcessSolution_->pushMetaData(meta, meta_len, solution, solution_len);
         postProcessSolution_->doPostProcess();
     }
 #endif
@@ -677,14 +676,6 @@ void ShmemoryPipeline::ParseOptionString(const std::string &options)
     if (parsed.hasKey("frameRate"))
     {
         framerate_ = parsed["frameRate"].asNumber<int>();
-    }
-    if (parsed.hasKey("memType"))
-    {
-        memtype_ = parsed["memType"].asString();
-    }
-    if (parsed.hasKey("memSrc"))
-    {
-        memsrc_ = parsed["memSrc"].asString();
     }
     if (parsed.hasKey("cameraId"))
     {
@@ -816,79 +807,75 @@ void ShmemoryPipeline::show_frame()
     }
 }
 
-int ShmemoryPipeline::openShmemory()
+bool ShmemoryPipeline::getFd()
 {
     CMP_LOG_INFO("start");
 
-    if (memtype_ == kMemtypeShmem)
+    cs_client_ = std::make_unique<CameraServiceClient>();
+    bufferFd   = cs_client_->getFd(handle_, "buffer");
+    if (bufferFd < 0)
     {
-        try
-        {
-            context_.key = std::stoi(memsrc_);
-        }
-        catch (...)
-        {
-            CMP_LOG_ERROR("Conversion error: memsrc_ is not a valid number.");
-            return -1;
-        }
-        return OpenShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), context_.key);
+        CMP_LOG_ERROR("get bufferFd fail!");
+        return false;
     }
-    else if (memtype_ == kMemtypePosixShm)
+    CMP_LOG_INFO("get bufferFd success (%d)", bufferFd);
+
+    signalFd = cs_client_->getFd(handle_, "signal");
+    if (signalFd < 0)
     {
-        CMP_LOG_INFO("posixshm_fd = %d", posixshm_fd);
-        if (posixshm_fd > 0)
-        {
-            return OpenPosixShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), posixshm_fd);
-        }
+        CMP_LOG_ERROR("get signalFd fail!");
+        return false;
     }
-
-    return -1;
-}
-
-int ShmemoryPipeline::closeShmemory()
-{
-    CMP_LOG_INFO("start");
-
-    if (memtype_ == kMemtypeShmem)
-    {
-        return CloseShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)));
-    }
-    else if (memtype_ == kMemtypePosixShm)
-    {
-        return ClosePosixShmem((SHMEM_HANDLE *)(&(context_.shmemHandle)), "", posixshm_fd);
-    }
-
-    return -1;
-}
-
-int ShmemoryPipeline::readShmemory(SHMEM_HANDLE hShmem, unsigned char **ppData, int *pSize,
-                                   unsigned char **ppMeta, int *pMetaSize)
-{
-    if (memtype_ == kMemtypeShmem)
-    {
-        return ReadShmem(hShmem, ppData, pSize, ppMeta, pMetaSize);
-    }
-    else if (memtype_ == kMemtypePosixShm)
-    {
-        return ReadPosixShmem(hShmem, ppData, pSize, ppMeta, pMetaSize);
-    }
-
-    return -1;
-}
-
-bool ShmemoryPipeline::createSignalListener()
-{
-    shm_listener_ = std::make_unique<SignalListener>();
-
-    if (shm_listener_)
-    {
-        CMP_LOG_INFO("shm_listener_ creation OK");
-        shm_listener_->initialize(SIGUSR1);
-        pid = shm_listener_->run();
-    }
-    CMP_LOG_INFO("pid : %d", pid);
-
+    CMP_LOG_INFO("get signalFd success (%d)", signalFd);
     return true;
+}
+
+bool ShmemoryPipeline::openShmemory()
+{
+    CMP_LOG_INFO("start");
+
+    camShmem_ = std::make_unique<CameraSharedMemory>();
+
+    return camShmem_->open(bufferFd, signalFd);
+}
+
+void ShmemoryPipeline::closeShmemory()
+{
+    CMP_LOG_INFO("start");
+
+    camShmem_->close();
+}
+
+bool ShmemoryPipeline::readShmemory(unsigned char **data, size_t *len, unsigned char **meta,
+                                    size_t *meta_len, unsigned char **extra, size_t *extra_len,
+                                    unsigned char **solution, size_t *solution_len)
+{
+    CMP_LOG_DEBUG("start! key(%d)", handle_);
+
+    size_t dataLen     = 0;
+    size_t metaLen     = 0;
+    size_t extraLen    = 0;
+    size_t solutionLen = 0;
+
+    bool ret =
+        camShmem_->read(data, &dataLen, meta, &metaLen, extra, &extraLen, solution, &solutionLen);
+
+    if (ret)
+    {
+        if (len)
+            *len = static_cast<size_t>(dataLen);
+        if (meta_len)
+            *meta_len = static_cast<size_t>(metaLen);
+        if (extra_len)
+            *extra_len = static_cast<size_t>(extraLen);
+        if (solution_len)
+            *solution_len = static_cast<size_t>(solutionLen);
+
+        CMP_LOG_DEBUG("end! data(%p) length(%zu)", *data, dataLen);
+        return true;
+    }
+
+    return false;
 }
 
 void ShmemoryPipeline::deleteSocketIfExists(const std::string &socketPath)

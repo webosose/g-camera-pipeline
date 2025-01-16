@@ -131,6 +131,7 @@ bool CameraServiceClient::cbGetReplyMsg(LSHandle *sh, LSMessage *msg, void *ctx)
 
 bool CameraServiceClient::cbGetFd(LSHandle *sh, LSMessage *msg, void *ctx)
 {
+    CMP_LOG_INFO("start");
     CameraServiceClient *caller = static_cast<CameraServiceClient *>(ctx);
     const char *str             = LSMessageGetPayload(msg);
     caller->reply_from_server_  = str ? str : "";
@@ -138,6 +139,8 @@ bool CameraServiceClient::cbGetFd(LSHandle *sh, LSMessage *msg, void *ctx)
     LS::Message ls_message(msg);
     LS::PayloadRef payload_ref = ls_message.accessPayload();
     fd                         = payload_ref.getFd();
+    CMP_LOG_INFO("cbGetFd %d", fd);
+
     if (fd)
     {
         caller->fd_ = dup(fd);
@@ -230,13 +233,16 @@ bool CameraServiceClient::stopCamera()
     return parsed["returnValue"].asBool();
 }
 
-int CameraServiceClient::getFd()
+int CameraServiceClient::getFd(int handle, const std::string &type)
 {
-    if (handle_ == -1)
+    CMP_LOG_INFO("start");
+    if (handle == -1)
     {
         return -1;
     }
-    std::string payload = "{\"handle\":" + std::to_string(handle_) + "}";
+    std::string payload = "{\"handle\":" + std::to_string(handle);
+    payload += ", \"type\":\"" + type + "\"}";
+
     if (!call("luna://com.webos.service.camera2/getFd", payload, cbGetFd))
     {
         return -1;

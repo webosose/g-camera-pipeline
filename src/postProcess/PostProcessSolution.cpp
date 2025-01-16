@@ -19,7 +19,11 @@
 namespace cmp
 {
 
-bool PostProcessSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen) { return true; }
+bool PostProcessSolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen, uint8_t *asolution,
+                                       int32_t asolutionLen)
+{
+    return true;
+}
 bool PostProcessSolution::doPostProcess() { return true; }
 bool PostProcessSolution::doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV)
 {

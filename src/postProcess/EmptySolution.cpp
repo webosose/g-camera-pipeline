@@ -23,7 +23,11 @@
 namespace cmp
 {
 
-bool EmptySolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen) { return true; }
+bool EmptySolution::pushMetaData(uint8_t *aMeta, int32_t aMetaLen, uint8_t *asolution,
+                                 int32_t asolutionLen)
+{
+    return true;
+}
 bool EmptySolution::doPostProcess() { return true; }
 
 bool EmptySolution::doPostProcess(uint8_t *aData, uint32_t aStrride, uint32_t offsetUV)
