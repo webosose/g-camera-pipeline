@@ -25,8 +25,10 @@ extern "C"
 }
 #include "base.h"
 #include "camera_pipeline.h"
+#include "camera_service_client.h"
 #include "camera_types.h"
 #include "message.h"
+#include <camera_shared_memory.h>
 #include <camera_window_manager.h>
 #include <cameraservice/camera_service.h>
 #include <gst/app/gstappsink.h>
@@ -93,9 +95,6 @@ class Service;
 }
 } // namespace cmp
 
-class CameraSharedMemory;
-class LunaClient;
-
 namespace cmp
 {
 namespace player
@@ -159,7 +158,7 @@ private:
     void FreeRecordElements();
     void FreePreviewBinElements();
 
-    bool getFd(int handle, const std::string &type, int &fd);
+    bool getFd();
     bool openShmemory();
     void closeShmemory();
     bool readShmemory(unsigned char **data, size_t *len, unsigned char **meta = nullptr,
@@ -207,8 +206,10 @@ private:
 
     /* shmem sync */
     std::string camera_id_;
+    std::unique_ptr<CameraServiceClient> cs_client_;
     std::unique_ptr<CameraSharedMemory> camShmem_{nullptr};
-    std::unique_ptr<LunaClient> luna_client_{nullptr};
+    int bufferFd = -1;
+    int signalFd = -1;
 };
 #ifdef PTZ_ENABLED
 IPostProcessSolution *getPostProcessSolution();

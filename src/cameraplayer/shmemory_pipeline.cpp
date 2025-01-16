@@ -1,7 +1,6 @@
 #include "shmemory_pipeline.h"
 #include "camera_shared_memory.h"
 #include "log.h"
-#include "luna_client.h"
 #include "message.h"
 #include <pbnjson.hpp>
 #include <system_error>
@@ -32,10 +31,6 @@ ShmemoryPipeline::ShmemoryPipeline()
     {
     }
     g_main_context_unref(c);
-
-    int pid                     = getpid();
-    std::string ipc_client_name = "com.webos.pipeline.ipc._" + std::to_string(pid);
-    luna_client_                = std::make_unique<LunaClient>(ipc_client_name.c_str());
 
     CMP_LOG_INFO("end");
 }
@@ -99,6 +94,12 @@ bool ShmemoryPipeline::Load(const std::string &msg)
     if (!attachSurface(true))
     {
         CMP_LOG_ERROR("attachSurface() failed");
+        return false;
+    }
+
+    if (!getFd())
+    {
+        CMP_LOG_ERROR("getFd() failed");
         return false;
     }
 
@@ -802,52 +803,32 @@ void ShmemoryPipeline::show_frame()
     }
 }
 
-bool ShmemoryPipeline::getFd(int handle, const std::string &type, int &fd)
-{
-    CMP_LOG_INFO("start!");
-
-    std::string uri     = "luna://com.webos.service.camera2/getFd";
-    std::string payload = "{\"handle\":" + std::to_string(handle) + ", \"type\":\"" + type + "\"}";
-    CMP_LOG_INFO("payload(%s)", payload.c_str());
-
-    std::string resp;
-    luna_client_->callSync(uri.c_str(), payload.c_str(), &resp, 3000, &fd);
-
-    CMP_LOG_INFO("end! resp(%s) fd(%d)", resp.c_str(), fd);
-
-    pbnjson::JDomParser jsonDomParser;
-    if (jsonDomParser.parse(resp, pbnjson::JSchema::AllSchema()))
-    {
-        pbnjson::JValue parsed = jsonDomParser.getDom();
-        return parsed["returnValue"].asBool();
-    }
-
-    CMP_LOG_ERROR("ERROR JDomParser: %s ", resp.c_str());
-    return false;
-}
-
-bool ShmemoryPipeline::openShmemory()
+bool ShmemoryPipeline::getFd()
 {
     CMP_LOG_INFO("start");
 
-    int bufferFd = -1;
-    int signalFd = -1;
-
-    bool ret = getFd(handle_, "buffer", bufferFd);
-    if (!ret || bufferFd < 0)
+    cs_client_ = std::make_unique<CameraServiceClient>();
+    bufferFd   = cs_client_->getFd(handle_, "buffer");
+    if (bufferFd < 0)
     {
         CMP_LOG_ERROR("get bufferFd fail!");
         return false;
     }
     CMP_LOG_INFO("get bufferFd success (%d)", bufferFd);
 
-    ret = getFd(handle_, "signal", signalFd);
-    if (!ret || signalFd < 0)
+    signalFd = cs_client_->getFd(handle_, "signal");
+    if (signalFd < 0)
     {
         CMP_LOG_ERROR("get signalFd fail!");
         return false;
     }
     CMP_LOG_INFO("get signalFd success (%d)", signalFd);
+    return true;
+}
+
+bool ShmemoryPipeline::openShmemory()
+{
+    CMP_LOG_INFO("start");
 
     camShmem_ = std::make_unique<CameraSharedMemory>();
 
