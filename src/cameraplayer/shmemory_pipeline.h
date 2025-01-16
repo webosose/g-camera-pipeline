@@ -3,7 +3,6 @@
 
 #include "base.h"
 #include "camera_pipeline.h"
-#include "camera_service_client.h"
 #include "camera_types.h"
 #include <camera_window_manager.h>
 #include <map>
@@ -22,6 +21,7 @@ class IPostProcessSolution;
 #endif
 
 class CameraSharedMemory;
+class LunaClient;
 class ShmemoryPipeline : public CameraPipeline
 {
     typedef struct GstAppSrcContext_
@@ -60,10 +60,8 @@ class ShmemoryPipeline : public CameraPipeline
     std::shared_ptr<IPostProcessSolution> postProcessSolution_;
 #endif
 
-    int bufferFd = -1;
-    int signalFd = -1;
-    std::unique_ptr<CameraServiceClient> cs_client_;
     std::unique_ptr<CameraSharedMemory> camShmem_{nullptr};
+    std::unique_ptr<LunaClient> luna_client_{nullptr};
 
     bool Pause();
     bool attachSurface(bool allow_no_window = false);
@@ -83,7 +81,7 @@ class ShmemoryPipeline : public CameraPipeline
     bool remBus();
     bool unloadImpl();
 
-    bool getFd();
+    bool getFd(int handle, const std::string &type, int &fd);
     bool openShmemory();
     void closeShmemory();
     bool readShmemory(unsigned char **data, size_t *len, unsigned char **meta = nullptr,
