@@ -82,7 +82,7 @@ CameraPlayer::CameraPlayer()
       source_(NULL), parser_(NULL), decoder_(NULL), filter_YUY2_(NULL), filter_NV12_(NULL),
       filter_H264_(NULL), filter_I420_(NULL), filter_JPEG_(NULL), filter_RGB_(NULL), vconv_(NULL),
       record_convert_(NULL), preview_decoder_(NULL), preview_parser_(NULL), preview_encoder_(NULL),
-      preview_convert_(NULL), tee_(NULL), capture_queue_(NULL), capture_encoder_(NULL),
+      preview_convert_(NULL), tee_(NULL), capture_convert_(NULL), capture_encoder_(NULL),
       capture_sink_(NULL), record_queue_(NULL), record_encoder_(NULL), record_parse_(NULL),
       record_decoder_(NULL), record_mux_(NULL), record_sink_(NULL), preview_queue_(NULL),
       preview_sink_(NULL), record_audio_src_(NULL), record_audio_queue_(NULL),
@@ -1208,10 +1208,10 @@ bool CameraPlayer::CreateCaptureElements(GstPad *tee_capture_pad)
     CMP_LOG_INFO(" CameraPlayer::CreateCaptureElements \n ");
     num_of_images_to_capture_ = kNumOfImages;
 
-    capture_queue_ = gst_element_factory_make("queue", "capture-queue");
-    if (!capture_queue_)
+    capture_convert_ = gst_element_factory_make("videoconvert", "capture-convert");
+    if (!capture_convert_)
     {
-        CMP_LOG_ERROR("capture_queue_(%p) Failed", capture_queue_);
+        CMP_LOG_ERROR("capture_convert_(%p) Failed", capture_convert_);
         return false;
     }
     capture_sink_ = gst_element_factory_make("appsink", "capture-sink");
@@ -1225,10 +1225,10 @@ bool CameraPlayer::CreateCaptureElements(GstPad *tee_capture_pad)
     g_object_set(G_OBJECT(capture_sink_), "emit-signals", TRUE, "sync", FALSE, NULL);
     g_signal_connect(capture_sink_, "new-sample", G_CALLBACK(GetSample), this);
 
-    gst_bin_add_many(GST_BIN(pipeline_), capture_queue_, capture_sink_, NULL);
+    gst_bin_add_many(GST_BIN(pipeline_), capture_convert_, capture_sink_, NULL);
     CMP_LOG_INFO(" CameraPlayer::CreateCaptureElements, added to bin  \n ");
 
-    capture_queue_pad_ = gst_element_get_static_pad(capture_queue_, "sink");
+    capture_queue_pad_ = gst_element_get_static_pad(capture_convert_, "sink");
     if (!capture_queue_pad_)
     {
         CMP_LOG_ERROR("Did not get capture queue pad.\n");
@@ -1253,7 +1253,7 @@ bool CameraPlayer::CreateCaptureElements(GstPad *tee_capture_pad)
         return false;
     }
 
-    if (TRUE != gst_element_link_many(capture_queue_, capture_encoder_, capture_sink_, NULL))
+    if (TRUE != gst_element_link_many(capture_convert_, capture_encoder_, capture_sink_, NULL))
     {
         CMP_LOG_ERROR("Elements could not be linked.\n");
         return false;
@@ -1266,9 +1266,9 @@ bool CameraPlayer::CreateCaptureElements(GstPad *tee_capture_pad)
         return false;
     }
 
-    if (TRUE != gst_element_sync_state_with_parent(capture_queue_))
+    if (TRUE != gst_element_sync_state_with_parent(capture_convert_))
     {
-        CMP_LOG_ERROR("Sync state capture_queue_ failed");
+        CMP_LOG_ERROR("Sync state capture_convert_ failed");
         return false;
     }
     if (TRUE != gst_element_sync_state_with_parent(capture_sink_))
@@ -2043,7 +2043,7 @@ void CameraPlayer::FreeCaptureElements()
 {
     DESTROY_ELEMENT(capture_queue_pad_);
 
-    DESTROY_ELEMENT(capture_queue_);
+    DESTROY_ELEMENT(capture_convert_);
     DESTROY_ELEMENT(capture_sink_);
     DESTROY_ELEMENT(capture_encoder_);
 }
@@ -2122,13 +2122,13 @@ GstPadProbeReturn CameraPlayer::CaptureRemoveProbe(GstPad *pad, GstPadProbeInfo 
     gst_object_unref(player->tee_capture_pad_);
     gst_object_unref(player->capture_queue_pad_);
 
-    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_), player->capture_queue_))
+    if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_), player->capture_convert_))
     {
         CMP_LOG_ERROR("Failed %d\n\n", __LINE__);
     }
-    gst_element_set_state(player->capture_queue_, GST_STATE_NULL);
-    gst_object_unref(player->capture_queue_);
-    player->capture_queue_ = NULL;
+    gst_element_set_state(player->capture_convert_, GST_STATE_NULL);
+    gst_object_unref(player->capture_convert_);
+    player->capture_convert_ = NULL;
 
     if (TRUE != gst_bin_remove(GST_BIN(player->pipeline_), player->capture_encoder_))
     {
