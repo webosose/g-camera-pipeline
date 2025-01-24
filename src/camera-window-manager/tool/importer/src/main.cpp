@@ -41,11 +41,9 @@ extern "C"
 
 static guint signal_watch_intr_id;
 #ifdef USE_COMPOSITER_VER4
-    static constexpr char const *waylandDisplayHandleContextType =
-        "GstWlDisplayHandleContextType";
+static constexpr char const *waylandDisplayHandleContextType = "GstWlDisplayHandleContextType";
 #else
-    static constexpr char const *waylandDisplayHandleContextType =
-        "GstWaylandDisplayHandleContextType";
+static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
 #endif
 
 namespace Importer

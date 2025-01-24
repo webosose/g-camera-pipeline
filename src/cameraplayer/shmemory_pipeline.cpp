@@ -513,8 +513,7 @@ GstBusSyncReply ShmemoryPipeline::handleBusSyncMessage(GstBus *bus, GstMessage *
     // This handler will be invoked synchronously, don't process any application
     // message handling here
 #ifdef USE_COMPOSITER_VER4
-    static constexpr char const *waylandDisplayHandleContextType =
-        "GstWlDisplayHandleContextType";
+    static constexpr char const *waylandDisplayHandleContextType = "GstWlDisplayHandleContextType";
 #else
     static constexpr char const *waylandDisplayHandleContextType =
         "GstWaylandDisplayHandleContextType";

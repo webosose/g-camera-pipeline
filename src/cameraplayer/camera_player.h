@@ -41,11 +41,9 @@ using namespace std;
 static bool getFdCb(LSHandle *, LSMessage *, void *);
 
 #ifdef USE_COMPOSITER_VER4
-    static constexpr char const *waylandDisplayHandleContextType =
-        "GstWlDisplayHandleContextType";
+static constexpr char const *waylandDisplayHandleContextType = "GstWlDisplayHandleContextType";
 #else
-    static constexpr char const *waylandDisplayHandleContextType =
-        "GstWaylandDisplayHandleContextType";
+static constexpr char const *waylandDisplayHandleContextType = "GstWaylandDisplayHandleContextType";
 #endif
 
 using CALLBACK_T =
