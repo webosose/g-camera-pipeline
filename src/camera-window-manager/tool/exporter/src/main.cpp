@@ -264,7 +264,6 @@ bool rendering(GLData *glData, WaylandEGLSurface *surface) noexcept(true)
     glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, glData->vertexStride, 0);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    eglSwapBuffers(eglGetCurrentDisplay(), eglGetCurrentSurface(EGL_READ));
 
     return true;
 }
