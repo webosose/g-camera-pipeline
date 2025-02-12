@@ -370,7 +370,8 @@ int main(int argc, char *argv[])
             continue;
 
         case 'e':
-            outputLogFile = optarg;
+            if (optarg)
+                outputLogFile = optarg;
             continue;
 
         case 'r':
@@ -456,7 +457,14 @@ int main(int argc, char *argv[])
         if (output_file_stream.is_open())
         {
             std::streambuf *original_cout_buffer = std::cout.rdbuf(output_file_stream.rdbuf());
-            std::cout << exporterOutput.dump(4) << std::endl;
+            try
+            {
+                std::cout << exporterOutput.dump(4) << std::endl;
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "An error occurred: " << e.what() << std::endl;
+            }
             std::cout.rdbuf(original_cout_buffer);
             output_file_stream.close();
         }
